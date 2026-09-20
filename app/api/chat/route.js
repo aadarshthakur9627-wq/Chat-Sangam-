@@ -1,12 +1,7 @@
 import Groq from "groq-sdk";
-import { GoogleGenAI } from "@google/genai";
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
-});
-
-const gemini = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
 });
 
 export const maxDuration = 60;
@@ -18,12 +13,8 @@ export async function POST(request) {
 
     if (!messages || !Array.isArray(messages)) {
       return Response.json(
-        {
-          error: "Messages are required.",
-        },
-        {
-          status: 400,
-        }
+        { error: "Messages are required." },
+        { status: 400 }
       );
     }
 
@@ -32,12 +23,12 @@ export async function POST(request) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
+          // =========================
+          // GEMINI STREAMING
+          // =========================
           if (model === "gemini") {
             const geminiContents = messages.map((msg) => ({
-              role:
-                msg.role === "assistant"
-                  ? "model"
-                  : "user",
+              role: msg.role === "assistant" ? "model" : "user",
               parts: [
                 {
                   text: msg.content,
@@ -45,26 +36,117 @@ export async function POST(request) {
               ],
             }));
 
-            const responseStream =
-              await gemini.models.generateContentStream({
-                model: "gemini-3.8-flash",
-                contents: geminiContents,
+            const geminiResponse = await fetch(
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:streamGenerateContent?alt=sse",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-goog-api-key": process.env.GEMINI_API_KEY,
+                },
+                body: JSON.stringify({
+                  contents: geminiContents,
+                }),
+              }
+            );
+
+            if (!geminiResponse.ok || !geminiResponse.body) {
+              const errorText = await geminiResponse.text();
+
+              console.error(
+                "Gemini API error:",
+                geminiResponse.status,
+                errorText
+              );
+
+              throw new Error("Gemini API request failed");
+            }
+
+            const reader = geminiResponse.body.getReader();
+            const decoder = new TextDecoder();
+
+            let buffer = "";
+
+            while (true) {
+              const { value, done } = await reader.read();
+
+              if (done) break;
+
+              buffer += decoder.decode(value, {
+                stream: true,
               });
 
-            for await (const chunk of responseStream) {
-              const text = chunk.text || "";
+              const lines = buffer.split("\n");
 
-              if (text) {
-                controller.enqueue(
-                  encoder.encode(text)
-                );
+              buffer = lines.pop() || "";
 
-                await new Promise((resolve) =>
-                  setTimeout(resolve, 20)
-                );
+              for (const line of lines) {
+                const trimmed = line.trim();
+
+                if (!trimmed.startsWith("data:")) {
+                  continue;
+                }
+
+                const jsonText = trimmed.slice(5).trim();
+
+                if (!jsonText) continue;
+
+                try {
+                  const data = JSON.parse(jsonText);
+
+                  const parts =
+                    data.candidates?.[0]?.content?.parts || [];
+
+                  for (const part of parts) {
+                    if (part.text) {
+                      controller.enqueue(
+                        encoder.encode(part.text)
+                      );
+                    }
+                  }
+                } catch (parseError) {
+                  console.error(
+                    "Gemini SSE parse error:",
+                    parseError
+                  );
+                }
               }
             }
-          } else {
+
+            // Process remaining buffer
+            const remaining = buffer.trim();
+
+            if (remaining.startsWith("data:")) {
+              const jsonText = remaining.slice(5).trim();
+
+              if (jsonText) {
+                try {
+                  const data = JSON.parse(jsonText);
+
+                  const parts =
+                    data.candidates?.[0]?.content?.parts || [];
+
+                  for (const part of parts) {
+                    if (part.text) {
+                      controller.enqueue(
+                        encoder.encode(part.text)
+                      );
+                    }
+                  }
+                } catch (parseError) {
+                  console.error(
+                    "Gemini final SSE parse error:",
+                    parseError
+                  );
+                }
+              }
+            }
+          }
+
+          // =========================
+          // GROQ STREAMING
+          // =========================
+          else {
             const responseStream =
               await groq.chat.completions.create({
                 model: "openai/gpt-oss-20b",
@@ -80,20 +162,13 @@ export async function POST(request) {
                 controller.enqueue(
                   encoder.encode(text)
                 );
-
-                await new Promise((resolve) =>
-                  setTimeout(resolve, 20)
-                );
               }
             }
           }
 
           controller.close();
         } catch (error) {
-          console.error(
-            "Streaming error:",
-            error
-          );
+          console.error("Streaming error:", error);
 
           controller.enqueue(
             encoder.encode(
@@ -107,20 +182,14 @@ export async function POST(request) {
     });
 
     return new Response(stream, {
-      status: 200,
       headers: {
-        "Content-Type":
-          "text/plain; charset=utf-8",
-        "Cache-Control":
-          "no-cache, no-transform",
-        "X-Accel-Buffering": "no",
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-transform",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {
-    console.error(
-      "Chat API error:",
-      error
-    );
+    console.error("Chat API error:", error);
 
     return Response.json(
       {
