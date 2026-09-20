@@ -3,8 +3,16 @@
 import { useState } from "react";
 
 const models = [
-  { id: "groq", name: "Groq", icon: "⚡" },
-  { id: "gemini", name: "Gemini", icon: "✦" },
+  {
+    id: "groq",
+    name: "Groq",
+    icon: "⚡",
+  },
+  {
+    id: "gemini",
+    name: "Gemini",
+    icon: "✦",
+  },
 ];
 
 export default function Home() {
@@ -17,6 +25,7 @@ export default function Home() {
     e.preventDefault();
 
     const text = message.trim();
+
     if (!text || loading) return;
 
     const userMessage = {
@@ -26,7 +35,14 @@ export default function Home() {
 
     const nextMessages = [...messages, userMessage];
 
-    setMessages(nextMessages);
+    setMessages([
+      ...nextMessages,
+      {
+        role: "assistant",
+        content: "",
+      },
+    ]);
+
     setMessage("");
     setLoading(true);
 
@@ -42,31 +58,72 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "AI response failed");
+      if (!response.ok || !response.body) {
+        throw new Error("AI response failed");
       }
 
-      setMessages((old) => [
-        ...old,
-        {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let assistantText = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+
+        if (done) break;
+
+        assistantText += decoder.decode(value, {
+          stream: true,
+        });
+
+        setMessages((old) => {
+          const updated = [...old];
+
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: assistantText,
+          };
+
+          return updated;
+        });
+      }
+
+      assistantText += decoder.decode();
+
+      setMessages((old) => {
+        const updated = [...old];
+
+        updated[updated.length - 1] = {
           role: "assistant",
-          content: data.reply,
-        },
-      ]);
+          content: assistantText,
+        };
+
+        return updated;
+      });
     } catch (error) {
-      setMessages((old) => [
-        ...old,
-        {
+      console.error("Chat error:", error);
+
+      setMessages((old) => {
+        const updated = [...old];
+
+        updated[updated.length - 1] = {
           role: "assistant",
           content:
             "Sorry, kuch problem aa gayi. Please dobara try karo.",
-        },
-      ]);
+        };
+
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
+  }
+
+  function startNewChat() {
+    if (loading) return;
+
+    setMessages([]);
+    setMessage("");
   }
 
   return (
@@ -74,6 +131,7 @@ export default function Home() {
       <aside className="sidebar">
         <div className="brand">
           <div className="logo">✦</div>
+
           <div>
             <h1>Chat Sangam</h1>
             <span>AI Assistant</span>
@@ -82,7 +140,8 @@ export default function Home() {
 
         <button
           className="new-chat"
-          onClick={() => setMessages([])}
+          onClick={startNewChat}
+          disabled={loading}
         >
           ＋ New Chat
         </button>
@@ -92,7 +151,7 @@ export default function Home() {
 
           {messages.length > 0 ? (
             <div className="chat-item">
-              {messages[0]?.content.slice(0, 28)}
+              {messages[0]?.content?.slice(0, 28)}
             </div>
           ) : (
             <div className="empty-history">
@@ -109,7 +168,9 @@ export default function Home() {
 
       <section className="chat-area">
         <header className="topbar">
-          <button className="mobile-menu">☰</button>
+          <button className="mobile-menu">
+            ☰
+          </button>
 
           <div className="mobile-title">
             <strong>Chat Sangam</strong>
@@ -121,7 +182,9 @@ export default function Home() {
               <button
                 key={item.id}
                 className={
-                  model === item.id ? "active-model" : ""
+                  model === item.id
+                    ? "active-model"
+                    : ""
                 }
                 onClick={() => setModel(item.id)}
                 disabled={loading}
@@ -135,13 +198,15 @@ export default function Home() {
         <div className="messages">
           {messages.length === 0 ? (
             <div className="welcome">
-              <div className="welcome-logo">✦</div>
+              <div className="welcome-logo">
+                ✦
+              </div>
 
               <h2>How can I help you?</h2>
 
               <p>
-                Ask anything and get intelligent answers from
-                multiple AI models.
+                Ask anything and get intelligent
+                answers from multiple AI models.
               </p>
 
               <div className="suggestions">
@@ -157,7 +222,9 @@ export default function Home() {
 
                 <button
                   onClick={() =>
-                    setMessage("Help me learn mathematics")
+                    setMessage(
+                      "Help me learn mathematics"
+                    )
                   }
                 >
                   Learn Mathematics
@@ -165,7 +232,9 @@ export default function Home() {
 
                 <button
                   onClick={() =>
-                    setMessage("Write a professional email")
+                    setMessage(
+                      "Write a professional email"
+                    )
                   }
                 >
                   Write an email
@@ -180,24 +249,25 @@ export default function Home() {
                   key={index}
                 >
                   <div className="avatar">
-                    {msg.role === "user" ? "A" : "✦"}
+                    {msg.role === "user"
+                      ? "A"
+                      : "✦"}
                   </div>
 
                   <div className="message-content">
                     {msg.content}
+
+                    {loading &&
+                      msg.role === "assistant" &&
+                      index ===
+                        messages.length - 1 && (
+                        <span className="typing-cursor">
+                          ▌
+                        </span>
+                      )}
                   </div>
                 </div>
               ))}
-
-              {loading && (
-                <div className="message-row assistant">
-                  <div className="avatar">✦</div>
-
-                  <div className="message-content">
-                    Thinking...
-                  </div>
-                </div>
-              )}
             </>
           )}
         </div>
@@ -209,12 +279,16 @@ export default function Home() {
           >
             <textarea
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={(e) =>
+                setMessage(e.target.value)
+              }
               placeholder={
                 loading
                   ? "AI is thinking..."
                   : `Message ${
-                      model === "groq" ? "Groq" : "Gemini"
+                      model === "groq"
+                        ? "Groq"
+                        : "Gemini"
                     }...`
               }
               rows={1}
@@ -233,15 +307,17 @@ export default function Home() {
             <button
               className="send-button"
               type="submit"
-              disabled={!message.trim() || loading}
+              disabled={
+                !message.trim() || loading
+              }
             >
               ↑
             </button>
           </form>
 
           <div className="composer-note">
-            Chat Sangam can make mistakes. Check important
-            information.
+            Chat Sangam can make mistakes. Check
+            important information.
           </div>
         </div>
       </section>
