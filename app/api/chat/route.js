@@ -9,6 +9,8 @@ const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+export const maxDuration = 30;
+
 export async function POST(request) {
   try {
     const { model, messages } = await request.json();
@@ -20,38 +22,77 @@ export async function POST(request) {
       );
     }
 
-    if (model === "gemini") {
-      const conversation = messages
-        .map((msg) => `${msg.role}: ${msg.content}`)
-        .join("\n");
+    const encoder = new TextEncoder();
 
-      const interaction = await gemini.interactions.create({
-        model: "gemini-3.8-flash",
-        input: conversation,
-      });
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          if (model === "gemini") {
+            const geminiContents = messages.map((msg) => ({
+              role: msg.role === "assistant" ? "model" : "user",
+              parts: [{ text: msg.content }],
+            }));
 
-      return Response.json({
-        reply: interaction.output_text || "No response received.",
-      });
-    }
+            const responseStream =
+              await gemini.models.generateContentStream({
+                model: "gemini-3.8-flash",
+                contents: geminiContents,
+              });
 
-    const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-20b",
-      messages,
+            for await (const chunk of responseStream) {
+              if (chunk.text) {
+                controller.enqueue(
+                  encoder.encode(chunk.text)
+                );
+              }
+            }
+          } else {
+            const responseStream =
+              await groq.chat.completions.create({
+                model: "openai/gpt-oss-20b",
+                messages,
+                stream: true,
+              });
+
+            for await (const chunk of responseStream) {
+              const text =
+                chunk.choices[0]?.delta?.content || "";
+
+              if (text) {
+                controller.enqueue(
+                  encoder.encode(text)
+                );
+              }
+            }
+          }
+
+          controller.close();
+        } catch (error) {
+          console.error("Streaming error:", error);
+
+          controller.enqueue(
+            encoder.encode(
+              "\n\n[AI response failed. Please try again.]"
+            )
+          );
+
+          controller.close();
+        }
+      },
     });
 
-    return Response.json({
-      reply:
-        completion.choices[0]?.message?.content ||
-        "No response received.",
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     });
   } catch (error) {
     console.error("Chat API error:", error);
 
     return Response.json(
-      {
-        error: "AI response failed. Please try again.",
-      },
+      { error: "AI response failed." },
       { status: 500 }
     );
   }
