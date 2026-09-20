@@ -22,7 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   async function sendMessage(e) {
-    e.preventDefault();
+    e?.preventDefault();
 
     const text = message.trim();
 
@@ -65,46 +65,52 @@ export default function Home() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
 
-      let assistantText = "";
+      let fullText = "";
 
       while (true) {
         const { value, done } = await reader.read();
 
         if (done) break;
 
-        assistantText += decoder.decode(value, {
+        const chunk = decoder.decode(value, {
           stream: true,
         });
 
-        setMessages((old) => {
-          const updated = [...old];
+        fullText += chunk;
+
+        setMessages((oldMessages) => {
+          const updated = [...oldMessages];
 
           updated[updated.length - 1] = {
             role: "assistant",
-            content: assistantText,
+            content: fullText,
           };
 
           return updated;
         });
       }
 
-      assistantText += decoder.decode();
+      const finalChunk = decoder.decode();
 
-      setMessages((old) => {
-        const updated = [...old];
+      if (finalChunk) {
+        fullText += finalChunk;
 
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: assistantText,
-        };
+        setMessages((oldMessages) => {
+          const updated = [...oldMessages];
 
-        return updated;
-      });
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: fullText,
+          };
+
+          return updated;
+        });
+      }
     } catch (error) {
       console.error("Chat error:", error);
 
-      setMessages((old) => {
-        const updated = [...old];
+      setMessages((oldMessages) => {
+        const updated = [...oldMessages];
 
         updated[updated.length - 1] = {
           role: "assistant",
@@ -284,7 +290,7 @@ export default function Home() {
               }
               placeholder={
                 loading
-                  ? "AI is thinking..."
+                  ? "AI is writing..."
                   : `Message ${
                       model === "groq"
                         ? "Groq"
