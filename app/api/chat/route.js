@@ -9,7 +9,8 @@ const gemini = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-export const maxDuration = 30;
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
@@ -17,8 +18,12 @@ export async function POST(request) {
 
     if (!messages || !Array.isArray(messages)) {
       return Response.json(
-        { error: "Messages are required." },
-        { status: 400 }
+        {
+          error: "Messages are required.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
@@ -29,8 +34,15 @@ export async function POST(request) {
         try {
           if (model === "gemini") {
             const geminiContents = messages.map((msg) => ({
-              role: msg.role === "assistant" ? "model" : "user",
-              parts: [{ text: msg.content }],
+              role:
+                msg.role === "assistant"
+                  ? "model"
+                  : "user",
+              parts: [
+                {
+                  text: msg.content,
+                },
+              ],
             }));
 
             const responseStream =
@@ -40,9 +52,15 @@ export async function POST(request) {
               });
 
             for await (const chunk of responseStream) {
-              if (chunk.text) {
+              const text = chunk.text || "";
+
+              if (text) {
                 controller.enqueue(
-                  encoder.encode(chunk.text)
+                  encoder.encode(text)
+                );
+
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 20)
                 );
               }
             }
@@ -56,11 +74,15 @@ export async function POST(request) {
 
             for await (const chunk of responseStream) {
               const text =
-                chunk.choices[0]?.delta?.content || "";
+                chunk.choices?.[0]?.delta?.content || "";
 
               if (text) {
                 controller.enqueue(
                   encoder.encode(text)
+                );
+
+                await new Promise((resolve) =>
+                  setTimeout(resolve, 20)
                 );
               }
             }
@@ -68,7 +90,10 @@ export async function POST(request) {
 
           controller.close();
         } catch (error) {
-          console.error("Streaming error:", error);
+          console.error(
+            "Streaming error:",
+            error
+          );
 
           controller.enqueue(
             encoder.encode(
@@ -82,18 +107,28 @@ export async function POST(request) {
     });
 
     return new Response(stream, {
+      status: 200,
       headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        "Content-Type":
+          "text/plain; charset=utf-8",
+        "Cache-Control":
+          "no-cache, no-transform",
+        "X-Accel-Buffering": "no",
       },
     });
   } catch (error) {
-    console.error("Chat API error:", error);
+    console.error(
+      "Chat API error:",
+      error
+    );
 
     return Response.json(
-      { error: "AI response failed." },
-      { status: 500 }
+      {
+        error: "AI response failed.",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
