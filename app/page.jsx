@@ -11,22 +11,62 @@ export default function Home() {
   const [model, setModel] = useState("groq");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  function sendMessage(e) {
+  async function sendMessage(e) {
     e.preventDefault();
 
     const text = message.trim();
-    if (!text) return;
+    if (!text || loading) return;
 
-    setMessages((old) => [
-      ...old,
-      {
-        role: "user",
-        content: text,
-      },
-    ]);
+    const userMessage = {
+      role: "user",
+      content: text,
+    };
 
+    const nextMessages = [...messages, userMessage];
+
+    setMessages(nextMessages);
     setMessage("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: nextMessages,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "AI response failed");
+      }
+
+      setMessages((old) => [
+        ...old,
+        {
+          role: "assistant",
+          content: data.reply,
+        },
+      ]);
+    } catch (error) {
+      setMessages((old) => [
+        ...old,
+        {
+          role: "assistant",
+          content:
+            "Sorry, kuch problem aa gayi. Please dobara try karo.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -49,6 +89,7 @@ export default function Home() {
 
         <div className="sidebar-section">
           <p>RECENT CHATS</p>
+
           {messages.length > 0 ? (
             <div className="chat-item">
               {messages[0]?.content.slice(0, 28)}
@@ -79,8 +120,11 @@ export default function Home() {
             {models.map((item) => (
               <button
                 key={item.id}
-                className={model === item.id ? "active-model" : ""}
+                className={
+                  model === item.id ? "active-model" : ""
+                }
                 onClick={() => setModel(item.id)}
+                disabled={loading}
               >
                 {item.icon} {item.name}
               </button>
@@ -103,7 +147,9 @@ export default function Home() {
               <div className="suggestions">
                 <button
                   onClick={() =>
-                    setMessage("Explain artificial intelligence simply")
+                    setMessage(
+                      "Explain artificial intelligence simply"
+                    )
                   }
                 >
                   Explain AI simply
@@ -127,32 +173,57 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            messages.map((msg, index) => (
-              <div
-                className={`message-row ${msg.role}`}
-                key={index}
-              >
-                <div className="avatar">
-                  {msg.role === "user" ? "A" : "✦"}
-                </div>
+            <>
+              {messages.map((msg, index) => (
+                <div
+                  className={`message-row ${msg.role}`}
+                  key={index}
+                >
+                  <div className="avatar">
+                    {msg.role === "user" ? "A" : "✦"}
+                  </div>
 
-                <div className="message-content">
-                  {msg.content}
+                  <div className="message-content">
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+
+              {loading && (
+                <div className="message-row assistant">
+                  <div className="avatar">✦</div>
+
+                  <div className="message-content">
+                    Thinking...
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="composer-wrapper">
-          <form className="composer" onSubmit={sendMessage}>
+          <form
+            className="composer"
+            onSubmit={sendMessage}
+          >
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={`Message ${model === "groq" ? "Groq" : "Gemini"}...`}
+              placeholder={
+                loading
+                  ? "AI is thinking..."
+                  : `Message ${
+                      model === "groq" ? "Groq" : "Gemini"
+                    }...`
+              }
               rows={1}
+              disabled={loading}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey
+                ) {
                   e.preventDefault();
                   sendMessage(e);
                 }
@@ -162,14 +233,15 @@ export default function Home() {
             <button
               className="send-button"
               type="submit"
-              disabled={!message.trim()}
+              disabled={!message.trim() || loading}
             >
               ↑
             </button>
           </form>
 
           <div className="composer-note">
-            Chat Sangam can make mistakes. Check important information.
+            Chat Sangam can make mistakes. Check important
+            information.
           </div>
         </div>
       </section>
