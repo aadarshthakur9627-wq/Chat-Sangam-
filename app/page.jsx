@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 
 const models = [
   {
@@ -17,31 +15,30 @@ const models = [
   },
 ];
 
-const STORAGE_KEY = "chat-sangam-chats";
+const STORAGE_KEY = "chat-sangam-history";
 
 function createChat() {
   return {
     id: Date.now().toString(),
     title: "New Chat",
     messages: [],
-    updatedAt: Date.now(),
   };
 }
 
 export default function Home() {
   const [model, setModel] = useState("groq");
-  const [message, setMessage] = useState("");
+
   const [chats, setChats] = useState([]);
+
   const [activeChatId, setActiveChatId] = useState(null);
+
+  const [message, setMessage] = useState("");
+
   const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
 
-  const activeChat =
-    chats.find((chat) => chat.id === activeChatId) || null;
+  const [loaded, setLoaded] = useState(false);
 
-  const messages = activeChat?.messages || [];
-
-  // Load chats from browser storage
+  /* Load saved chats */
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -53,29 +50,32 @@ export default function Home() {
           setChats(parsed);
           setActiveChatId(parsed[0].id);
         } else {
-          const firstChat = createChat();
-          setChats([firstChat]);
-          setActiveChatId(firstChat.id);
+          const newChat = createChat();
+
+          setChats([newChat]);
+          setActiveChatId(newChat.id);
         }
       } else {
-        const firstChat = createChat();
-        setChats([firstChat]);
-        setActiveChatId(firstChat.id);
+        const newChat = createChat();
+
+        setChats([newChat]);
+        setActiveChatId(newChat.id);
       }
     } catch (error) {
-      console.error("Chat history load error:", error);
+      console.error("History load error:", error);
 
-      const firstChat = createChat();
-      setChats([firstChat]);
-      setActiveChatId(firstChat.id);
+      const newChat = createChat();
+
+      setChats([newChat]);
+      setActiveChatId(newChat.id);
     }
 
-    setReady(true);
+    setLoaded(true);
   }, []);
 
-  // Save chats to browser storage
+  /* Save chats */
   useEffect(() => {
-    if (!ready) return;
+    if (!loaded) return;
 
     try {
       localStorage.setItem(
@@ -83,52 +83,44 @@ export default function Home() {
         JSON.stringify(chats)
       );
     } catch (error) {
-      console.error("Chat history save error:", error);
+      console.error("History save error:", error);
     }
-  }, [chats, ready]);
+  }, [chats, loaded]);
 
-  function updateActiveMessages(nextMessages) {
-    setChats((oldChats) =>
-      oldChats.map((chat) =>
-        chat.id === activeChatId
-          ? {
-              ...chat,
-              messages: nextMessages,
-              updatedAt: Date.now(),
-            }
-          : chat
-      )
-    );
-  }
+  const activeChat =
+    chats.find((chat) => chat.id === activeChatId) ||
+    null;
+
+  const messages = activeChat?.messages || [];
 
   async function sendMessage(e) {
     e?.preventDefault();
 
     const text = message.trim();
 
-    if (!text || loading || !activeChatId) return;
+    if (!text || loading || !activeChat) return;
 
     const userMessage = {
       role: "user",
       content: text,
     };
 
-    const nextMessages = [...messages, userMessage];
+    const nextMessages = [
+      ...messages,
+      userMessage,
+    ];
 
-    const chatTitle =
+    const newTitle =
       messages.length === 0
-        ? text.slice(0, 35)
-        : activeChat?.title || "New Chat";
+        ? text.slice(0, 32)
+        : activeChat.title;
 
     setChats((oldChats) =>
       oldChats.map((chat) =>
         chat.id === activeChatId
           ? {
               ...chat,
-              title:
-                chat.title === "New Chat"
-                  ? chatTitle
-                  : chat.title,
+              title: newTitle,
               messages: [
                 ...nextMessages,
                 {
@@ -136,7 +128,6 @@ export default function Home() {
                   content: "",
                 },
               ],
-              updatedAt: Date.now(),
             }
           : chat
       )
@@ -148,9 +139,11 @@ export default function Home() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
         },
+
         body: JSON.stringify({
           model,
           messages: nextMessages,
@@ -162,12 +155,14 @@ export default function Home() {
       }
 
       const reader = response.body.getReader();
+
       const decoder = new TextDecoder();
 
       let fullText = "";
 
       while (true) {
-        const { value, done } = await reader.read();
+        const { value, done } =
+          await reader.read();
 
         if (done) break;
 
@@ -178,26 +173,23 @@ export default function Home() {
         fullText += chunk;
 
         setChats((oldChats) =>
-          oldChats.map((chat) => {
-            if (chat.id !== activeChatId) {
-              return chat;
-            }
-
-            const updatedMessages = [...chat.messages];
-
-            updatedMessages[
-              updatedMessages.length - 1
-            ] = {
-              role: "assistant",
-              content: fullText,
-            };
-
-            return {
-              ...chat,
-              messages: updatedMessages,
-              updatedAt: Date.now(),
-            };
-          })
+          oldChats.map((chat) =>
+            chat.id === activeChatId
+              ? {
+                  ...chat,
+                  messages: chat.messages.map(
+                    (msg, index) =>
+                      index ===
+                      chat.messages.length - 1
+                        ? {
+                            role: "assistant",
+                            content: fullText,
+                          }
+                        : msg
+                  ),
+                }
+              : chat
+          )
         );
       }
 
@@ -205,55 +197,49 @@ export default function Home() {
 
       if (finalChunk) {
         fullText += finalChunk;
-
-        setChats((oldChats) =>
-          oldChats.map((chat) => {
-            if (chat.id !== activeChatId) {
-              return chat;
-            }
-
-            const updatedMessages = [...chat.messages];
-
-            updatedMessages[
-              updatedMessages.length - 1
-            ] = {
-              role: "assistant",
-              content: fullText,
-            };
-
-            return {
-              ...chat,
-              messages: updatedMessages,
-              updatedAt: Date.now(),
-            };
-          })
-        );
       }
+
+      setChats((oldChats) =>
+        oldChats.map((chat) =>
+          chat.id === activeChatId
+            ? {
+                ...chat,
+                messages: chat.messages.map(
+                  (msg, index) =>
+                    index ===
+                    chat.messages.length - 1
+                      ? {
+                          role: "assistant",
+                          content: fullText,
+                        }
+                      : msg
+                ),
+              }
+            : chat
+        )
+      );
     } catch (error) {
       console.error("Chat error:", error);
 
       setChats((oldChats) =>
-        oldChats.map((chat) => {
-          if (chat.id !== activeChatId) {
-            return chat;
-          }
-
-          const updatedMessages = [...chat.messages];
-
-          updatedMessages[
-            updatedMessages.length - 1
-          ] = {
-            role: "assistant",
-            content:
-              "Sorry, kuch problem aa gayi. Please dobara try karo.",
-          };
-
-          return {
-            ...chat,
-            messages: updatedMessages,
-            updatedAt: Date.now(),
-          };
-        })
+        oldChats.map((chat) =>
+          chat.id === activeChatId
+            ? {
+                ...chat,
+                messages: chat.messages.map(
+                  (msg, index) =>
+                    index ===
+                    chat.messages.length - 1
+                      ? {
+                          role: "assistant",
+                          content:
+                            "Sorry, kuch problem aa gayi. Please dobara try karo.",
+                        }
+                      : msg
+                ),
+              }
+            : chat
+        )
       );
     } finally {
       setLoading(false);
@@ -271,26 +257,28 @@ export default function Home() {
     ]);
 
     setActiveChatId(newChat.id);
+
     setMessage("");
   }
 
-  function openChat(chatId) {
+  function openChat(id) {
     if (loading) return;
 
-    setActiveChatId(chatId);
+    setActiveChatId(id);
+
     setMessage("");
   }
 
-  if (!ready) {
+  if (!loaded) {
     return (
       <main className="app">
         <div
           style={{
             width: "100%",
+            minHeight: "100vh",
             display: "grid",
             placeItems: "center",
-            minHeight: "100vh",
-            color: "#a9a0ad",
+            color: "#aaa",
           }}
         >
           Loading Chat Sangam...
@@ -301,6 +289,8 @@ export default function Home() {
 
   return (
     <main className="app">
+      {/* Sidebar */}
+
       <aside className="sidebar">
         <div className="brand">
           <div className="logo">✦</div>
@@ -322,33 +312,30 @@ export default function Home() {
         <div className="sidebar-section">
           <p>RECENT CHATS</p>
 
-          {chats.filter(
-            (chat) => chat.messages.length > 0
-          ).length > 0 ? (
-            chats
-              .filter(
-                (chat) => chat.messages.length > 0
-              )
-              .slice(0, 10)
-              .map((chat) => (
-                <button
-                  key={chat.id}
-                  className="chat-item"
-                  onClick={() =>
-                    openChat(chat.id)
-                  }
-                  style={{
-                    width: "100%",
-                    border: "0",
-                    textAlign: "left",
-                    cursor: loading
-                      ? "not-allowed"
-                      : "pointer",
-                  }}
-                >
-                  {chat.title}
-                </button>
-              ))
+          {chats.length > 0 ? (
+            chats.slice(0, 10).map((chat) => (
+              <button
+                key={chat.id}
+                className="chat-item"
+                onClick={() => openChat(chat.id)}
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  border: "0",
+                  textAlign: "left",
+                  marginBottom: "4px",
+                  cursor: loading
+                    ? "not-allowed"
+                    : "pointer",
+                  background:
+                    chat.id === activeChatId
+                      ? "#241627"
+                      : "#1a111d",
+                }}
+              >
+                {chat.title || "New Chat"}
+              </button>
+            ))
           ) : (
             <div className="empty-history">
               No conversations yet
@@ -361,6 +348,8 @@ export default function Home() {
           <div>◉ Account</div>
         </div>
       </aside>
+
+      {/* Main Chat */}
 
       <section className="chat-area">
         <header className="topbar">
@@ -382,9 +371,7 @@ export default function Home() {
                     ? "active-model"
                     : ""
                 }
-                onClick={() =>
-                  setModel(item.id)
-                }
+                onClick={() => setModel(item.id)}
                 disabled={loading}
               >
                 {item.icon} {item.name}
@@ -392,6 +379,8 @@ export default function Home() {
             ))}
           </div>
         </header>
+
+        {/* Messages */}
 
         <div className="messages">
           {messages.length === 0 ? (
@@ -453,31 +442,7 @@ export default function Home() {
                   </div>
 
                   <div className="message-content">
-                    {msg.role === "assistant" ? (
-                      <div className="markdown-content">
-                        <ReactMarkdown
-                          remarkPlugins={[
-                            remarkGfm,
-                          ]}
-                          components={{
-                            a: ({
-                              node,
-                              ...props
-                            }) => (
-                              <a
-                                {...props}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              />
-                            ),
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      msg.content
-                    )}
+                    {msg.content}
 
                     {loading &&
                       msg.role === "assistant" &&
@@ -493,6 +458,8 @@ export default function Home() {
             </>
           )}
         </div>
+
+        {/* Composer */}
 
         <div className="composer-wrapper">
           <form
@@ -545,4 +512,4 @@ export default function Home() {
       </section>
     </main>
   );
-            }
+}
