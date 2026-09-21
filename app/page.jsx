@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -17,18 +17,96 @@ const models = [
   },
 ];
 
+const STORAGE_KEY = "chat-sangam-chats";
+
+function createChat() {
+  return {
+    id: Date.now().toString(),
+    title: "New Chat",
+    messages: [],
+    updatedAt: Date.now(),
+  };
+}
+
 export default function Home() {
   const [model, setModel] = useState("groq");
   const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  const activeChat =
+    chats.find((chat) => chat.id === activeChatId) || null;
+
+  const messages = activeChat?.messages || [];
+
+  // Load chats from browser storage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+
+      if (saved) {
+        const parsed = JSON.parse(saved);
+
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setChats(parsed);
+          setActiveChatId(parsed[0].id);
+        } else {
+          const firstChat = createChat();
+          setChats([firstChat]);
+          setActiveChatId(firstChat.id);
+        }
+      } else {
+        const firstChat = createChat();
+        setChats([firstChat]);
+        setActiveChatId(firstChat.id);
+      }
+    } catch (error) {
+      console.error("Chat history load error:", error);
+
+      const firstChat = createChat();
+      setChats([firstChat]);
+      setActiveChatId(firstChat.id);
+    }
+
+    setReady(true);
+  }, []);
+
+  // Save chats to browser storage
+  useEffect(() => {
+    if (!ready) return;
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(chats)
+      );
+    } catch (error) {
+      console.error("Chat history save error:", error);
+    }
+  }, [chats, ready]);
+
+  function updateActiveMessages(nextMessages) {
+    setChats((oldChats) =>
+      oldChats.map((chat) =>
+        chat.id === activeChatId
+          ? {
+              ...chat,
+              messages: nextMessages,
+              updatedAt: Date.now(),
+            }
+          : chat
+      )
+    );
+  }
 
   async function sendMessage(e) {
     e?.preventDefault();
 
     const text = message.trim();
 
-    if (!text || loading) return;
+    if (!text || loading || !activeChatId) return;
 
     const userMessage = {
       role: "user",
@@ -37,13 +115,32 @@ export default function Home() {
 
     const nextMessages = [...messages, userMessage];
 
-    setMessages([
-      ...nextMessages,
-      {
-        role: "assistant",
-        content: "",
-      },
-    ]);
+    const chatTitle =
+      messages.length === 0
+        ? text.slice(0, 35)
+        : activeChat?.title || "New Chat";
+
+    setChats((oldChats) =>
+      oldChats.map((chat) =>
+        chat.id === activeChatId
+          ? {
+              ...chat,
+              title:
+                chat.title === "New Chat"
+                  ? chatTitle
+                  : chat.title,
+              messages: [
+                ...nextMessages,
+                {
+                  role: "assistant",
+                  content: "",
+                },
+              ],
+              updatedAt: Date.now(),
+            }
+          : chat
+      )
+    );
 
     setMessage("");
     setLoading(true);
@@ -80,16 +177,28 @@ export default function Home() {
 
         fullText += chunk;
 
-        setMessages((oldMessages) => {
-          const updated = [...oldMessages];
+        setChats((oldChats) =>
+          oldChats.map((chat) => {
+            if (chat.id !== activeChatId) {
+              return chat;
+            }
 
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: fullText,
-          };
+            const updatedMessages = [...chat.messages];
 
-          return updated;
-        });
+            updatedMessages[
+              updatedMessages.length - 1
+            ] = {
+              role: "assistant",
+              content: fullText,
+            };
+
+            return {
+              ...chat,
+              messages: updatedMessages,
+              updatedAt: Date.now(),
+            };
+          })
+        );
       }
 
       const finalChunk = decoder.decode();
@@ -97,31 +206,55 @@ export default function Home() {
       if (finalChunk) {
         fullText += finalChunk;
 
-        setMessages((oldMessages) => {
-          const updated = [...oldMessages];
+        setChats((oldChats) =>
+          oldChats.map((chat) => {
+            if (chat.id !== activeChatId) {
+              return chat;
+            }
 
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: fullText,
-          };
+            const updatedMessages = [...chat.messages];
 
-          return updated;
-        });
+            updatedMessages[
+              updatedMessages.length - 1
+            ] = {
+              role: "assistant",
+              content: fullText,
+            };
+
+            return {
+              ...chat,
+              messages: updatedMessages,
+              updatedAt: Date.now(),
+            };
+          })
+        );
       }
     } catch (error) {
       console.error("Chat error:", error);
 
-      setMessages((oldMessages) => {
-        const updated = [...oldMessages];
+      setChats((oldChats) =>
+        oldChats.map((chat) => {
+          if (chat.id !== activeChatId) {
+            return chat;
+          }
 
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content:
-            "Sorry, kuch problem aa gayi. Please dobara try karo.",
-        };
+          const updatedMessages = [...chat.messages];
 
-        return updated;
-      });
+          updatedMessages[
+            updatedMessages.length - 1
+          ] = {
+            role: "assistant",
+            content:
+              "Sorry, kuch problem aa gayi. Please dobara try karo.",
+          };
+
+          return {
+            ...chat,
+            messages: updatedMessages,
+            updatedAt: Date.now(),
+          };
+        })
+      );
     } finally {
       setLoading(false);
     }
@@ -130,8 +263,40 @@ export default function Home() {
   function startNewChat() {
     if (loading) return;
 
-    setMessages([]);
+    const newChat = createChat();
+
+    setChats((oldChats) => [
+      newChat,
+      ...oldChats,
+    ]);
+
+    setActiveChatId(newChat.id);
     setMessage("");
+  }
+
+  function openChat(chatId) {
+    if (loading) return;
+
+    setActiveChatId(chatId);
+    setMessage("");
+  }
+
+  if (!ready) {
+    return (
+      <main className="app">
+        <div
+          style={{
+            width: "100%",
+            display: "grid",
+            placeItems: "center",
+            minHeight: "100vh",
+            color: "#a9a0ad",
+          }}
+        >
+          Loading Chat Sangam...
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -157,10 +322,33 @@ export default function Home() {
         <div className="sidebar-section">
           <p>RECENT CHATS</p>
 
-          {messages.length > 0 ? (
-            <div className="chat-item">
-              {messages[0]?.content?.slice(0, 28)}
-            </div>
+          {chats.filter(
+            (chat) => chat.messages.length > 0
+          ).length > 0 ? (
+            chats
+              .filter(
+                (chat) => chat.messages.length > 0
+              )
+              .slice(0, 10)
+              .map((chat) => (
+                <button
+                  key={chat.id}
+                  className="chat-item"
+                  onClick={() =>
+                    openChat(chat.id)
+                  }
+                  style={{
+                    width: "100%",
+                    border: "0",
+                    textAlign: "left",
+                    cursor: loading
+                      ? "not-allowed"
+                      : "pointer",
+                  }}
+                >
+                  {chat.title}
+                </button>
+              ))
           ) : (
             <div className="empty-history">
               No conversations yet
@@ -194,7 +382,9 @@ export default function Home() {
                     ? "active-model"
                     : ""
                 }
-                onClick={() => setModel(item.id)}
+                onClick={() =>
+                  setModel(item.id)
+                }
                 disabled={loading}
               >
                 {item.icon} {item.name}
@@ -266,9 +456,14 @@ export default function Home() {
                     {msg.role === "assistant" ? (
                       <div className="markdown-content">
                         <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
+                          remarkPlugins={[
+                            remarkGfm,
+                          ]}
                           components={{
-                            a: ({ node, ...props }) => (
+                            a: ({
+                              node,
+                              ...props
+                            }) => (
                               <a
                                 {...props}
                                 target="_blank"
@@ -350,4 +545,4 @@ export default function Home() {
       </section>
     </main>
   );
-}
+            }
