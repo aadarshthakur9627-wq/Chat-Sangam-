@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const models = [
   {
@@ -261,7 +263,26 @@ export default function Home() {
                   </div>
 
                   <div className="message-content">
-                    {msg.content}
+                    {msg.role === "assistant" ? (
+                      <div className="markdown-content">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            a: ({ node, ...props }) => (
+                              <a
+                                {...props}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              />
+                            ),
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      msg.content
+                    )}
 
                     {loading &&
                       msg.role === "assistant" &&
