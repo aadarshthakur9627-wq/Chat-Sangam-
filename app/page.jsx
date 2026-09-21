@@ -27,18 +27,14 @@ function createChat() {
 
 export default function Home() {
   const [model, setModel] = useState("groq");
-
   const [chats, setChats] = useState([]);
-
   const [activeChatId, setActiveChatId] = useState(null);
-
   const [message, setMessage] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [loaded, setLoaded] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  /* Load saved chats */
+  /* Load saved history */
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -51,13 +47,11 @@ export default function Home() {
           setActiveChatId(parsed[0].id);
         } else {
           const newChat = createChat();
-
           setChats([newChat]);
           setActiveChatId(newChat.id);
         }
       } else {
         const newChat = createChat();
-
         setChats([newChat]);
         setActiveChatId(newChat.id);
       }
@@ -65,7 +59,6 @@ export default function Home() {
       console.error("History load error:", error);
 
       const newChat = createChat();
-
       setChats([newChat]);
       setActiveChatId(newChat.id);
     }
@@ -73,7 +66,7 @@ export default function Home() {
     setLoaded(true);
   }, []);
 
-  /* Save chats */
+  /* Save history */
   useEffect(() => {
     if (!loaded) return;
 
@@ -139,11 +132,9 @@ export default function Home() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-
         headers: {
           "Content-Type": "application/json",
         },
-
         body: JSON.stringify({
           model,
           messages: nextMessages,
@@ -155,7 +146,6 @@ export default function Home() {
       }
 
       const reader = response.body.getReader();
-
       const decoder = new TextDecoder();
 
       let fullText = "";
@@ -166,11 +156,9 @@ export default function Home() {
 
         if (done) break;
 
-        const chunk = decoder.decode(value, {
+        fullText += decoder.decode(value, {
           stream: true,
         });
-
-        fullText += chunk;
 
         setChats((oldChats) =>
           oldChats.map((chat) =>
@@ -193,11 +181,7 @@ export default function Home() {
         );
       }
 
-      const finalChunk = decoder.decode();
-
-      if (finalChunk) {
-        fullText += finalChunk;
-      }
+      fullText += decoder.decode();
 
       setChats((oldChats) =>
         oldChats.map((chat) =>
@@ -257,16 +241,16 @@ export default function Home() {
     ]);
 
     setActiveChatId(newChat.id);
-
     setMessage("");
+    setMobileMenuOpen(false);
   }
 
   function openChat(id) {
     if (loading) return;
 
     setActiveChatId(id);
-
     setMessage("");
+    setMobileMenuOpen(false);
   }
 
   if (!loaded) {
@@ -289,7 +273,8 @@ export default function Home() {
 
   return (
     <main className="app">
-      {/* Sidebar */}
+
+      {/* Desktop Sidebar */}
 
       <aside className="sidebar">
         <div className="brand">
@@ -324,9 +309,6 @@ export default function Home() {
                   border: "0",
                   textAlign: "left",
                   marginBottom: "4px",
-                  cursor: loading
-                    ? "not-allowed"
-                    : "pointer",
                   background:
                     chat.id === activeChatId
                       ? "#241627"
@@ -349,11 +331,169 @@ export default function Home() {
         </div>
       </aside>
 
+      {/* Mobile Overlay */}
+
+      {mobileMenuOpen && (
+        <div
+          onClick={() =>
+            setMobileMenuOpen(false)
+          }
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 999,
+            background: "rgba(0,0,0,0.65)",
+          }}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+
+      {mobileMenuOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: "285px",
+            maxWidth: "82vw",
+            zIndex: 1000,
+            background: "#100b16",
+            borderRight: "1px solid #332638",
+            padding: "22px 16px",
+            boxShadow:
+              "15px 0 45px rgba(0,0,0,0.5)",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "25px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+              }}
+            >
+              <div className="logo">
+                ✦
+              </div>
+
+              <div>
+                <div
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: "17px",
+                  }}
+                >
+                  Chat Sangam
+                </div>
+
+                <div
+                  style={{
+                    color: "#9d91a3",
+                    fontSize: "12px",
+                  }}
+                >
+                  AI Assistant
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() =>
+                setMobileMenuOpen(false)
+              }
+              style={{
+                border: 0,
+                background: "transparent",
+                color: "#aaa",
+                fontSize: "25px",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <button
+            className="new-chat"
+            onClick={startNewChat}
+            disabled={loading}
+            style={{
+              marginBottom: "28px",
+            }}
+          >
+            ＋ New Chat
+          </button>
+
+          <div className="sidebar-section">
+            <p>RECENT CHATS</p>
+
+            {chats.length > 0 ? (
+              chats.slice(0, 10).map((chat) => (
+                <button
+                  key={chat.id}
+                  onClick={() => openChat(chat.id)}
+                  disabled={loading}
+                  style={{
+                    width: "100%",
+                    border: 0,
+                    borderRadius: "9px",
+                    padding: "12px",
+                    marginBottom: "5px",
+                    textAlign: "left",
+                    color: "#d5cbd7",
+                    background:
+                      chat.id === activeChatId
+                        ? "#2a1830"
+                        : "#1a111d",
+                  }}
+                >
+                  💬{" "}
+                  {chat.title || "New Chat"}
+                </button>
+              ))
+            ) : (
+              <div className="empty-history">
+                No conversations yet
+              </div>
+            )}
+          </div>
+
+          <div
+            style={{
+              marginTop: "35px",
+              display: "grid",
+              gap: "18px",
+              color: "#958a99",
+              fontSize: "14px",
+            }}
+          >
+            <div>⚙ Settings</div>
+            <div>◉ Account</div>
+          </div>
+        </div>
+      )}
+
       {/* Main Chat */}
 
       <section className="chat-area">
+
         <header className="topbar">
-          <button className="mobile-menu">
+
+          <button
+            className="mobile-menu"
+            onClick={() =>
+              setMobileMenuOpen(true)
+            }
+          >
             ☰
           </button>
 
@@ -371,13 +511,16 @@ export default function Home() {
                     ? "active-model"
                     : ""
                 }
-                onClick={() => setModel(item.id)}
+                onClick={() =>
+                  setModel(item.id)
+                }
                 disabled={loading}
               >
                 {item.icon} {item.name}
               </button>
             ))}
           </div>
+
         </header>
 
         {/* Messages */}
@@ -385,11 +528,14 @@ export default function Home() {
         <div className="messages">
           {messages.length === 0 ? (
             <div className="welcome">
+
               <div className="welcome-logo">
                 ✦
               </div>
 
-              <h2>How can I help you?</h2>
+              <h2>
+                How can I help you?
+              </h2>
 
               <p>
                 Ask anything and get intelligent
@@ -397,6 +543,7 @@ export default function Home() {
               </p>
 
               <div className="suggestions">
+
                 <button
                   onClick={() =>
                     setMessage(
@@ -426,6 +573,7 @@ export default function Home() {
                 >
                   Write an email
                 </button>
+
               </div>
             </div>
           ) : (
@@ -462,10 +610,12 @@ export default function Home() {
         {/* Composer */}
 
         <div className="composer-wrapper">
+
           <form
             className="composer"
             onSubmit={sendMessage}
           >
+
             <textarea
               value={message}
               onChange={(e) =>
@@ -502,12 +652,14 @@ export default function Home() {
             >
               ↑
             </button>
+
           </form>
 
           <div className="composer-note">
             Chat Sangam can make mistakes. Check
             important information.
           </div>
+
         </div>
       </section>
     </main>
