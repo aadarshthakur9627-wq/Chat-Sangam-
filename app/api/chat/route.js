@@ -89,7 +89,7 @@ function formatWebContext(results) {
 function formatSources(results) {
   if (!results.length) return "";
   return "\n\n---\n**Sources**\n" + results.map((item, index) =>
-    (index + 1) + ". [" + item.title.replace(/\\[/g, "(").replace(/\\]/g, ")") + "](" + item.url + ")"
+    (index + 1) + ". [" + item.title.replace(/\[/g, "(").replace(/\]/g, ")") + "](" + item.url + ")"
   ).join("\n");
 }
 
