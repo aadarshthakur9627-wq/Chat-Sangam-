@@ -67,6 +67,21 @@ function formatTime(timestamp) {
   return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(timestamp);
 }
 
+function prepareCitationMarkdown(content, sources) {
+  if (!content) return "";
+
+  const available = new Set((sources || []).map((source) => String(source.id)));
+  const cleaned = content
+    .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
+    .replace(/\[(\d+)\](?:\s*\[L\d+(?:-L?\d+)?\])+/gi, "[$1]")
+    .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "");
+
+  return cleaned.replace(/\[(\d+)\](?!\()/g, (match, id) => {
+    if (!available.has(String(id))) return match;
+    return `[${id}](#source-${id})`;
+  });
+}
+
 export default function Home() {
   const [reasoningEffort, setReasoningEffort] = useState("medium");
   const [chats, setChats] = useState([]);
@@ -408,7 +423,7 @@ export default function Home() {
                     <div className="message-bubble">
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>{msg.content || ""}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <>
@@ -421,7 +436,7 @@ export default function Home() {
                                   <div className="source-heading"><span>⌕</span> Sources <small>{msg.sources.length} results</small></div>
                                   <div className="source-grid">
                                     {msg.sources.map((source) => (
-                                      <a className="source-card" key={source.id} href={source.url} target="_blank" rel="noreferrer">
+                                      <a className="source-card" id={`source-${source.id}`} key={source.id} href={source.url} target="_blank" rel="noreferrer">
                                         <span className="source-number">{source.id}</span>
                                         <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
                                         <span className="source-arrow">↗</span>
