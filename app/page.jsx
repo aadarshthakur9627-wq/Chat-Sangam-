@@ -1,30 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const models = [
-  {
-    id: "groq",
-    name: "Groq",
-    icon: "⚡",
-  },
-  {
-    id: "gemini",
-    name: "Gemini",
-    icon: "✦",
-  },
+const STORAGE_KEY = "chat-sangam-history-v2";
+
+const MODELS = [
+  { id: "groq", name: "Groq", provider: "Fast inference", icon: "⚡", color: "pink" },
+  { id: "gemini", name: "Gemini", provider: "Google AI", icon: "✦", color: "violet" },
 ];
 
-const STORAGE_KEY = "chat-sangam-history";
+const COMING_SOON = [
+  { name: "OpenAI", icon: "◉" },
+  { name: "Claude", icon: "◌" },
+  { name: "Perplexity", icon: "⌕" },
+  { name: "DeepSeek", icon: "◆" },
+];
+
+const PROMPTS = [
+  { icon: "✦", title: "Learn", text: "Teach me a difficult topic from basics with examples." },
+  { icon: "⌁", title: "Plan", text: "Create a practical step-by-step plan for my goal." },
+  { icon: "✎", title: "Create", text: "Help me create a polished piece of content." },
+  { icon: "⌘", title: "Code", text: "Review this idea and help me build it cleanly." },
+];
 
 function createChat() {
   return {
-    id: Date.now().toString(),
-    title: "New Chat",
+    id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
+    title: "New conversation",
     messages: [],
+    updatedAt: Date.now(),
   };
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return "";
+  return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(timestamp);
 }
 
 export default function Home() {
@@ -35,92 +47,102 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-
-      if (saved) {
-        const parsed = JSON.parse(saved);
-
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setChats(parsed);
-          setActiveChatId(parsed[0].id);
-        } else {
-          const newChat = createChat();
-          setChats([newChat]);
-          setActiveChatId(newChat.id);
-        }
-      } else {
-        const newChat = createChat();
-        setChats([newChat]);
-        setActiveChatId(newChat.id);
-      }
+      const parsed = saved ? JSON.parse(saved) : [];
+      const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
+      setChats(initial);
+      setActiveChatId(initial[0].id);
     } catch (error) {
       console.error("History load error:", error);
-
-      const newChat = createChat();
-      setChats([newChat]);
-      setActiveChatId(newChat.id);
+      const initial = [createChat()];
+      setChats(initial);
+      setActiveChatId(initial[0].id);
+    } finally {
+      setLoaded(true);
     }
-
-    setLoaded(true);
   }, []);
 
   useEffect(() => {
     if (!loaded) return;
-
     try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(chats)
-      );
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
     } catch (error) {
       console.error("History save error:", error);
     }
   }, [chats, loaded]);
 
-  const activeChat =
-    chats.find((chat) => chat.id === activeChatId) || null;
+  useEffect(() => {
+    if (!loading) textareaRef.current?.focus();
+  }, [activeChatId, loading]);
 
+  const activeChat = chats.find((chat) => chat.id === activeChatId) || null;
   const messages = activeChat?.messages || [];
 
-  async function sendMessage(e) {
-    e?.preventDefault();
+  const filteredChats = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return chats.slice(0, 20);
+    return chats.filter((chat) => (chat.title || "").toLowerCase().includes(query)).slice(0, 20);
+  }, [chats, search]);
 
+  const selectedModel = MODELS.find((item) => item.id === model) || MODELS[0];
+
+  function updateChat(id, updater) {
+    setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
+  }
+
+  function startNewChat() {
+    if (loading) return;
+    const chat = createChat();
+    setChats((current) => [chat, ...current]);
+    setActiveChatId(chat.id);
+    setMessage("");
+    setSearch("");
+    setMobileMenuOpen(false);
+  }
+
+  function openChat(id) {
+    if (loading) return;
+    setActiveChatId(id);
+    setMessage("");
+    setMobileMenuOpen(false);
+  }
+
+  function deleteChat(id, event) {
+    event?.stopPropagation();
+    if (loading) return;
+    setChats((current) => {
+      const remaining = current.filter((chat) => chat.id !== id);
+      const next = remaining.length ? remaining : [createChat()];
+      setActiveChatId((active) => active === id ? next[0].id : active);
+      return next;
+    });
+  }
+
+  function usePrompt(text) {
+    setMessage(text);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  async function sendMessage(event) {
+    event?.preventDefault();
     const text = message.trim();
-
     if (!text || loading || !activeChat) return;
 
-    const userMessage = {
-      role: "user",
-      content: text,
-    };
-
+    const userMessage = { role: "user", content: text };
     const nextMessages = [...messages, userMessage];
+    const title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
 
-    const newTitle =
-      messages.length === 0
-        ? text.slice(0, 32)
-        : activeChat.title;
-
-    setChats((oldChats) =>
-      oldChats.map((chat) =>
-        chat.id === activeChatId
-          ? {
-              ...chat,
-              title: newTitle,
-              messages: [
-                ...nextMessages,
-                {
-                  role: "assistant",
-                  content: "",
-                },
-              ],
-            }
-          : chat
-      )
-    );
+    updateChat(activeChat.id, (chat) => ({
+      ...chat,
+      title,
+      updatedAt: Date.now(),
+      messages: [...nextMessages, { role: "assistant", content: "" }],
+    }));
 
     setMessage("");
     setLoading(true);
@@ -128,576 +150,185 @@ export default function Home() {
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: nextMessages,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, messages: nextMessages }),
       });
 
-      if (!response.ok || !response.body) {
-        throw new Error("AI response failed");
-      }
+      if (!response.ok || !response.body) throw new Error("AI response failed");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-
       let fullText = "";
 
       while (true) {
-        const { value, done } = await reader.read();
-
-        if (done) break;
-
-        fullText += decoder.decode(value, {
-          stream: true,
-        });
-
-        setChats((oldChats) =>
-          oldChats.map((chat) =>
-            chat.id === activeChatId
-              ? {
-                  ...chat,
-                  messages: chat.messages.map(
-                    (msg, index) =>
-                      index === chat.messages.length - 1
-                        ? {
-                            ...msg,
-                            content: fullText,
-                          }
-                        : msg
-                  ),
-                }
-              : chat
-          )
-        );
+        const result = await reader.read();
+        if (result.done) break;
+        fullText += decoder.decode(result.value, { stream: true });
+        updateChat(activeChat.id, (chat) => ({
+          ...chat,
+          updatedAt: Date.now(),
+          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
+        }));
       }
 
       fullText += decoder.decode();
-
-      setChats((oldChats) =>
-        oldChats.map((chat) =>
-          chat.id === activeChatId
-            ? {
-                ...chat,
-                messages: chat.messages.map(
-                  (msg, index) =>
-                    index === chat.messages.length - 1
-                      ? {
-                          ...msg,
-                          content: fullText,
-                        }
-                      : msg
-                ),
-              }
-            : chat
-        )
-      );
+      updateChat(activeChat.id, (chat) => ({
+        ...chat,
+        updatedAt: Date.now(),
+        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
+      }));
     } catch (error) {
       console.error("Chat error:", error);
-
-      setChats((oldChats) =>
-        oldChats.map((chat) =>
-          chat.id === activeChatId
-            ? {
-                ...chat,
-                messages: chat.messages.map(
-                  (msg, index) =>
-                    index === chat.messages.length - 1
-                      ? {
-                          ...msg,
-                          content:
-                            "Sorry, kuch problem aa gayi. Please dobara try karo.",
-                        }
-                      : msg
-                ),
-              }
-            : chat
-        )
-      );
+      updateChat(activeChat.id, (chat) => ({
+        ...chat,
+        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "Sorry, kuch problem aa gayi. Please dobara try karo." } : msg),
+      }));
     } finally {
       setLoading(false);
     }
   }
 
-  function startNewChat() {
-    if (loading) return;
-
-    const newChat = createChat();
-
-    setChats((oldChats) => [newChat, ...oldChats]);
-    setActiveChatId(newChat.id);
-    setMessage("");
-    setMobileMenuOpen(false);
-  }
-
-  function openChat(id) {
-    if (loading) return;
-
-    setActiveChatId(id);
-    setMessage("");
-    setMobileMenuOpen(false);
-  }
-
   if (!loaded) {
-    return (
-      <main className="app">
-        <div
-          style={{
-            width: "100%",
-            minHeight: "100vh",
-            display: "grid",
-            placeItems: "center",
-            color: "#aaa",
-          }}
-        >
-          Loading Chat Sangam...
-        </div>
-      </main>
-    );
+    return <main className="boot-screen"><div className="boot-mark">✦</div><span>Loading Chat Sangam…</span></main>;
   }
 
   return (
-    <main className="app">
-
-      {/* ================= DESKTOP SIDEBAR ================= */}
-
-      <aside className="sidebar">
-
-        <div className="brand">
-          <div className="logo">✦</div>
-
-          <div>
-            <h1>Chat Sangam</h1>
-            <span>AI Assistant</span>
-          </div>
+    <main className="app-shell">
+      <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
+        <div className="sidebar-head">
+          <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
+            <span className="brand-mark">✦</span>
+            <span className="brand-copy"><strong>Chat Sangam</strong><small>Many AIs. One workspace.</small></span>
+          </button>
+          <button className="icon-button mobile-close" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">×</button>
         </div>
 
-        <button
-          className="new-chat"
-          onClick={startNewChat}
-          disabled={loading}
-        >
-          ＋ New Chat
+        <button className="new-chat-button" onClick={startNewChat} disabled={loading}>
+          <span>＋</span><span>New conversation</span><kbd>⌘ K</kbd>
         </button>
 
-        <div className="sidebar-section">
-
-          <p>RECENT CHATS</p>
-
-          {chats.length > 0 ? (
-            chats.slice(0, 10).map((chat) => (
-              <button
-                key={chat.id}
-                className="chat-item"
-                onClick={() => openChat(chat.id)}
-                disabled={loading}
-                style={{
-                  width: "100%",
-                  border: "0",
-                  textAlign: "left",
-                  marginBottom: "4px",
-                  background:
-                    chat.id === activeChatId
-                      ? "#241627"
-                      : "#1a111d",
-                }}
-              >
-                💬 {chat.title || "New Chat"}
-              </button>
-            ))
-          ) : (
-            <div className="empty-history">
-              No conversations yet
-            </div>
-          )}
-
+        <div className="sidebar-search">
+          <span>⌕</span>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" aria-label="Search conversations" />
+          <kbd>/</kbd>
         </div>
 
-        <div className="sidebar-bottom">
-          <div>⚙ Settings</div>
-          <div>◉ Account</div>
+        <div className="history-header"><span>RECENT</span><span>{filteredChats.length}</span></div>
+
+        <div className="chat-history">
+          {filteredChats.length ? filteredChats.map((chat) => (
+            <button key={chat.id} className={"history-item " + (chat.id === activeChatId ? "selected" : "")} onClick={() => openChat(chat.id)} disabled={loading}>
+              <span className="history-icon">◌</span>
+              <span className="history-text">
+                <strong>{chat.title || "New conversation"}</strong>
+                <small>{chat.messages.length ? chat.messages.length + " messages · " + formatTime(chat.updatedAt) : "Empty conversation"}</small>
+              </span>
+              <span className="history-delete" onClick={(e) => deleteChat(chat.id, e)}>×</span>
+            </button>
+          )) : <div className="no-results">No conversations found.</div>}
         </div>
 
+        <div className="sidebar-footer">
+          <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
+          <div className="footer-links"><span>⚙ Settings</span><span>◉ Account</span></div>
+        </div>
       </aside>
 
+      {mobileMenuOpen && <button className="mobile-backdrop" onClick={() => setMobileMenuOpen(false)} aria-label="Close sidebar" />}
 
-      {/* ================= MOBILE OVERLAY ================= */}
-
-      {mobileMenuOpen && (
-        <div
-          onClick={() => setMobileMenuOpen(false)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 999,
-            background: "rgba(0,0,0,0.65)",
-          }}
-        />
-      )}
-
-
-      {/* ================= MOBILE DRAWER ================= */}
-
-      {mobileMenuOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            bottom: 0,
-            width: "285px",
-            maxWidth: "82vw",
-            zIndex: 1000,
-            background: "#100b16",
-            borderRight: "1px solid #332638",
-            padding: "22px 16px",
-            boxShadow: "15px 0 45px rgba(0,0,0,0.5)",
-            overflowY: "auto",
-          }}
-        >
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: "25px",
-            }}
-          >
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-
-              <div className="logo">
-                ✦
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: "17px",
-                  }}
-                >
-                  Chat Sangam
-                </div>
-
-                <div
-                  style={{
-                    color: "#9d91a3",
-                    fontSize: "12px",
-                  }}
-                >
-                  AI Assistant
-                </div>
-              </div>
-
-            </div>
-
-            <button
-              onClick={() => setMobileMenuOpen(false)}
-              style={{
-                border: 0,
-                background: "transparent",
-                color: "#aaa",
-                fontSize: "25px",
-              }}
-            >
-              ×
-            </button>
-
-          </div>
-
-
-          <button
-            className="new-chat"
-            onClick={startNewChat}
-            disabled={loading}
-            style={{
-              marginBottom: "28px",
-            }}
-          >
-            ＋ New Chat
-          </button>
-
-
-          <div className="sidebar-section">
-
-            <p>RECENT CHATS</p>
-
-            {chats.length > 0 ? (
-              chats.slice(0, 10).map((chat) => (
-                <button
-                  key={chat.id}
-                  onClick={() => openChat(chat.id)}
-                  disabled={loading}
-                  style={{
-                    width: "100%",
-                    border: 0,
-                    borderRadius: "9px",
-                    padding: "12px",
-                    marginBottom: "5px",
-                    textAlign: "left",
-                    color: "#d5cbd7",
-                    background:
-                      chat.id === activeChatId
-                        ? "#2a1830"
-                        : "#1a111d",
-                  }}
-                >
-                  💬 {chat.title || "New Chat"}
-                </button>
-              ))
-            ) : (
-              <div className="empty-history">
-                No conversations yet
-              </div>
-            )}
-
-          </div>
-
-
-          <div
-            style={{
-              marginTop: "35px",
-              display: "grid",
-              gap: "18px",
-              color: "#958a99",
-              fontSize: "14px",
-            }}
-          >
-            <div>⚙ Settings</div>
-            <div>◉ Account</div>
-          </div>
-
-        </div>
-      )}
-
-
-      {/* ================= MAIN CHAT ================= */}
-
-      <section className="chat-area">
-
-        {/* TOP BAR */}
-
+      <section className="workspace">
         <header className="topbar">
-
-          <button
-            className="mobile-menu"
-            onClick={() => setMobileMenuOpen(true)}
-          >
-            ☰
-          </button>
-
-          <div className="mobile-title">
-            <strong>Chat Sangam</strong>
-            <span>AI Assistant</span>
+          <div className="topbar-left">
+            <button className="icon-button mobile-menu-button" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu">☰</button>
+            <div><div className="eyebrow">AI WORKSPACE</div><h1>{activeChat?.title || "New conversation"}</h1></div>
           </div>
-
-
-          <div className="model-selector">
-
-            {models.map((item) => (
-              <button
-                key={item.id}
-                className={
-                  model === item.id
-                    ? "active-model"
-                    : ""
-                }
-                onClick={() => setModel(item.id)}
-                disabled={loading}
-              >
-                {item.icon} {item.name}
-              </button>
-            ))}
-
+          <div className="topbar-right">
+            <div className="model-picker">
+              <span className="picker-label">MODEL</span>
+              <select value={model} onChange={(e) => setModel(e.target.value)} disabled={loading} aria-label="Select AI model">
+                {MODELS.map((item) => <option key={item.id} value={item.id}>{item.icon} {item.name}</option>)}
+              </select>
+              <span className="chevron">⌄</span>
+            </div>
+            <button className="top-action" onClick={startNewChat} disabled={loading}>＋ <span>New</span></button>
           </div>
-
         </header>
 
-
-        {/* ================= MESSAGES ================= */}
+        <div className="model-strip">
+          <div className="selected-model">
+            <span className={"model-orb " + selectedModel.color}>{selectedModel.icon}</span>
+            <span><strong>{selectedModel.name}</strong><small>{selectedModel.provider}</small></span>
+            <i />
+            <span className="live-label"><b /> Live</span>
+          </div>
+          <div className="coming-soon">
+            <span>COMING NEXT</span>
+            {COMING_SOON.map((item) => <span key={item.name} title={item.name}>{item.icon} {item.name}</span>)}
+          </div>
+        </div>
 
         <div className="messages">
-
           {messages.length === 0 ? (
-
             <div className="welcome">
-
-              <div className="welcome-logo">
-                ✦
+              <div className="hero-glow" />
+              <div className="hero-mark">✦</div>
+              <div className="hero-kicker">THE MULTI-MODEL AI WORKSPACE</div>
+              <h2>One question.<br /><span>Many minds.</span></h2>
+              <p>Chat Sangam brings powerful AI models into one clean workspace. Pick a model, ask anything, and build faster.</p>
+              <div className="prompt-grid">
+                {PROMPTS.map((prompt) => (
+                  <button key={prompt.title} className="prompt-card" onClick={() => usePrompt(prompt.text)}>
+                    <span className="prompt-icon">{prompt.icon}</span>
+                    <span><strong>{prompt.title}</strong><small>{prompt.text}</small></span>
+                    <b>→</b>
+                  </button>
+                ))}
               </div>
-
-              <h2>
-                How can I help you?
-              </h2>
-
-              <p>
-                Ask anything and get intelligent
-                answers from multiple AI models.
-              </p>
-
-
-              <div className="suggestions">
-
-                <button
-                  onClick={() =>
-                    setMessage(
-                      "Explain artificial intelligence simply"
-                    )
-                  }
-                >
-                  Explain AI simply
-                </button>
-
-                <button
-                  onClick={() =>
-                    setMessage(
-                      "Help me learn mathematics"
-                    )
-                  }
-                >
-                  Learn Mathematics
-                </button>
-
-                <button
-                  onClick={() =>
-                    setMessage(
-                      "Write a professional email"
-                    )
-                  }
-                >
-                  Write an email
-                </button>
-
-              </div>
-
+              <div className="trust-row"><span>● Private local chat history</span><span>● Streaming responses</span><span>● Markdown & code support</span></div>
             </div>
-
           ) : (
-
-            <>
+            <div className="conversation">
               {messages.map((msg, index) => (
-
-                <div
-                  className={`message-row ${msg.role}`}
-                  key={index}
-                >
-
-                  <div className="avatar">
-                    {msg.role === "user"
-                      ? "A"
-                      : "✦"}
+                <article className={"message-row " + msg.role} key={index}>
+                  <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
+                  <div className="message-main">
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : selectedModel.name}</strong><span>{msg.role === "assistant" ? "AI response" : "Message"}</span></div>
+                    <div className="message-bubble">
+                      {msg.role === "assistant" ? (
+                        <div className="markdown-content">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || ""}</ReactMarkdown>
+                          {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
+                        </div>
+                      ) : msg.content}
+                    </div>
                   </div>
-
-
-                  <div className="message-content">
-
-                    {msg.role === "assistant" ? (
-
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                      >
-                        {msg.content || ""}
-                      </ReactMarkdown>
-
-                    ) : (
-
-                      msg.content
-
-                    )}
-
-
-                    {loading &&
-                      msg.role === "assistant" &&
-                      index === messages.length - 1 && (
-                        <span className="typing-cursor">
-                          ▌
-                        </span>
-                      )}
-
-                  </div>
-
-                </div>
-
+                </article>
               ))}
-            </>
-
+            </div>
           )}
-
         </div>
 
-
-        {/* ================= COMPOSER ================= */}
-
-        <div className="composer-wrapper">
-
-          <form
-            className="composer"
-            onSubmit={sendMessage}
-          >
-
-            <textarea
-              value={message}
-              onChange={(e) =>
-                setMessage(e.target.value)
-              }
-              placeholder={
-                loading
-                  ? "AI is writing..."
-                  : `Message ${
-                      model === "groq"
-                        ? "Groq"
-                        : "Gemini"
-                    }...`
-              }
-              rows={1}
-              disabled={loading}
-              onKeyDown={(e) => {
-
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey
-                ) {
-                  e.preventDefault();
-                  sendMessage(e);
-                }
-
-              }}
-            />
-
-
-            <button
-              className="send-button"
-              type="submit"
-              disabled={
-                !message.trim() || loading
-              }
-            >
-              ↑
-            </button>
-
+        <div className="composer-dock">
+          <form className="composer" onSubmit={sendMessage}>
+            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
+            <div className="composer-input-row">
+              <textarea
+                ref={textareaRef}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={loading ? "Generating response…" : "Ask Chat Sangam anything…"}
+                rows={1}
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
+                }}
+              />
+              <button className="send-button" type="submit" disabled={!message.trim() || loading} aria-label="Send message">{loading ? "…" : "↑"}</button>
+            </div>
           </form>
-
-
-          <div className="composer-note">
-            Chat Sangam can make mistakes. Check
-            important information.
-          </div>
-
+          <div className="composer-note">Chat Sangam may make mistakes. Verify important information.</div>
         </div>
-
       </section>
-
     </main>
   );
 }
