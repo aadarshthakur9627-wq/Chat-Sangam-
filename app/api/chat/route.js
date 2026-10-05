@@ -16,7 +16,6 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "- Never claim that your name is ChatGPT, Grok, Gemini, Claude, Perplexity, DeepSeek, or another AI platform.",
   "- Groq and Gemini are providers/models used by Chat Sangam; they are not your identity.",
   "- If the user explicitly asks which underlying model/provider is being used, answer accurately based on the selected model.",
-  "- Do not invent model names or capabilities.",
   "",
   "BEHAVIOR:",
   "- Be helpful, clear, accurate, and concise.",
@@ -25,30 +24,100 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "- Treat Chat Sangam as the product identity and the selected provider as the underlying engine.",
 ].join("\n");
 
-function buildMessages(model, messages) {
+const DEFAULT_SEARXNG_URL = "https://searx.ononoki.org";
+
+async function searchWeb(query) {
+  const baseUrl = (process.env.SEARXNG_URL || DEFAULT_SEARXNG_URL).replace(/\/$/, "");
+  const url = new URL(baseUrl + "/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("language", "auto");
+  url.searchParams.set("safesearch", "1");
+  url.searchParams.set("pageno", "1");
+
+  const response = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(12000),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Web search returned HTTP " + response.status);
+  }
+
+  const data = await response.json();
+  return (data.results || []).slice(0, 6).map((item) => ({
+    title: item.title || "Untitled",
+    url: item.url || "",
+    content: item.content || "",
+    publishedDate: item.publishedDate || null,
+  })).filter((item) => item.url);
+}
+
+function buildMessages(model, messages, webContext) {
   const providerContext = model === "gemini"
     ? "The current underlying provider is Google Gemini."
     : "The current underlying provider is Groq, using the GPT-OSS-20B model.";
 
+  const webInstruction = webContext
+    ? [
+        "",
+        "WEB SEARCH CONTEXT:",
+        "The following information was retrieved from the live web. Use it to answer the user's question.",
+        "Prefer recent and directly relevant sources. Do not invent facts that are not supported by the search results.",
+        "When using a source, cite it inline as [1], [2], etc. The source list is supplied after the context.",
+        "",
+        webContext,
+      ].join("\n")
+    : "";
+
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT PROVIDER CONTEXT:\n" + providerContext,
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT PROVIDER CONTEXT:\n" + providerContext + webInstruction,
     },
     ...messages,
   ];
 }
 
+function formatWebContext(results) {
+  return results.map((item, index) =>
+    "[" + (index + 1) + "] " + item.title + "\nURL: " + item.url + "\nSnippet: " + item.content
+  ).join("\n\n");
+}
+
+function formatSources(results) {
+  if (!results.length) return "";
+  return "\n\n---\n**Sources**\n" + results.map((item, index) =>
+    (index + 1) + ". [" + item.title.replace(/\\[/g, "(").replace(/\\]/g, ")") + "](" + item.url + ")"
+  ).join("\n");
+}
+
 export async function POST(request) {
   try {
-    const { model, messages } = await request.json();
+    const { model, messages, webSearch = false } = await request.json();
 
     if (!Array.isArray(messages)) {
       return Response.json({ error: "Messages are required." }, { status: 400 });
     }
 
     const safeModel = model === "gemini" ? "gemini" : "groq";
-    const chatMessages = buildMessages(safeModel, messages);
+    let searchResults = [];
+    let webContext = "";
+
+    if (webSearch) {
+      try {
+        const latestUserMessage = [...messages].reverse().find((msg) => msg.role === "user");
+        if (latestUserMessage?.content?.trim()) {
+          searchResults = await searchWeb(latestUserMessage.content.trim());
+          webContext = formatWebContext(searchResults);
+        }
+      } catch (searchError) {
+        console.error("Web search error:", searchError);
+      }
+    }
+
+    const chatMessages = buildMessages(safeModel, messages, webContext);
     const encoder = new TextEncoder();
 
     const stream = new ReadableStream({
@@ -73,7 +142,7 @@ export async function POST(request) {
                 body: JSON.stringify({
                   systemInstruction: {
                     parts: [{
-                      text: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT PROVIDER CONTEXT:\nThe current underlying provider is Google Gemini.",
+                      text: chatMessages[0].content,
                     }],
                   },
                   contents: geminiContents,
@@ -129,6 +198,8 @@ export async function POST(request) {
             }
           }
 
+          const sources = formatSources(searchResults);
+          if (sources) controller.enqueue(encoder.encode(sources));
           controller.close();
         } catch (error) {
           console.error("Streaming error:", error);
