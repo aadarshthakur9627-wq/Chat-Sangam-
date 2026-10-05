@@ -154,24 +154,20 @@ function normalizeSearchAnswer(answer) {
   if (!answer) return "";
 
   return answer
-    // Normalize every common Groq/browser-search citation wrapper to [N].
-    .replace(/[\\[【〖]\\s*(\\d+)\\s*†[^\\]】〗]*[\\]】〗]/g, "[$1]")
-    .replace(/\\[(\\d+)\\s*†[^\\]]*\\]/gi, "[$1]")
-    .replace(/【(\\d+)\\s*†[^】]*】/gi, "[$1]")
-    .replace(/〖(\\d+)\\s*†[^〗]*〗/gi, "[$1]")
+    // Normalize Groq/browser-search citation wrappers to [N].
+    .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
     // Normalize citation + line-reference combinations such as [2] [L21-L28].
-    .replace(/\\[(\\d+)\\]\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\](?:\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\])*/gi, "[$1]")
-    .replace(/\\[(\\d+)\\]\\s*L\\d+(?:[-–—]L?\\d+)?/gi, "[$1]")
+    .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
+    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
     // Remove any remaining standalone line-reference tokens.
-    .replace(/\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\]/gi, "")
-    .replace(/\\s*【L\\d+(?:[-–—]L?\\d+)?】/gi, "")
-    .replace(/\\s*〖L\\d+(?:[-–—]L?\\d+)?〗/gi, "")
-    // Remove accidental web-search table scaffolding while keeping the actual stories.
-    .replace(/\\|\\s*#\\s*\\|\\s*Headline\\s*\\|\\s*Key point\\s*\\|\\s*Source\\s*\\|/gi, "")
-    .replace(/\\|?\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|?/g, "")
-    // Keep citation pills visually separated from adjacent text.
-    .replace(/\\](?=[A-Za-z])/g, "] ")
-    .replace(/\\s{3,}/g, "  ")
+    .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
+    .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
+    .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
+    // Remove accidental web-search table scaffolding.
+    .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
+    .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
+    .replace(/\](?=[A-Za-z])/g, "] ")
+    .replace(/\s{3,}/g, "  ")
     .trim();
 }
 function formatSources(results) {
