@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@google/genai": "latest",
     "groq-sdk": "latest",
     "next": "latest",
     "react": "latest",
