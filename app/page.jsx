@@ -48,6 +48,7 @@ export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [webSearch, setWebSearch] = useState(false);
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -151,7 +152,7 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: nextMessages }),
+        body: JSON.stringify({ model, messages: nextMessages, webSearch }),
       });
 
       if (!response.ok || !response.body) throw new Error("AI response failed");
@@ -243,6 +244,9 @@ export default function Home() {
             <div><div className="eyebrow">AI WORKSPACE</div><h1>{activeChat?.title || "New conversation"}</h1></div>
           </div>
           <div className="topbar-right">
+            <button className={"web-search-toggle " + (webSearch ? "active" : "")} onClick={() => setWebSearch((value) => !value)} disabled={loading} type="button" aria-pressed={webSearch} title="Search the live web before answering">
+              <span>⌕</span> Web Search <b>{webSearch ? "ON" : "OFF"}</b>
+            </button>
             <div className="model-picker">
               <span className="picker-label">MODEL</span>
               <select value={model} onChange={(e) => setModel(e.target.value)} disabled={loading} aria-label="Select AI model">
@@ -310,7 +314,7 @@ export default function Home() {
 
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
-            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
+            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
             <div className="composer-input-row">
               <textarea
                 ref={textareaRef}
@@ -326,7 +330,7 @@ export default function Home() {
               <button className="send-button" type="submit" disabled={!message.trim() || loading} aria-label="Send message">{loading ? "…" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">Chat Sangam may make mistakes. Verify important information.</div>
+          <div className="composer-note">{webSearch ? "⌕ Live web search is ON · Results are summarized with source links." : "Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
