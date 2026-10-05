@@ -109,7 +109,10 @@ function buildMessages(messages, webContext) {
 
 export async function POST(request) {
   try {
-    const { messages, webSearch = false } = await request.json();
+    const body = await request.json();
+    const messages = body.messages;
+    const webSearch = body.webSearch || false;
+    const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort) ? body.reasoningEffort : "medium";
 
     if (!Array.isArray(messages)) {
       return Response.json({ error: "Messages are required." }, { status: 400 });
@@ -144,7 +147,7 @@ export async function POST(request) {
       messages: chatMessages,
       temperature: 0.6,
       top_p: 0.95,
-      reasoning_effort: "medium",
+      reasoning_effort: safeReasoning,
       include_reasoning: false,
       max_completion_tokens: 8192,
       stream: true,
