@@ -30,6 +30,29 @@ const PROMPTS = [
   { icon: "⌘", title: "Code", text: "Review this idea and help me build it cleanly." },
 ];
 
+function CodeBlock({ children }) {
+  const [copied, setCopied] = useState(false);
+  const code = String(children?.props?.children ?? children).replace(/\n$/, "");
+
+  async function copyCode() {
+    try {
+      await navigator.clipboard?.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1200);
+    } catch {}
+  }
+
+  return (
+    <div className="code-block">
+      <div className="code-toolbar">
+        <span>CODE</span>
+        <button type="button" onClick={copyCode}>{copied ? "Copied" : "Copy"}</button>
+      </div>
+      <pre>{children}</pre>
+    </div>
+  );
+}
+
 function createChat() {
   return {
     id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
@@ -385,7 +408,7 @@ export default function Home() {
                     <div className="message-bubble">
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || ""}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>{msg.content || ""}</ReactMarkdown>
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <>
