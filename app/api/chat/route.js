@@ -91,6 +91,7 @@ async function browserSearch(query) {
     reasoning_effort: "low",
     include_reasoning: false,
     max_completion_tokens: 2048,
+    citation_options: "enabled",
     stream: false,
   });
 
@@ -127,7 +128,10 @@ function formatWebContext(search) {
     "Prefer the retrieved evidence over stale model knowledge.",
     search.answer ? "Search synthesis:\n" + search.answer : "",
     sources ? "Retrieved sources:\n" + sources : "",
-    "CITATIONS: When a factual claim comes from a retrieved source, cite it inline as [1], [2], etc.",
+    "CITATIONS: Cite every important factual claim that comes from web research inline as [1], [2], etc.",
+    "Use only citation numbers that correspond to the retrieved sources below.",
+    "Prefer multiple independent sources for important or controversial claims.",
+    "If the user asks for latest/current information, clearly state the relevant date or time context when available.",
     "Do not invent citations.",
   ].filter(Boolean).join("\n\n");
 }
@@ -208,6 +212,7 @@ export async function POST(request) {
         reasoning_effort: safeReasoning,
         include_reasoning: false,
         max_completion_tokens: 4096,
+        citation_options: "enabled",
         stream: true,
       });
     } catch (error) {
