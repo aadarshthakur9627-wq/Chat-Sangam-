@@ -84,8 +84,9 @@ async function browserSearch(query) {
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Prefer primary and authoritative sources when possible.",
-          "When using retrieved web evidence, cite claims with [1], [2], etc. matching the source order.",
-          "Do not use special citation glyphs or structured/JSON output.",
+          "Cite important web-backed claims using the browser search citation format; Chat Sangam will normalize those citations for the UI.",
+          "Do not manually invent source numbers or line references.",
+          "Do not use structured/JSON output.",
           "Return a concise synthesis, but do not hide the source URLs/results from the application.",
         ].join("\n"),
       },
@@ -103,7 +104,6 @@ async function browserSearch(query) {
   const executedTools = message?.executed_tools || [];
   const rawResults = executedTools.flatMap((tool) => tool?.search_results?.results || []);
 
-  const seen = new Set();
   const results = rawResults
     .map((item) => ({
       title: item.title || "Web result",
@@ -111,14 +111,9 @@ async function browserSearch(query) {
       content: item.content || "",
       score: typeof item.score === "number" ? item.score : null,
     }))
-    .filter((item) => item.url)
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     .filter((item) => {
       try {
-        const parsed = new URL(item.url);
-        const key = parsed.hostname.replace(/^www\./, "") + parsed.pathname;
-        if (seen.has(key)) return false;
-        seen.add(key);
+        new URL(item.url);
         return true;
       } catch {
         return false;
@@ -155,8 +150,14 @@ function formatWebContext(search) {
 
 function normalizeSearchAnswer(answer) {
   if (!answer) return "";
+
   return answer
+    // Groq native browser-search citations: 〖2†L6-L10〗
     .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
+    // Some model outputs split line references: [2][L6-L10] or [2] [L6] [L10]
+    .replace(/\[(\d+)\](?:\s*\[L\d+(?:-L?\d+)?\])+/gi, "[$1]")
+    // Remove any leftover standalone line-reference tokens.
+    .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "")
     .replace(/\s{3,}/g, "  ")
     .trim();
 }
