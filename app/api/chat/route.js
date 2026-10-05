@@ -24,8 +24,45 @@ function latestUserMessage(messages) {
   return [...messages].reverse().find((message) => message.role === "user")?.content?.trim() || "";
 }
 
+function groqErrorStatus(error) {
+  return Number(error?.status || error?.statusCode || 500);
+}
+
+function groqErrorMessage(error) {
+  const status = groqErrorStatus(error);
+  const apiMessage = error?.error?.message || error?.message || "";
+
+  if (status === 401) return "Groq API key is invalid or missing. Check GROQ_API_KEY in Vercel Production environment variables.";
+  if (status === 403) return "Groq API access was denied. Check the Groq API key permissions and account status.";
+  if (status === 429) return "Groq rate limit reached. Please wait a few seconds and try again.";
+  if (status >= 500) return "Groq is temporarily unavailable. Please try again in a moment.";
+  return apiMessage ? `Groq API error: ${apiMessage}` : "AI response failed. Please try again.";
+}
+
+async function createGroqCompletion(params) {
+  let lastError;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      return await groq.chat.completions.create(params);
+    } catch (error) {
+      lastError = error;
+      const status = groqErrorStatus(error);
+      const retryable = status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+
+      if (!retryable || attempt === 1) throw error;
+
+      const retryAfter = Number(error?.headers?.get?.("retry-after") || error?.headers?.["retry-after"] || 0);
+      const delay = retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : 1000;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
 async function browserSearch(query) {
-  const response = await groq.chat.completions.create({
+  const response = await createGroqCompletion({
     model: GROQ_MODEL,
     messages: [
       {
@@ -116,7 +153,9 @@ export async function POST(request) {
     const body = await request.json();
     const messages = body.messages;
     const webSearch = body.webSearch || false;
-    const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort) ? body.reasoningEffort : "medium";
+    const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort)
+      ? body.reasoningEffort
+      : "medium";
 
     if (!Array.isArray(messages)) {
       return Response.json({ error: "Messages are required." }, { status: 400 });
@@ -128,6 +167,7 @@ export async function POST(request) {
     if (webSearch && latest) {
       try {
         search = await browserSearch(latest);
+
         if (!search.results.length && !search.answer) {
           return Response.json(
             { error: "Web search is temporarily unavailable. Please turn Web Search off or try again." },
@@ -137,8 +177,8 @@ export async function POST(request) {
       } catch (error) {
         console.error("Groq browser search error:", error);
         return Response.json(
-          { error: "Web Search is temporarily unavailable. I could not verify this information from the live web." },
-          { status: 503 }
+          { error: groqErrorMessage(error) },
+          { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
         );
       }
     }
@@ -146,16 +186,27 @@ export async function POST(request) {
     const chatMessages = buildMessages(messages, webSearch ? formatWebContext(search) : "");
     const encoder = new TextEncoder();
 
-    const responseStream = await groq.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: chatMessages,
-      temperature: 0.6,
-      top_p: 0.95,
-      reasoning_effort: safeReasoning,
-      include_reasoning: false,
-      max_completion_tokens: 8192,
-      stream: true,
-    });
+    let responseStream;
+
+    try {
+      responseStream = await createGroqCompletion({
+        model: GROQ_MODEL,
+        messages: chatMessages,
+        temperature: 0.6,
+        top_p: 0.95,
+        reasoning_effort: safeReasoning,
+        include_reasoning: false,
+        max_completion_tokens: 4096,
+        stream: true,
+      });
+    } catch (error) {
+      console.error("Groq chat completion error:", error);
+      const status = groqErrorStatus(error);
+      return Response.json(
+        { error: groqErrorMessage(error) },
+        { status: status >= 400 && status < 600 ? status : 500 }
+      );
+    }
 
     const stream = new ReadableStream({
       async start(controller) {
@@ -173,7 +224,7 @@ export async function POST(request) {
           controller.close();
         } catch (error) {
           console.error("Groq streaming error:", error);
-          controller.enqueue(encoder.encode("\n\n[AI response failed. Please try again.]"));
+          controller.enqueue(encoder.encode("\n\n[AI response stream interrupted. Please try again.]"));
           controller.close();
         }
       },
@@ -188,6 +239,9 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("Chat API error:", error);
-    return Response.json({ error: "AI response failed." }, { status: 500 });
+    return Response.json(
+      { error: groqErrorMessage(error) },
+      { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 500 }
+    );
   }
 }
