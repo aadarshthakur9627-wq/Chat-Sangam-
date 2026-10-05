@@ -83,6 +83,8 @@ async function browserSearch(query) {
           "Prefer primary and authoritative sources when possible.",
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
+          "Do not use Markdown tables unless the user explicitly asks for a table.",
+          "Do not output table headers, separator rows, or stray pipe characters around the answer.",
           "Prefer primary and authoritative sources when possible.",
           "Cite important web-backed claims using the browser search citation format; Chat Sangam will normalize those citations for the UI.",
           "Do not manually invent source numbers or line references.",
@@ -152,20 +154,26 @@ function normalizeSearchAnswer(answer) {
   if (!answer) return "";
 
   return answer
-    // Groq native browser-search citations: 〖2†L6-L10〗
-    .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
-    // Alternate citation forms produced by the browser-search model.
-    .replace(/\[(\d+)\]\s*\[L\d+(?:-L?\d+)?\](?:\s*\[L\d+(?:-L?\d+)?\])*/gi, "[$1]")
-    .replace(/\[(\d+)†L\d+(?:-L?\d+)?\]/gi, "[$1]")
-    .replace(/\[(\d+)\s*†[^\]]*\]/gi, "[$1]")
-    // Remove any leftover standalone line-reference tokens.
-    .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "")
-    // Keep citation pills visually separated from adjacent punctuation/text.
-    .replace(/\](?=[A-Za-z])/g, "] ")
-    .replace(/\s{3,}/g, "  ")
+    // Normalize every common Groq/browser-search citation wrapper to [N].
+    .replace(/[\\[【〖]\\s*(\\d+)\\s*†[^\\]】〗]*[\\]】〗]/g, "[$1]")
+    .replace(/\\[(\\d+)\\s*†[^\\]]*\\]/gi, "[$1]")
+    .replace(/【(\\d+)\\s*†[^】]*】/gi, "[$1]")
+    .replace(/〖(\\d+)\\s*†[^〗]*〗/gi, "[$1]")
+    // Normalize citation + line-reference combinations such as [2] [L21-L28].
+    .replace(/\\[(\\d+)\\]\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\](?:\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\])*/gi, "[$1]")
+    .replace(/\\[(\\d+)\\]\\s*L\\d+(?:[-–—]L?\\d+)?/gi, "[$1]")
+    // Remove any remaining standalone line-reference tokens.
+    .replace(/\\s*\\[L\\d+(?:[-–—]L?\\d+)?\\]/gi, "")
+    .replace(/\\s*【L\\d+(?:[-–—]L?\\d+)?】/gi, "")
+    .replace(/\\s*〖L\\d+(?:[-–—]L?\\d+)?〗/gi, "")
+    // Remove accidental web-search table scaffolding while keeping the actual stories.
+    .replace(/\\|\\s*#\\s*\\|\\s*Headline\\s*\\|\\s*Key point\\s*\\|\\s*Source\\s*\\|/gi, "")
+    .replace(/\\|?\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|\\s*-{2,}\\s*\\|?/g, "")
+    // Keep citation pills visually separated from adjacent text.
+    .replace(/\\](?=[A-Za-z])/g, "] ")
+    .replace(/\\s{3,}/g, "  ")
     .trim();
 }
-
 function formatSources(results) {
   if (!results.length) return "";
   const payload = results.map((item, index) => ({
