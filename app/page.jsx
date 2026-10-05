@@ -73,7 +73,9 @@ function prepareCitationMarkdown(content, sources) {
   const available = new Set((sources || []).map((source) => String(source.id)));
   const cleaned = content
     .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
-    .replace(/\[(\d+)\](?:\s*\[L\d+(?:-L?\d+)?\])+/gi, "[$1]")
+    .replace(/\[(\d+)\]\s*\[L\d+(?:-L?\d+)?\](?:\s*\[L\d+(?:-L?\d+)?\])*/gi, "[$1]")
+    .replace(/\[(\d+)†L\d+(?:-L?\d+)?\]/gi, "[$1]")
+    .replace(/\[(\d+)\s*†[^\]]*\]/gi, "[$1]")
     .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "");
 
   return cleaned.replace(/\[(\d+)\](?!\()/g, (match, id) => {
