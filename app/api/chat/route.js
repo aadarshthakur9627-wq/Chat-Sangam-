@@ -87,9 +87,13 @@ function formatWebContext(search) {
 
 function formatSources(results) {
   if (!results.length) return "";
-  return "\n\n---\n**Sources**\n" + results.map((item, index) =>
-    (index + 1) + ". [" + item.title.replace(/\[/g, "(").replace(/\]/g, ")") + "](" + item.url + ")"
-  ).join("\n");
+  const payload = results.map((item, index) => ({
+    id: index + 1,
+    title: item.title,
+    url: item.url,
+    snippet: item.content,
+  }));
+  return "\n\n__CHAT_SANGAM_SOURCES__" + JSON.stringify(payload) + "__END_CHAT_SANGAM_SOURCES__";
 }
 
 function buildMessages(messages, webContext) {
