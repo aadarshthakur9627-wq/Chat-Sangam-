@@ -154,10 +154,14 @@ function normalizeSearchAnswer(answer) {
   return answer
     // Groq native browser-search citations: 〖2†L6-L10〗
     .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
-    // Some model outputs split line references: [2][L6-L10] or [2] [L6] [L10]
-    .replace(/\[(\d+)\](?:\s*\[L\d+(?:-L?\d+)?\])+/gi, "[$1]")
+    // Alternate citation forms produced by the browser-search model.
+    .replace(/\[(\d+)\]\s*\[L\d+(?:-L?\d+)?\](?:\s*\[L\d+(?:-L?\d+)?\])*/gi, "[$1]")
+    .replace(/\[(\d+)†L\d+(?:-L?\d+)?\]/gi, "[$1]")
+    .replace(/\[(\d+)\s*†[^\]]*\]/gi, "[$1]")
     // Remove any leftover standalone line-reference tokens.
     .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "")
+    // Keep citation pills visually separated from adjacent punctuation/text.
+    .replace(/\](?=[A-Za-z])/g, "] ")
     .replace(/\s{3,}/g, "  ")
     .trim();
 }
