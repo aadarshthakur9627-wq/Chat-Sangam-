@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Chat Sangam",
-  description: "AI Assistant powered by Groq and Gemini",
+  title: "Chat Sangam — One workspace. Many AIs.",
+  description: "A premium multi-model AI workspace for learning, planning, creating, and coding.",
 };
 
 export default function RootLayout({ children }) {
