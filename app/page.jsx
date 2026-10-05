@@ -136,6 +136,20 @@ export default function Home() {
     requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
+  function parseStreamPayload(text) {
+    const marker = "__CHAT_SANGAM_SOURCES__";
+    const endMarker = "__END_CHAT_SANGAM_SOURCES__";
+    const start = text.indexOf(marker);
+    if (start === -1) return { text, sources: null };
+    const end = text.indexOf(endMarker, start);
+    if (end === -1) return { text: text.slice(0, start), sources: null };
+    try {
+      return { text: text.slice(0, start).trimEnd(), sources: JSON.parse(text.slice(start + marker.length, end)) };
+    } catch {
+      return { text: text.slice(0, start).trimEnd(), sources: null };
+    }
+  }
+
   async function requestCompletion(chatId, nextMessages) {
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -173,18 +187,20 @@ export default function Home() {
         const result = await reader.read();
         if (result.done) break;
         fullText += decoder.decode(result.value, { stream: true });
+        const parsed = parseStreamPayload(fullText);
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
+          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
         }));
       }
 
       fullText += decoder.decode();
+      const parsed = parseStreamPayload(fullText);
       updateChat(chatId, (chat) => ({
         ...chat,
         updatedAt: Date.now(),
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
+        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
       }));
     } catch (error) {
       if (error?.name === "AbortError") return;
@@ -208,14 +224,22 @@ export default function Home() {
     const text = message.trim();
     if (!text || loading || !activeChat) return;
 
-    const userMessage = { role: "user", content: text };
-    const nextMessages = [...messages, userMessage];
-    const title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
+    let nextMessages;
+    let title = activeChat.title;
+
+    if (editingIndex !== null && messages[editingIndex]?.role === "user") {
+      nextMessages = [...messages.slice(0, editingIndex), { role: "user", content: text }];
+      title = editingIndex === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
+    } else {
+      nextMessages = [...messages, { role: "user", content: text }];
+      title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
+    }
 
     updateChat(activeChat.id, (chat) => ({
       ...chat,
       title,
       updatedAt: Date.now(),
+      messages: nextMessages,
     }));
     setMessage("");
     setEditingIndex(null);
@@ -364,10 +388,26 @@ export default function Home() {
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || ""}</ReactMarkdown>
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
-                            <div className="message-actions">
-                              <button type="button" onClick={() => copyText(msg.content)} title="Copy response">Copy</button>
-                              <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
-                            </div>
+                            <>
+                              <div className="message-actions">
+                                <button type="button" onClick={() => copyText(msg.content)} title="Copy response">Copy</button>
+                                <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
+                              </div>
+                              {msg.sources?.length > 0 && (
+                                <div className="source-panel">
+                                  <div className="source-heading"><span>⌕</span> Sources <small>{msg.sources.length} results</small></div>
+                                  <div className="source-grid">
+                                    {msg.sources.map((source) => (
+                                      <a className="source-card" key={source.id} href={source.url} target="_blank" rel="noreferrer">
+                                        <span className="source-number">{source.id}</span>
+                                        <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
+                                        <span className="source-arrow">↗</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                       ) : msg.content}
