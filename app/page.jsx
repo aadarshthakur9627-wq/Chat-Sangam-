@@ -54,6 +54,8 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => {
@@ -134,30 +136,23 @@ export default function Home() {
     requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
-  async function sendMessage(event) {
-    event?.preventDefault();
-    const text = message.trim();
-    if (!text || loading || !activeChat) return;
+  async function requestCompletion(chatId, nextMessages) {
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setLoading(true);
 
-    const userMessage = { role: "user", content: text };
-    const nextMessages = [...messages, userMessage];
-    const title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
-
-    updateChat(activeChat.id, (chat) => ({
+    updateChat(chatId, (chat) => ({
       ...chat,
-      title,
       updatedAt: Date.now(),
       messages: [...nextMessages, { role: "assistant", content: "" }],
     }));
-
-    setMessage("");
-    setLoading(true);
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages, webSearch, reasoningEffort }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -178,7 +173,7 @@ export default function Home() {
         const result = await reader.read();
         if (result.done) break;
         fullText += decoder.decode(result.value, { stream: true });
-        updateChat(activeChat.id, (chat) => ({
+        updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
           messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
@@ -186,20 +181,69 @@ export default function Home() {
       }
 
       fullText += decoder.decode();
-      updateChat(activeChat.id, (chat) => ({
+      updateChat(chatId, (chat) => ({
         ...chat,
         updatedAt: Date.now(),
         messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fullText } : msg),
       }));
     } catch (error) {
+      if (error?.name === "AbortError") return;
       console.error("Chat error:", error);
-      updateChat(activeChat.id, (chat) => ({
+      updateChat(chatId, (chat) => ({
         ...chat,
         messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
       }));
     } finally {
+      abortControllerRef.current = null;
       setLoading(false);
     }
+  }
+
+  function stopGeneration() {
+    abortControllerRef.current?.abort();
+  }
+
+  async function sendMessage(event) {
+    event?.preventDefault();
+    const text = message.trim();
+    if (!text || loading || !activeChat) return;
+
+    const userMessage = { role: "user", content: text };
+    const nextMessages = [...messages, userMessage];
+    const title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
+
+    updateChat(activeChat.id, (chat) => ({
+      ...chat,
+      title,
+      updatedAt: Date.now(),
+    }));
+    setMessage("");
+    setEditingIndex(null);
+    await requestCompletion(activeChat.id, nextMessages);
+  }
+
+  async function regenerateMessage(index) {
+    if (loading || !activeChat || index <= 0) return;
+    const userIndex = index - 1;
+    if (messages[userIndex]?.role !== "user") return;
+    const nextMessages = messages.slice(0, index);
+    updateChat(activeChat.id, (chat) => ({
+      ...chat,
+      updatedAt: Date.now(),
+      messages: nextMessages,
+    }));
+    await requestCompletion(activeChat.id, nextMessages);
+  }
+
+  function editMessage(index) {
+    if (loading || !activeChat || messages[index]?.role !== "user") return;
+    setEditingIndex(index);
+    setMessage(messages[index].content);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  function copyText(text) {
+    navigator.clipboard?.writeText(text);
   }
 
   if (!loaded) {
@@ -321,7 +365,8 @@ export default function Home() {
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <div className="message-actions">
-                              <button type="button" onClick={() => navigator.clipboard?.writeText(msg.content)} title="Copy response">Copy</button>
+                              <button type="button" onClick={() => copyText(msg.content)} title="Copy response">Copy</button>
+                              <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
                             </div>
                           )}
                         </div>
@@ -349,10 +394,10 @@ export default function Home() {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
                 }}
               />
-              <button className="send-button" type="submit" disabled={!message.trim() || loading} aria-label="Send message">{loading ? "…" : "↑"}</button>
+              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && !message.trim()} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">{webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
+          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
