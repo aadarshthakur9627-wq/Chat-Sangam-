@@ -81,6 +81,11 @@ async function browserSearch(query) {
           "You are Chat Sangam's web research layer.",
           "Use browser search to retrieve current, relevant information.",
           "Prefer primary and authoritative sources when possible.",
+          "Return the final answer for the user, not just research notes.",
+          "Use concise Markdown and answer the user's exact question.",
+          "Prefer primary and authoritative sources when possible.",
+          "When using retrieved web evidence, cite claims with [1], [2], etc. matching the source order.",
+          "Do not use special citation glyphs or structured/JSON output.",
           "Return a concise synthesis, but do not hide the source URLs/results from the application.",
         ].join("\n"),
       },
@@ -148,6 +153,14 @@ function formatWebContext(search) {
   ].filter(Boolean).join("\n\n");
 }
 
+function normalizeSearchAnswer(answer) {
+  if (!answer) return "";
+  return answer
+    .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
+    .replace(/\s{3,}/g, "  ")
+    .trim();
+}
+
 function formatSources(results) {
   if (!results.length) return "";
   const payload = results.map((item, index) => ({
@@ -210,7 +223,33 @@ export async function POST(request) {
       }
     }
 
-    const chatMessages = buildMessages(messages, webSearch ? formatWebContext(search) : "");
+    // Browser Search already returns the model's final researched answer.
+    // Avoid a second GPT-OSS completion here: it can trigger output_parse_failed
+    // after browser-search tool execution. The searched answer plus source cards
+    // gives Chat Sangam a reliable Perplexity-style web-search path.
+    if (webSearch) {
+      const encoder = new TextEncoder();
+      const answer = normalizeSearchAnswer(search.answer) || "I couldn't generate a web-search answer. Please try again.";
+      const sources = formatSources(search.results);
+      const payload = answer + sources;
+
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(payload));
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
+      });
+    }
+
+    const chatMessages = buildMessages(messages, "");
     const encoder = new TextEncoder();
 
     let responseStream;
