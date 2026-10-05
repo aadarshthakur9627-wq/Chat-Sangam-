@@ -72,15 +72,21 @@ function prepareCitationMarkdown(content, sources) {
 
   const available = new Set((sources || []).map((source) => String(source.id)));
   const cleaned = content
-    .replace(/〖(\d+)†[^〗]*〗/g, "[$1]")
-    .replace(/\[(\d+)\]\s*\[L\d+(?:-L?\d+)?\](?:\s*\[L\d+(?:-L?\d+)?\])*/gi, "[$1]")
-    .replace(/\[(\d+)†L\d+(?:-L?\d+)?\]/gi, "[$1]")
-    .replace(/\[(\d+)\s*†[^\]]*\]/gi, "[$1]")
-    .replace(/\s*\[L\d+(?:-L?\d+)?\]/gi, "");
+    // Normalize Groq/browser-search citation wrappers to [N].
+    .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
+    .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
+    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
+    .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
+    .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
+    .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
+    // Remove accidental web-search table scaffolding.
+    .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
+    .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
+    .trim();
 
   return cleaned.replace(/\[(\d+)\](?!\()/g, (match, id) => {
     if (!available.has(String(id))) return match;
-    return `[${id}](#source-${id})`;
+    return "[" + id + "](#source-" + id + ")";
   });
 }
 
