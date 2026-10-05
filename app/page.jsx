@@ -6,12 +6,17 @@ import remarkGfm from "remark-gfm";
 
 const STORAGE_KEY = "chat-sangam-history-v2";
 
-const MODELS = [
-  { id: "groq", name: "Groq", provider: "Fast inference", icon: "⚡", color: "pink" },
-  { id: "gemini", name: "Gemini", provider: "Google AI", icon: "✦", color: "violet" },
-];
+const ACTIVE_ENGINE = {
+  id: "groq",
+  name: "Groq",
+  model: "GPT-OSS 20B",
+  provider: "Groq API",
+  icon: "⚡",
+  color: "pink",
+};
 
-const COMING_SOON = [
+const FUTURE_ENGINES = [
+  { name: "Gemini", icon: "✦" },
   { name: "OpenAI", icon: "◉" },
   { name: "Claude", icon: "◌" },
   { name: "Perplexity", icon: "⌕" },
@@ -40,7 +45,7 @@ function formatTime(timestamp) {
 }
 
 export default function Home() {
-  const [model, setModel] = useState("groq");
+  const [reasoningEffort, setReasoningEffort] = useState("medium");
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [message, setMessage] = useState("");
@@ -90,7 +95,7 @@ export default function Home() {
     return chats.filter((chat) => (chat.title || "").toLowerCase().includes(query)).slice(0, 20);
   }, [chats, search]);
 
-  const selectedModel = MODELS.find((item) => item.id === model) || MODELS[0];
+  const selectedModel = ACTIVE_ENGINE;
 
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
@@ -152,10 +157,18 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model, messages: nextMessages, webSearch }),
+        body: JSON.stringify({ messages: nextMessages, webSearch, reasoningEffort }),
       });
 
-      if (!response.ok || !response.body) throw new Error("AI response failed");
+      if (!response.ok) {
+        let detail = "AI response failed.";
+        try {
+          const data = await response.json();
+          detail = data.error || detail;
+        } catch {}
+        throw new Error(detail);
+      }
+      if (!response.body) throw new Error("AI response failed.");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -182,7 +195,7 @@ export default function Home() {
       console.error("Chat error:", error);
       updateChat(activeChat.id, (chat) => ({
         ...chat,
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "Sorry, kuch problem aa gayi. Please dobara try karo." } : msg),
+        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
       }));
     } finally {
       setLoading(false);
@@ -247,13 +260,17 @@ export default function Home() {
             <button className={"web-search-toggle " + (webSearch ? "active" : "")} onClick={() => setWebSearch((value) => !value)} disabled={loading} type="button" aria-pressed={webSearch} title="Search the live web before answering">
               <span>⌕</span> Web Search <b>{webSearch ? "ON" : "OFF"}</b>
             </button>
-            <div className="model-picker">
-              <span className="picker-label">MODEL</span>
-              <select value={model} onChange={(e) => setModel(e.target.value)} disabled={loading} aria-label="Select AI model">
-                {MODELS.map((item) => <option key={item.id} value={item.id}>{item.icon} {item.name}</option>)}
-              </select>
-              <span className="chevron">⌄</span>
+            <div className="engine-badge" title="Current AI engine">
+              <span className="engine-dot" /> <strong>Groq</strong><span>GPT-OSS 20B</span>
             </div>
+            <label className="thinking-picker" title="Groq reasoning effort">
+              <span>THINK</span>
+              <select value={reasoningEffort} onChange={(e) => setReasoningEffort(e.target.value)} disabled={loading} aria-label="Reasoning effort">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+            </label>
             <button className="top-action" onClick={startNewChat} disabled={loading}>＋ <span>New</span></button>
           </div>
         </header>
@@ -261,13 +278,13 @@ export default function Home() {
         <div className="model-strip">
           <div className="selected-model">
             <span className={"model-orb " + selectedModel.color}>{selectedModel.icon}</span>
-            <span><strong>{selectedModel.name}</strong><small>{selectedModel.provider}</small></span>
+            <span><strong>{selectedModel.name} · {selectedModel.model}</strong><small>{selectedModel.provider}</small></span>
             <i />
-            <span className="live-label"><b /> Live</span>
+            <span className="live-label"><b /> Online</span>
           </div>
           <div className="coming-soon">
-            <span>COMING NEXT</span>
-            {COMING_SOON.map((item) => <span key={item.name} title={item.name}>{item.icon} {item.name}</span>)}
+            <span>FUTURE ENGINES</span>
+            {FUTURE_ENGINES.map((item) => <span key={item.name} title={item.name}>{item.icon} {item.name}</span>)}
           </div>
         </div>
 
@@ -296,12 +313,17 @@ export default function Home() {
                 <article className={"message-row " + msg.role} key={index}>
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
-                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : selectedModel.name}</strong><span>{msg.role === "assistant" ? "AI response" : "Message"}</span></div>
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? "Groq · GPT-OSS 20B" : "Message"}</span></div>
                     <div className="message-bubble">
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content || ""}</ReactMarkdown>
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
+                          {!loading && msg.content && (
+                            <div className="message-actions">
+                              <button type="button" onClick={() => navigator.clipboard?.writeText(msg.content)} title="Copy response">Copy</button>
+                            </div>
+                          )}
                         </div>
                       ) : msg.content}
                     </div>
@@ -314,7 +336,7 @@ export default function Home() {
 
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
-            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
+            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
             <div className="composer-input-row">
               <textarea
                 ref={textareaRef}
@@ -330,7 +352,7 @@ export default function Home() {
               <button className="send-button" type="submit" disabled={!message.trim() || loading} aria-label="Send message">{loading ? "…" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">{webSearch ? "⌕ Live web search is ON · Results are summarized with source links." : "Chat Sangam may make mistakes. Verify important information."}</div>
+          <div className="composer-note">{webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
