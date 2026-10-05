@@ -91,7 +91,6 @@ async function browserSearch(query) {
     reasoning_effort: "low",
     include_reasoning: false,
     max_completion_tokens: 2048,
-    citation_options: "enabled",
     stream: false,
   });
 
@@ -99,6 +98,7 @@ async function browserSearch(query) {
   const executedTools = message?.executed_tools || [];
   const rawResults = executedTools.flatMap((tool) => tool?.search_results?.results || []);
 
+  const seen = new Set();
   const results = rawResults
     .map((item) => ({
       title: item.title || "Web result",
@@ -107,7 +107,19 @@ async function browserSearch(query) {
       score: typeof item.score === "number" ? item.score : null,
     }))
     .filter((item) => item.url)
-    .slice(0, 8);
+    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
+    .filter((item) => {
+      try {
+        const parsed = new URL(item.url);
+        const key = parsed.hostname.replace(/^www\./, "") + parsed.pathname;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      } catch {
+        return false;
+      }
+    })
+    .slice(0, 6);
 
   return {
     answer: message?.content || "",
@@ -212,7 +224,6 @@ export async function POST(request) {
         reasoning_effort: safeReasoning,
         include_reasoning: false,
         max_completion_tokens: 4096,
-        citation_options: "enabled",
         stream: true,
       });
     } catch (error) {
