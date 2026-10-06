@@ -114,6 +114,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
+  const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
@@ -388,8 +389,27 @@ export default function Home() {
             <button className={"web-search-toggle " + (webSearch ? "active" : "")} onClick={() => setWebSearch((value) => !value)} disabled={loading} type="button" aria-pressed={webSearch} title="Search the live web before answering">
               <span>⌕</span> Web Search <b>{webSearch ? "ON" : "OFF"}</b>
             </button>
-            <div className="engine-badge" title="Current AI engine">
-              <span className="engine-dot" /> <strong>Groq</strong><span>GPT-OSS 20B</span>
+            <div className="model-selector">
+              <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
+                <span className="engine-dot" /> <strong>{selectedModel.name}</strong><span>{selectedModel.model}</span><b className="model-chevron">⌄</b>
+              </button>
+              {modelMenuOpen && (
+                <div className="model-menu" role="menu">
+                  <div className="model-menu-head"><span>SELECT MODEL</span><small>1 active</small></div>
+                  <button className="model-option active" type="button" role="menuitem" onClick={() => setModelMenuOpen(false)}>
+                    <span className="model-option-icon">⚡</span>
+                    <span className="model-option-copy"><strong>Groq · GPT-OSS 20B</strong><small>Groq API · Fast · Active</small></span>
+                    <span className="model-check">✓</span>
+                  </button>
+                  {FUTURE_ENGINES.map((item) => (
+                    <button className="model-option disabled" type="button" role="menuitem" key={item.name} disabled title={`${item.name} integration coming soon`}>
+                      <span className="model-option-icon">{item.icon}</span>
+                      <span className="model-option-copy"><strong>{item.name}</strong><small>Integration coming soon</small></span>
+                      <span className="model-lock">SOON</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <label className="thinking-picker" title="Groq reasoning effort">
               <span>THINK</span>
