@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { CanvasFactory } from "pdf-parse/worker";
-import { PDFParse } from "pdf-parse";
+import pdfParse from "pdf-parse";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
