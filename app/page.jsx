@@ -67,6 +67,20 @@ function formatTime(timestamp) {
   return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(timestamp);
 }
 
+function getCitedSources(content, sources) {
+  if (!content || !Array.isArray(sources)) return [];
+  const citedIds = new Set();
+  const cleaned = content
+    .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
+    .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
+    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]");
+  for (const match of cleaned.matchAll(/\[(\d+)\]/g)) {
+    const id = Number(match[1]);
+    if (id > 0) citedIds.add(String(id));
+  }
+  return sources.filter((source) => citedIds.has(String(source.id)));
+}
+
 function prepareCitationMarkdown(content, sources) {
   if (!content) return "";
 
@@ -439,20 +453,24 @@ export default function Home() {
                                 <button type="button" onClick={() => copyText(msg.content)} title="Copy response">Copy</button>
                                 <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
                               </div>
-                              {msg.sources?.length > 0 && (
-                                <div className="source-panel">
-                                  <div className="source-heading"><span>⌕</span> Sources <small>{msg.sources.length} results</small></div>
-                                  <div className="source-grid">
-                                    {msg.sources.map((source) => (
-                                      <a className="source-card" id={`source-${source.id}`} key={source.id} href={source.url} target="_blank" rel="noreferrer">
-                                        <span className="source-number">{source.id}</span>
-                                        <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
-                                        <span className="source-arrow">↗</span>
-                                      </a>
-                                    ))}
+                              {msg.sources?.length > 0 && (() => {
+                                const usedSources = getCitedSources(msg.content || "", msg.sources);
+                                if (!usedSources.length) return null;
+                                return (
+                                  <div className="source-panel">
+                                    <div className="source-heading"><span>⌕</span> Sources <small>{usedSources.length} used</small></div>
+                                    <div className="source-grid">
+                                      {usedSources.map((source) => (
+                                        <a className="source-card" id={`source-${source.id}`} key={source.id} href={source.url} target="_blank" rel="noreferrer">
+                                          <span className="source-number">{source.id}</span>
+                                          <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
+                                          <span className="source-arrow">↗</span>
+                                        </a>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                );
+                              })()}
                             </>
                           )}
                         </div>
