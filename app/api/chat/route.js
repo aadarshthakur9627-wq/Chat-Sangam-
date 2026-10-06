@@ -167,6 +167,8 @@ function normalizeSearchAnswer(answer) {
     .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
     .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
     .replace(/\](?=[A-Za-z])/g, "] ")
+    // Collapse repeated identical citations such as [1] [1].
+    .replace(/\[(\d+)\]\s+\[\1\]/g, "[$1]")
     .replace(/\s{3,}/g, "  ")
     .trim();
 }
