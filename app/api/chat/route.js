@@ -159,6 +159,8 @@ function normalizeSearchAnswer(answer) {
     // Normalize citation + line-reference combinations such as [2] [L21-L28].
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
+    // Groq may emit zero-based browser-search citations; UI sources are one-based.
+    .replace(/\[0\]/g, "[1]")
     // Remove any remaining standalone line-reference tokens.
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
