@@ -76,6 +76,7 @@ function prepareCitationMarkdown(content, sources) {
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
+    .replace(/\[0\]/g, "[1]")
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
     .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
