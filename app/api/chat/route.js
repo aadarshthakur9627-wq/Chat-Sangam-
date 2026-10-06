@@ -129,6 +129,44 @@ async function browserSearch(query) {
   };
 }
 
+async function synthesizeWebAnswer(query, search) {
+  const sourceContext = search.results.map((item, index) =>
+    "SOURCE " + (index + 1) + "\nTITLE: " + item.title + "\nURL: " + item.url + "\nCONTENT: " + item.content
+  ).join("\n\n");
+
+  const response = await createGroqCompletion({
+    model: GROQ_MODEL,
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are Chat Sangam's final web-answer writer.",
+          "Answer the user's question using ONLY the supplied browser-search sources.",
+          "Write a concise, natural answer in the user's language.",
+          "For each important factual claim, cite the exact source number using [1], [2], [3], etc.",
+          "The source numbers are one-based and MUST match the SOURCE numbers supplied below.",
+          "Never use [0]. Never use citation formats containing L-lines, daggers, or special brackets.",
+          "Never invent or renumber sources.",
+          "Do not use Markdown tables unless explicitly requested.",
+          "If multiple claims use the same source, reuse that source number.",
+          "Do not add a separate sources list; Chat Sangam renders source cards separately.",
+        ].join("\n"),
+      },
+      {
+        role: "user",
+        content: "USER QUESTION:\n" + query + "\n\nBROWSER SEARCH SOURCES:\n" + sourceContext,
+      },
+    ],
+    reasoning_effort: "low",
+    include_reasoning: false,
+    temperature: 0.2,
+    max_completion_tokens: 2048,
+    stream: false,
+  });
+
+  return response.choices?.[0]?.message?.content || search.answer || "";
+}
+
 function formatWebContext(search) {
   if (!search.results.length && !search.answer) return "";
 
@@ -160,7 +198,6 @@ function normalizeSearchAnswer(answer) {
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
     // Groq may emit zero-based browser-search citations; UI sources are one-based.
-    .replace(/\[0\]/g, "[1]")
     // Remove any remaining standalone line-reference tokens.
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
@@ -242,7 +279,13 @@ export async function POST(request) {
     // gives Chat Sangam a reliable Perplexity-style web-search path.
     if (webSearch) {
       const encoder = new TextEncoder();
-      const answer = normalizeSearchAnswer(search.answer) || "I couldn't generate a web-search answer. Please try again.";
+      let finalAnswer = search.answer;
+      try {
+        finalAnswer = await synthesizeWebAnswer(latest, search);
+      } catch (error) {
+        console.error("Groq web-answer synthesis error:", error);
+      }
+      const answer = normalizeSearchAnswer(finalAnswer) || "I couldn't generate a web-search answer. Please try again.";
       const sources = formatSources(search.results);
       const payload = answer + sources;
 
