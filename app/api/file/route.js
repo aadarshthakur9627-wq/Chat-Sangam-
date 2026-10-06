@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import pdfParse from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_TEXT_CHARS = 120000;
+const MAX_PAGES = 200;
 
 export async function POST(request) {
   try {
@@ -38,17 +39,18 @@ export async function POST(request) {
     let text = "";
 
     if (ext === "pdf") {
-      const parser = new PDFParse({
-        data: new Uint8Array(buffer),
-        CanvasFactory,
-      });
-
-      try {
-        const parsed = await parser.getText();
-        text = parsed.text || "";
-      } finally {
-        await parser.destroy();
+      const pdf = await getDocumentProxy(new Uint8Array(buffer));
+      if (pdf.numPages > MAX_PAGES) {
+        return NextResponse.json(
+          { error: "PDF is too large. Maximum supported length is 200 pages." },
+          { status: 413 }
+        );
       }
+
+      const parsed = await extractText(pdf, { mergePages: true });
+      text = Array.isArray(parsed.text)
+        ? parsed.text.join("\n")
+        : parsed.text || "";
     } else {
       text = buffer.toString("utf8");
     }
@@ -56,7 +58,9 @@ export async function POST(request) {
     text = text.replace(/\u0000/g, "").replace(/\r\n/g, "\n").trim();
 
     const truncated = text.length > MAX_TEXT_CHARS;
-    if (truncated) text = text.slice(0, MAX_TEXT_CHARS);
+    if (truncated) {
+      text = text.slice(0, MAX_TEXT_CHARS);
+    }
 
     return NextResponse.json({
       name,
