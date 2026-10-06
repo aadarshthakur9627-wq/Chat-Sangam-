@@ -115,6 +115,9 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
   const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
@@ -190,6 +193,31 @@ export default function Home() {
       setActiveChatId((active) => active === id ? next[0].id : active);
       return next;
     });
+  }
+
+  async function handleFileChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFileLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/file", { method: "POST", body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "File read failed.");
+      setAttachedFile(data);
+    } catch (error) {
+      alert(error?.message || "File read failed.");
+      setAttachedFile(null);
+    } finally {
+      setFileLoading(false);
+      setFileInputKey((value) => value + 1);
+    }
+  }
+
+  function removeAttachedFile() {
+    setAttachedFile(null);
+    setFileInputKey((value) => value + 1);
   }
 
   function usePrompt(text) {
@@ -283,16 +311,16 @@ export default function Home() {
   async function sendMessage(event) {
     event?.preventDefault();
     const text = message.trim();
-    if (!text || loading || !activeChat) return;
+    if ((!text && !attachedFile) || loading || fileLoading || !activeChat) return;
 
     let nextMessages;
     let title = activeChat.title;
 
     if (editingIndex !== null && messages[editingIndex]?.role === "user") {
-      nextMessages = [...messages.slice(0, editingIndex), { role: "user", content: text }];
+      nextMessages = [...messages.slice(0, editingIndex), { role: "user", content: attachedFile ? text + "\n\n[Attached file: " + attachedFile.name + "]\n\n" + attachedFile.text : text }];
       title = editingIndex === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
     } else {
-      nextMessages = [...messages, { role: "user", content: text }];
+      nextMessages = [...messages, { role: "user", content: attachedFile ? (text || "Please analyze the attached file.") + "\n\n[Attached file: " + attachedFile.name + "]\n\n" + attachedFile.text : text }];
       title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
     }
 
@@ -304,6 +332,8 @@ export default function Home() {
     }));
     setMessage("");
     setEditingIndex(null);
+    setAttachedFile(null);
+    setFileInputKey((value) => value + 1);
     await requestCompletion(activeChat.id, nextMessages);
   }
 
@@ -506,7 +536,7 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
-            <div className="composer-input-row">
+            {attachedFile && (\n              <div className="attachment-chip"><span>📎</span><span><strong>{attachedFile.name}</strong><small>{attachedFile.characters.toLocaleString()} chars{attachedFile.truncated ? " · truncated" : ""}</small></span><button type="button" onClick={removeAttachedFile} disabled={loading}>×</button></div>\n            )}\n            <div className="composer-input-row">
               <textarea
                 ref={textareaRef}
                 value={message}
@@ -518,7 +548,7 @@ export default function Home() {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
                 }}
               />
-              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && !message.trim()} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
+              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFile)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
           <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
