@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { CanvasFactory } from "pdf-parse/worker";
 import { PDFParse } from "pdf-parse";
 
 export const runtime = "nodejs";
@@ -38,7 +39,11 @@ export async function POST(request) {
     let text = "";
 
     if (ext === "pdf") {
-      const parser = new PDFParse({ data: buffer });
+      const parser = new PDFParse({
+        data: new Uint8Array(buffer),
+        CanvasFactory,
+      });
+
       try {
         const parsed = await parser.getText();
         text = parsed.text || "";
@@ -52,9 +57,7 @@ export async function POST(request) {
     text = text.replace(/\u0000/g, "").replace(/\r\n/g, "\n").trim();
 
     const truncated = text.length > MAX_TEXT_CHARS;
-    if (truncated) {
-      text = text.slice(0, MAX_TEXT_CHARS);
-    }
+    if (truncated) text = text.slice(0, MAX_TEXT_CHARS);
 
     return NextResponse.json({
       name,
