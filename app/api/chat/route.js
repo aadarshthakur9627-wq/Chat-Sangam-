@@ -236,25 +236,32 @@ function sanitizeFileText(text) {
 function attachFileContext(messages, attachments) {
   if (!Array.isArray(attachments) || !attachments.length) return messages;
 
-  const byIndex = new Map(
-    attachments
-      .filter((item) => Number.isInteger(item?.messageIndex) && typeof item?.text === "string")
-      .map((item) => [item.messageIndex, item])
-  );
+  const byIndex = new Map();
+  for (const item of attachments) {
+    if (!Number.isInteger(item?.messageIndex) || typeof item?.text !== "string") continue;
+    const current = byIndex.get(item.messageIndex) || [];
+    current.push(item);
+    byIndex.set(item.messageIndex, current);
+  }
 
   return messages.map((message, index) => {
-    const attachment = byIndex.get(index);
-    if (!attachment) return message;
+    const messageAttachments = byIndex.get(index);
+    if (!messageAttachments?.length) return message;
 
-    const fileText = sanitizeFileText(attachment.text);
-    if (!fileText) return message;
+    const fileContext = messageAttachments
+      .map((attachment) => {
+        const fileText = sanitizeFileText(attachment.text);
+        if (!fileText) return "";
+        return "[Attached file: " + String(attachment.name || "document") + "]\n\n" + fileText;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+
+    if (!fileContext) return message;
 
     return {
       ...message,
-      content:
-        message.content +
-        "\n\n[Attached file: " + String(attachment.name || "document") + "]\n\n" +
-        fileText,
+      content: message.content + "\n\n" + fileContext,
     };
   });
 }
