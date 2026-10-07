@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { createPortal } from "react-dom";
 
 const STORAGE_KEY = "chat-sangam-history-v2";
 
@@ -845,8 +846,8 @@ export default function Home() {
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
                 <span className="engine-dot" /> <strong>Groq</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
-              {modelMenuOpen && (
-                <div className="model-menu" role="menu">
+              {modelMenuOpen && typeof document !== "undefined" && createPortal(
+                <div className="model-menu model-menu-portal" role="menu">
                   <div className="model-menu-head"><span>GROQ MODELS</span><small>{GROQ_MODELS.length} active</small></div>
                   {GROQ_MODELS.map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
@@ -888,7 +889,8 @@ export default function Home() {
                       <span className="model-lock">SOON</span>
                     </button>
                   ))}
-                </div>
+                </div>,
+                document.body
               )}
             </div>
             <label className="thinking-picker" title="Groq reasoning effort">
