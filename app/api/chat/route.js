@@ -135,27 +135,23 @@ async function browserSearch(query) {
 }
 
 async function deepResearch(query) {
-  const queries = [
-    query,
-    query + " official primary sources evidence",
-    query + " recent developments statistics expert analysis",
-  ];
-
-  const searches = await Promise.all(
-    queries.map((researchQuery) => browserSearch(researchQuery))
+  // Keep Deep Research within Groq free-tier rate limits:
+  // one broad browser-search pass, followed by one synthesis pass.
+  const search = await browserSearch(
+    query +
+      " — prioritize official primary sources, recent developments, statistics, expert analysis, and multiple independent sources"
   );
 
   const seen = new Set();
-  const results = searches
-    .flatMap((search) => search.results || [])
+  const results = (search.results || [])
     .filter((item) => {
       if (!item?.url || seen.has(item.url)) return false;
       seen.add(item.url);
       return true;
     })
-    .slice(0, 12);
+    .slice(0, 8);
 
-  return { results };
+  return { results, searchAnswer: search.answer || "" };
 }
 
 async function synthesizeDeepResearchAnswer(query, research) {
