@@ -222,6 +222,16 @@ export default function Home() {
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
   const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
+  function toggleCompareMode() {
+    if (loading || visionActive) return;
+    setCompareModelIds((current) => {
+      const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
+      const valid = current.filter((id) => textModels.includes(id));
+      if (valid.length < 2) setCompareModelIds(textModels.slice(0, 2));
+    });
+    setCompareMode((value) => !value);
+  }
+
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
   }
@@ -839,17 +849,23 @@ export default function Home() {
                   <div className="model-menu-head"><span>GROQ MODELS</span><small>{GROQ_MODELS.length} active</small></div>
                   {GROQ_MODELS.map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
-                      onClick={() => { setSelectedModelId(item.id); setModelMenuOpen(false); }}>
+                      onClick={() => {
+                        if (item.kind === "vision" && !visionActive) return;
+                        setSelectedModelId(item.id);
+                        setModelMenuOpen(false);
+                        if (item.kind === "vision") setCompareMode(false);
+                      }}
+                      disabled={item.kind === "vision" && !visionActive}>
                       <span className="model-option-icon">{item.icon}</span>
                       <span className="model-option-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
                   <div className="model-menu-divider" />
-                  <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={() => setCompareMode((value) => !value)} disabled={visionActive}>
+                  <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
                     <span className="compare-toggle-icon">⇄</span>
                     <span className="model-option-copy"><strong>Compare Groq models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
-                    <span className={"compare-switch " + (compareMode ? "on" : "")}><i /></span>
+                    <span className={"compare-switch " + (compareMode ? "on" : "")} aria-hidden="true"><i /></span>
                   </button>
                   {compareMode && !visionActive && (
                     <div className="compare-picks">
