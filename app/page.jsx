@@ -251,13 +251,11 @@ export default function Home() {
     }));
 
     try {
+      // Diagnostic: send only visible message text.
+      // This isolates whether the attached file context is causing the browser fetch failure.
       const apiMessages = nextMessages.map((msg) => ({
         role: msg.role,
-        content: msg.fileContext
-          ? msg.content +
-            "\n\n[Attached file: " + msg.fileName + "]\n\n" +
-            msg.fileContext
-          : msg.content,
+        content: msg.content,
       }));
 
       const response = await fetch("/api/chat", {
