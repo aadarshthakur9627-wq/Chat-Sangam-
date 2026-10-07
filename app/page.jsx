@@ -526,6 +526,23 @@ export default function Home() {
     if (action === "select") selectMessageText(index);
   }
 
+  async function createImagePreview(dataUrl) {
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSide = 420;
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+        canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+        canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.68));
+      };
+      image.onerror = () => resolve(dataUrl);
+      image.src = dataUrl;
+    });
+  }
+
   async function sendMessage(event) {
     event?.preventDefault();
     const text = message.trim();
@@ -549,6 +566,10 @@ export default function Home() {
       ];
       title = editingIndex === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
     } else {
+      const imagePreviews = attachedImages.length
+        ? await Promise.all(attachedImages.map((image) => createImagePreview(image.dataUrl)))
+        : [];
+
       nextMessages = [
         ...messages,
         {
@@ -562,6 +583,7 @@ export default function Home() {
           } : {}),
           ...(attachedImages.length ? {
             imageNames: attachedImages.map((image) => image.name),
+            imagePreviews,
           } : {}),
         },
       ];
@@ -667,6 +689,8 @@ export default function Home() {
       ...(Array.isArray(msg.sources) ? { sources: [...msg.sources] } : {}),
       ...(Array.isArray(msg.fileNames) ? { fileNames: [...msg.fileNames] } : {}),
       ...(Array.isArray(msg.fileContexts) ? { fileContexts: msg.fileContexts.map((file) => ({ ...file })) } : {}),
+      ...(Array.isArray(msg.imageNames) ? { imageNames: [...msg.imageNames] } : {}),
+      ...(Array.isArray(msg.imagePreviews) ? { imagePreviews: [...msg.imagePreviews] } : {}),
     }));
     const sourceTitle = branchMessages.find((msg) => msg.role === "user")?.content || activeChat.title || "New conversation";
     const chat = { ...createChat(), title: "Branch: " + sourceTitle.replace(/\s+/g, " ").slice(0, 38), messages: branchMessages, updatedAt: Date.now() };
@@ -907,6 +931,15 @@ export default function Home() {
                         </div>
                       ) : (
                         <>
+                          {Array.isArray(msg.imagePreviews) && msg.imagePreviews.length > 0 && (
+                            <div className="message-image-list">
+                              {msg.imagePreviews.map((src, imageIndex) => (
+                                <div className="message-image-card" key={(msg.imageNames?.[imageIndex] || "image") + imageIndex}>
+                                  <img src={src} alt={msg.imageNames?.[imageIndex] || "Attached image"} loading="lazy" />
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           {Array.isArray(msg.fileNames) && msg.fileNames.length ? (
                             <div className="message-file-list">
                               {msg.fileNames.map((name, fileIndex) => (
