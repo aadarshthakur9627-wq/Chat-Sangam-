@@ -676,7 +676,7 @@ export default function Home() {
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
                     <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? "Groq · GPT-OSS 20B" : "Message"}</span></div>
-                    <div className="message-bubble">
+                    <div className={"message-bubble " + (msg.role === "assistant" ? "assistant-answer-bubble" : "")}>
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
                           <div className="message-selectable" id={"message-selectable-" + index}>
