@@ -251,16 +251,14 @@ export default function Home() {
     }));
 
     try {
-      const apiMessages = nextMessages.map((msg) => {
-        if (!msg.fileContext) return msg;
-        return {
-          ...msg,
-          content:
-            msg.content +
+      const apiMessages = nextMessages.map((msg) => ({
+        role: msg.role,
+        content: msg.fileContext
+          ? msg.content +
             "\n\n[Attached file: " + msg.fileName + "]\n\n" +
-            msg.fileContext,
-        };
-      });
+            msg.fileContext
+          : msg.content,
+      }));
 
       const response = await fetch("/api/chat", {
         method: "POST",
