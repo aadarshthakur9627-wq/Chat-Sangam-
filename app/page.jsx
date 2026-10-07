@@ -137,9 +137,12 @@ export default function Home() {
   const [deepResearch, setDeepResearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [attachedImages, setAttachedImages] = useState([]);
+  const imageCacheRef = useRef(new Map());
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [imageInputKey, setImageInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const [messageContextMenu, setMessageContextMenu] = useState(null);
@@ -268,9 +271,69 @@ export default function Home() {
     }
   }
 
+  async function fileToDataUrl(file) {
+    if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+    if (file.size > 10 * 1024 * 1024) throw new Error("Image is too large. Maximum size is 10 MB.");
+    const source = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Could not read the image."));
+      reader.readAsDataURL(file);
+    });
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Could not process the image."));
+      img.src = source;
+    });
+    const maxSide = 1600;
+    const scale = Math.min(1, maxSide / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round((image.naturalWidth || image.width) * scale));
+    canvas.height = Math.max(1, Math.round((image.naturalHeight || image.height) * scale));
+    canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+    let quality = 0.82;
+    let dataUrl = canvas.toDataURL("image/jpeg", quality);
+    while (dataUrl.length > 1_350_000 && quality > 0.52) {
+      quality -= 0.06;
+      dataUrl = canvas.toDataURL("image/jpeg", quality);
+    }
+    if (dataUrl.length > 1_500_000) throw new Error("Image is still too large after compression. Please choose a smaller image.");
+    return dataUrl;
+  }
+
+  async function handleImageChange(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    setFileLoading(true);
+    try {
+      const remaining = Math.max(0, 3 - attachedImages.length);
+      const selected = files.slice(0, remaining);
+      if (!selected.length) throw new Error("You can attach up to 3 images per message.");
+      const converted = [];
+      for (const file of selected) converted.push({ name: file.name || "Image", dataUrl: await fileToDataUrl(file) });
+      setAttachedImages((current) => [...current, ...converted].slice(0, 3));
+    } catch (error) {
+      alert(error?.message || "Image upload failed.");
+    } finally {
+      setFileLoading(false);
+      setImageInputKey((value) => value + 1);
+      setAttachMenuOpen(false);
+    }
+  }
+
+  function removeAttachedImage(index) {
+    setAttachedImages((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setImageInputKey((value) => value + 1);
+  }
+
   function openAttachMenu() { if (!loading && !fileLoading) setAttachMenuOpen((current) => !current); }
 
-  function handleImageOption() { setAttachMenuOpen(false); alert("Image upload and image analysis will be available soon. Files/PDF upload is available now."); }
+  function handleImageOption() {
+    if (loading || fileLoading) return;
+    setAttachMenuOpen(false);
+    document.getElementById("camera-upload-" + imageInputKey)?.click();
+  }
 
   function handleFilesOption() { if (loading || fileLoading) return; setAttachMenuOpen(false); document.getElementById("file-upload-" + fileInputKey)?.click(); }
 
@@ -318,23 +381,19 @@ export default function Home() {
       }));
       const attachments = nextMessages.flatMap((msg, index) => {
         if (Array.isArray(msg.fileContexts)) {
-          return msg.fileContexts.map((file) => ({
-            messageIndex: index,
-            name: file.name || "Attached file",
-            text: file.text || "",
-          }));
+          return msg.fileContexts.map((file) => ({ messageIndex: index, name: file.name || "Attached file", text: file.text || "" }));
         }
-        return msg.fileContext ? [{
-          messageIndex: index,
-          name: msg.fileName || "Attached file",
-          text: msg.fileContext,
-        }] : [];
+        return msg.fileContext ? [{ messageIndex: index, name: msg.fileName || "Attached file", text: msg.fileContext }] : [];
+      });
+      const imageAttachments = nextMessages.flatMap((msg, index) => {
+        const cached = imageCacheRef.current.get(index);
+        return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
       });
 
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, attachments, webSearch, deepResearch, reasoningEffort }),
+        body: JSON.stringify({ messages: apiMessages, attachments, imageAttachments, webSearch, deepResearch, reasoningEffort }),
         signal: controller.signal,
       });
 
@@ -462,7 +521,7 @@ export default function Home() {
   async function sendMessage(event) {
     event?.preventDefault();
     const text = message.trim();
-    if ((!text && !attachedFiles.length) || loading || fileLoading || !activeChat) return;
+    if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
 
     let nextMessages;
     let title = activeChat.title;
@@ -472,10 +531,11 @@ export default function Home() {
         ...messages.slice(0, editingIndex),
         {
           role: "user",
-          content: attachedFiles.length ? (text || "Please analyze the attached file(s).") : text,
+          content: (attachedFiles.length || attachedImages.length) ? (text || "Please analyze the attached file(s) and image(s).") : text,
           ...(attachedFiles.length ? {
             fileNames: attachedFiles.map((file) => file.name),
             fileContexts: attachedFiles.map((file) => ({ name: file.name, text: file.text })),
+            ...(attachedImages.length ? { imageNames: attachedImages.map((image) => image.name) } : {}),
           } : {}),
         },
       ];
@@ -503,8 +563,12 @@ export default function Home() {
     }));
     setMessage("");
     setEditingIndex(null);
+    const imageMessageIndex = nextMessages.length - 1;
+    if (attachedImages.length) imageCacheRef.current.set(imageMessageIndex, attachedImages.map((image) => ({ ...image })));
     setAttachedFiles([]);
+    setAttachedImages([]);
     setFileInputKey((value) => value + 1);
+    setImageInputKey((value) => value + 1);
     await requestCompletion(activeChat.id, nextMessages);
   }
 
@@ -913,6 +977,17 @@ export default function Home() {
                 <span className="composer-hint">Enter to send · Shift + Enter for new line</span>
               )}
             </div>
+            {attachedImages.length > 0 && (
+              <div className="attachment-list image-attachment-list">
+                {attachedImages.map((image, index) => (
+                  <div className="attachment-chip image-attachment-chip" key={image.name + index}>
+                    <img src={image.dataUrl} alt={image.name} />
+                    <span><strong>{image.name}</strong><small>Image · ready for vision</small></span>
+                    <button type="button" onClick={() => removeAttachedImage(index)} disabled={loading}>×</button>
+                  </div>
+                ))}
+              </div>
+            )}
             {attachedFiles.length > 0 && (
               <div className="attachment-list">
                 {attachedFiles.map((file, index) => (
@@ -932,12 +1007,14 @@ export default function Home() {
                     <button className="attach-menu-backdrop" type="button" aria-label="Close attachment menu" onClick={() => setAttachMenuOpen(false)} />
                     <div className="attach-menu" role="menu">
                       <button type="button" role="menuitem" onClick={handleImageOption}><span className="attach-menu-icon">⌁</span><span><strong>Camera</strong><small>Take a photo</small></span></button>
-                      <button type="button" role="menuitem" onClick={handleImageOption}><span className="attach-menu-icon">▧</span><span><strong>Photos</strong><small>Choose from gallery</small></span></button>
+                      <button type="button" role="menuitem" onClick={() => { setAttachMenuOpen(false); document.getElementById("image-upload-" + imageInputKey)?.click(); }}><span className="attach-menu-icon">▧</span><span><strong>Photos</strong><small>Choose from gallery</small></span></button>
                       <button type="button" role="menuitem" onClick={handleFilesOption}><span className="attach-menu-icon">□</span><span><strong>Files</strong><small>PDF, TXT, CSV, JSON</small></span></button>
                     </div>
                   </>
                 )}
                 <input key={fileInputKey} id={"file-upload-" + fileInputKey} className="hidden-file-input" type="file" multiple accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json" onChange={handleFileChange} disabled={loading || fileLoading} />
+                <input key={"camera-" + imageInputKey} id={"camera-upload-" + imageInputKey} className="hidden-file-input" type="file" accept="image/*" capture="environment" onChange={handleImageChange} disabled={loading || fileLoading} />
+                <input key={"photos-" + imageInputKey} id={"image-upload-" + imageInputKey} className="hidden-file-input" type="file" accept="image/*" multiple onChange={handleImageChange} disabled={loading || fileLoading} />
               </div>
               <textarea
                 ref={textareaRef}
