@@ -53,6 +53,21 @@ function CodeBlock({ children }) {
   );
 }
 
+function ActionIcon({ type, size = 17 }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
+  if (type === "copy") return <svg {...common}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>;
+  if (type === "check") return <svg {...common}><path d="m5 12 4 4L19 6" /></svg>;
+  if (type === "up") return <svg {...common}><path d="M7 10v10" /><path d="M11 10V5.5A2.5 2.5 0 0 1 13.5 3L14 3v7h5.2a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 18.2 20H7" /></svg>;
+  if (type === "down") return <svg {...common}><path d="M7 14V4" /><path d="M11 14v4.5a2.5 2.5 0 0 0 2.5 2.5l.5 0v-7h5.2a2 2 0 0 0 2-2.3l-1-6A2 2 0 0 0 18.2 4H7" /></svg>;
+  if (type === "volume") return <svg {...common}><path d="M11 5 6 9H3v6h3l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 6a9 9 0 0 1 0 12" /></svg>;
+  if (type === "share") return <svg {...common}><path d="M12 16V3" /><path d="m7 8 5-5 5 5" /><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>;
+  if (type === "more") return <svg {...common}><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" /></svg>;
+  if (type === "branch") return <svg {...common}><path d="M6 4v12" /><path d="M6 8h8a4 4 0 0 1 4 4v1" /><path d="m15 10 3 3 3-3" /><circle cx="6" cy="4" r="2" /><circle cx="6" cy="20" r="2" /></svg>;
+  if (type === "retry") return <svg {...common}><path d="M20 11a8 8 0 1 0 1 5" /><path d="M20 4v7h-7" /></svg>;
+  if (type === "web") return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z" /></svg>;
+  return null;
+}
+
 function createChat() {
   return {
     id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
@@ -762,24 +777,24 @@ export default function Home() {
                                 return (
                                   <>
                                     <div className="assistant-action-bar">
-                                      <button type="button" onClick={() => copyText(msg.content, index)} title="Copy response" aria-label="Copy response"><span>{copiedMessageIndex === index ? "✓" : "▣"}</span></button>
-                                      <button type="button" className={feedbackByIndex[index] === "up" ? "selected" : ""} onClick={() => toggleAssistantFeedback(index, "up")} title="Good response" aria-label="Good response"><span>👍</span></button>
-                                      <button type="button" className={feedbackByIndex[index] === "down" ? "selected" : ""} onClick={() => toggleAssistantFeedback(index, "down")} title="Bad response" aria-label="Bad response"><span>👎</span></button>
-                                      <button type="button" onClick={() => speakMessage(msg.content)} title="Read aloud" aria-label="Read aloud"><span>◖</span></button>
-                                      <button type="button" onClick={() => shareMessage(msg.content)} title="Share response" aria-label="Share response"><span>↗</span></button>
-                                      <div className="assistant-more-wrap">
-                                        <button type="button" className={assistantMenuIndex === index ? "active" : ""} onClick={() => setAssistantMenuIndex((current) => current === index ? null : index)} title="More actions" aria-label="More actions" aria-expanded={assistantMenuIndex === index}><span>⋮</span></button>
-                                        {assistantMenuIndex === index && (
-                                          <div className="assistant-more-menu" role="menu">
-                                            <div className="assistant-more-time">More actions</div>
-                                            <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("branch", index)}><span>↗</span> Branch in new chat</button>
-                                            <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("retry", index)}><span>↻</span> Retry</button>
-                                            {usedSources.length > 0 && <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("remove-web", index)}><span>◎</span> Remove web results</button>}
-                                          </div>
-                                        )}
-                                      </div>
-                                      {usedSources.length > 0 && <button type="button" className="assistant-sources-button" onClick={() => document.getElementById("sources-panel-" + index)?.scrollIntoView({ behavior: "smooth", block: "nearest" })} title="View sources"><span>▲</span> Sources</button>}
-                                    </div>
+                                       <button className={copiedMessageIndex === index ? "action-icon-button selected" : "action-icon-button"} type="button" onClick={() => copyText(msg.content, index)} data-tooltip={copiedMessageIndex === index ? "Copied" : "Copy"} aria-label={copiedMessageIndex === index ? "Copied" : "Copy response"}><ActionIcon type={copiedMessageIndex === index ? "check" : "copy"} /></button>
+                                       <button className={feedbackByIndex[index] === "up" ? "action-icon-button selected" : "action-icon-button"} type="button" onClick={() => toggleAssistantFeedback(index, "up")} data-tooltip="Good response" aria-label="Good response"><ActionIcon type="up" /></button>
+                                       <button className={feedbackByIndex[index] === "down" ? "action-icon-button selected" : "action-icon-button"} type="button" onClick={() => toggleAssistantFeedback(index, "down")} data-tooltip="Bad response" aria-label="Bad response"><ActionIcon type="down" /></button>
+                                       <button className="action-icon-button" type="button" onClick={() => speakMessage(msg.content)} data-tooltip="Read aloud" aria-label="Read aloud"><ActionIcon type="volume" /></button>
+                                       <button className="action-icon-button" type="button" onClick={() => shareMessage(msg.content)} data-tooltip="Share" aria-label="Share response"><ActionIcon type="share" /></button>
+                                       <div className="assistant-more-wrap">
+                                         <button className={assistantMenuIndex === index ? "action-icon-button active" : "action-icon-button"} type="button" onClick={() => setAssistantMenuIndex((current) => current === index ? null : index)} data-tooltip="More" aria-label="More actions" aria-expanded={assistantMenuIndex === index}><ActionIcon type="more" /></button>
+                                         {assistantMenuIndex === index && (
+                                           <div className="assistant-more-menu" role="menu">
+                                             <div className="assistant-more-time">Response actions</div>
+                                             <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("branch", index)}><ActionIcon type="branch" size={19} /><span>Branch in new chat</span></button>
+                                             <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("retry", index)}><ActionIcon type="retry" size={19} /><span>Retry response</span></button>
+                                             {usedSources.length > 0 && <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("remove-web", index)}><ActionIcon type="web" size={19} /><span>Remove web results</span></button>}
+                                           </div>
+                                         )}
+                                       </div>
+                                       {usedSources.length > 0 && <button type="button" className="assistant-sources-button" onClick={() => document.getElementById("sources-panel-" + index)?.scrollIntoView({ behavior: "smooth", block: "nearest" })} data-tooltip="View sources" aria-label="View sources"><ActionIcon type="web" size={15} /><span>Sources</span></button>}
+                                     </div>
                                     {usedSources.length > 0 && (
                                       <div className="source-panel" id={"sources-panel-" + index}>
                                         <div className="source-heading"><span>⌕</span> Sources <small>{usedSources.length} used</small></div>
