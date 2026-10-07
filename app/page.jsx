@@ -542,7 +542,19 @@ export default function Home() {
                 <span><strong>{attachedFile.name}</strong><small>{attachedFile.characters.toLocaleString()} chars{attachedFile.truncated ? " · truncated" : ""}</small></span>
                 <button type="button" onClick={removeAttachedFile} disabled={loading}>×</button>
               </div>
-            )}\n            <div className="composer-input-row">
+            )}
+            <div className="composer-input-row">
+              <label className="attach-button" htmlFor={"file-upload-" + fileInputKey} title="Attach PDF or document" aria-label="Attach file">
+                📎
+                <input
+                  key={fileInputKey}
+                  id={"file-upload-" + fileInputKey}
+                  type="file"
+                  accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
+                  onChange={handleFileChange}
+                  disabled={loading || fileLoading}
+                />
+              </label>
               <textarea
                 ref={textareaRef}
                 value={message}
