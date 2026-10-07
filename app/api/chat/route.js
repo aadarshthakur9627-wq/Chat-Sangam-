@@ -348,13 +348,13 @@ function buildVisionMessages(messages, attachments, imageAttachments) {
   ];
 }
 
-function buildMessages(messages, attachments) {
+function buildMessages(messages, attachments, model = GROQ_MODEL) {
   const messagesWithFiles = attachFileContext(messages, attachments);
 
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + requestedModel + ".",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + resolveGroqModel(model) + ".",
     },
     ...messagesWithFiles,
   ];
@@ -519,7 +519,7 @@ export async function POST(request) {
       }
     }
 
-    const chatMessages = buildMessages(messages, attachments);
+    const chatMessages = buildMessages(messages, attachments, requestedModel);
 
     try {
       const responseStream = await createGroqCompletion({
