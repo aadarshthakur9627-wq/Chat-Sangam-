@@ -227,7 +227,8 @@ export default function Home() {
     setCompareModelIds((current) => {
       const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
       const valid = current.filter((id) => textModels.includes(id));
-      if (valid.length < 2) setCompareModelIds(textModels.slice(0, 2));
+      const next = valid.length >= 2 ? valid : textModels.slice(0, 2);
+      return next;
     });
     setCompareMode((value) => !value);
   }
