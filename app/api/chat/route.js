@@ -76,7 +76,7 @@ async function createGroqCompletion(params) {
   throw lastError;
 }
 
-async function browserSearch(query) {
+async function browserSearch(query, forceSearch = false) {
   const response = await createGroqCompletion({
     model: GROQ_MODEL,
     messages: [
@@ -84,13 +84,12 @@ async function browserSearch(query) {
         role: "system",
         content: [
           "You are Chat Sangam's web research layer.",
-          "Use browser search to retrieve current, relevant information.",
+          "Use browser search to retrieve current, relevant information when useful.",
           "Prefer primary and authoritative sources when possible.",
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Do not use Markdown tables unless the user explicitly asks for a table.",
           "Do not output table headers, separator rows, or stray pipe characters around the answer.",
-          "Prefer primary and authoritative sources when possible.",
           "Cite important web-backed claims using the browser search citation format; Chat Sangam will normalize those citations for the UI.",
           "Do not manually invent source numbers or line references.",
           "Do not use structured/JSON output.",
@@ -100,7 +99,9 @@ async function browserSearch(query) {
       { role: "user", content: query },
     ],
     tools: [{ type: "browser_search" }],
-    tool_choice: "required",
+    // Web Search can safely fall back to a normal answer for greetings/simple prompts.
+    // Deep Research passes forceSearch=true so it must actually use browser search.
+    tool_choice: forceSearch ? "required" : "auto",
     reasoning_effort: "low",
     include_reasoning: false,
     max_completion_tokens: 2048,
@@ -135,11 +136,11 @@ async function browserSearch(query) {
 }
 
 async function deepResearch(query) {
-  // Keep Deep Research within Groq free-tier rate limits:
-  // one broad browser-search pass, followed by one synthesis pass.
+  // One browser-search request only, to stay rate-limit friendly.
   const search = await browserSearch(
     query +
-      " — prioritize official primary sources, recent developments, statistics, expert analysis, and multiple independent sources"
+      " — prioritize official primary sources, recent developments, statistics, expert analysis, and multiple independent sources",
+    true
   );
 
   const seen = new Set();
@@ -155,55 +156,27 @@ async function deepResearch(query) {
 }
 
 async function synthesizeDeepResearchAnswer(query, research) {
-  // Browser Search already returns a synthesized answer plus its source results.
-  // Reuse that answer so Deep Research costs one Groq request instead of two.
   return research.searchAnswer || "";
-}
-
-function formatWebContext(search) {
-  if (!search.results.length && !search.answer) return "";
-
-  const sources = search.results.map((item, index) =>
-    "[" + (index + 1) + "] " + item.title + "\nURL: " + item.url + "\nSnippet: " + item.content
-  ).join("\n\n");
-
-  return [
-    "LIVE WEB RESEARCH",
-    "Use the following browser-search information to answer the user's question.",
-    "Prefer the retrieved evidence over stale model knowledge.",
-    search.answer ? "Search synthesis:\n" + search.answer : "",
-    sources ? "Retrieved sources:\n" + sources : "",
-    "CITATIONS: Cite every important factual claim that comes from web research inline as [1], [2], etc.",
-    "Use only citation numbers that correspond to the retrieved sources below.",
-    "Prefer multiple independent sources for important or controversial claims.",
-    "If the user asks for latest/current information, clearly state the relevant date or time context when available.",
-    "Do not invent citations.",
-  ].filter(Boolean).join("\n\n");
 }
 
 function normalizeSearchAnswer(answer) {
   if (!answer) return "";
 
   return answer
-    // Normalize Groq/browser-search citation wrappers to [N].
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
-    // Normalize citation + line-reference combinations such as [2] [L21-L28].
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
-    // Groq may emit zero-based browser-search citations; UI sources are one-based.
-    // Remove any remaining standalone line-reference tokens.
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
     .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
-    // Remove accidental web-search table scaffolding.
     .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
     .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
     .replace(/\](?=[A-Za-z])/g, "] ")
-    // Collapse repeated identical citations such as [1] [1].
     .replace(/\[(\d+)\]\s+\[\1\]/g, "[$1]")
     .replace(/\s{3,}/g, "  ")
     .trim();
 }
+
 function formatSources(results) {
   if (!results.length) return "";
   const payload = results.map((item, index) => ({
@@ -257,18 +230,13 @@ function attachFileContext(messages, attachments) {
   });
 }
 
-function buildMessages(messages, webContext, attachments) {
-  const providerContext = [
-    "CURRENT ENGINE: Groq API using " + GROQ_MODEL + ".",
-    webContext || "",
-  ].filter(Boolean).join("\n\n");
-
+function buildMessages(messages, attachments) {
   const messagesWithFiles = attachFileContext(messages, attachments);
 
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + providerContext,
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + GROQ_MODEL + ".",
     },
     ...messagesWithFiles,
   ];
@@ -281,6 +249,7 @@ export async function POST(request) {
     const attachments = Array.isArray(body.attachments) ? body.attachments : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch || false;
+    const deepResearchEnabled = body.deepResearch || false;
     const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort)
       ? body.reasoningEffort
       : "medium";
@@ -290,9 +259,8 @@ export async function POST(request) {
     }
 
     const latest = latestUserMessage(messages);
-    let search = { answer: "", results: [] };
 
-    if (deepResearch && latest) {
+    if (deepResearchEnabled && latest) {
       try {
         const research = await deepResearch(latest);
         if (!research.results.length) {
@@ -302,23 +270,13 @@ export async function POST(request) {
           );
         }
 
-        const finalAnswer = await synthesizeDeepResearchAnswer(latest, research);
-        const answer = normalizeSearchAnswer(finalAnswer) || "I couldn't generate a deep research answer. Please try again.";
-        const sources = formatSources(research.results);
-        const payload = answer + sources;
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-          start(controller) {
-            controller.enqueue(encoder.encode(payload));
-            controller.close();
-          },
-        });
-
-        return new Response(stream, {
+        const answer = normalizeSearchAnswer(await synthesizeDeepResearchAnswer(latest, research))
+          || "I couldn't generate a deep research answer. Please try again.";
+        const payload = answer + formatSources(research.results);
+        return new Response(payload, {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
             "Cache-Control": "no-cache, no-transform",
-            Connection: "keep-alive",
           },
         });
       } catch (error) {
@@ -332,14 +290,22 @@ export async function POST(request) {
 
     if (webSearch && latest) {
       try {
-        search = await browserSearch(latest);
-
+        const search = await browserSearch(latest, false);
         if (!search.results.length && !search.answer) {
           return Response.json(
             { error: "Web search is temporarily unavailable. Please turn Web Search off or try again." },
             { status: 503 }
           );
         }
+
+        const answer = normalizeSearchAnswer(search.answer)
+          || "I couldn't generate a web-search answer. Please try again.";
+        return new Response(answer + formatSources(search.results), {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+          },
+        });
       } catch (error) {
         console.error("Groq browser search error:", error);
         return Response.json(
@@ -349,26 +315,34 @@ export async function POST(request) {
       }
     }
 
-    // Browser Search already returns the model's final researched answer.
-    // Avoid a second GPT-OSS completion here: it can trigger output_parse_failed
-    // after browser-search tool execution. The searched answer plus source cards
-    // gives Chat Sangam a reliable Perplexity-style web-search path.
-    if (webSearch) {
-      const encoder = new TextEncoder();
-      let finalAnswer = search.answer;
-      try {
-        finalAnswer = await synthesizeWebAnswer(latest, search);
-      } catch (error) {
-        console.error("Groq web-answer synthesis error:", error);
-      }
-      const answer = normalizeSearchAnswer(finalAnswer) || "I couldn't generate a web-search answer. Please try again.";
-      const sources = formatSources(search.results);
-      const payload = answer + sources;
+    const chatMessages = buildMessages(messages, attachments);
 
+    try {
+      const responseStream = await createGroqCompletion({
+        model: GROQ_MODEL,
+        messages: chatMessages,
+        temperature: 0.6,
+        top_p: 0.95,
+        reasoning_effort: safeReasoning,
+        include_reasoning: false,
+        max_completion_tokens: 4096,
+        stream: true,
+      });
+
+      const encoder = new TextEncoder();
       const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(encoder.encode(payload));
-          controller.close();
+        async start(controller) {
+          try {
+            for await (const chunk of responseStream) {
+              const text = chunk.choices?.[0]?.delta?.content || "";
+              if (text) controller.enqueue(encoder.encode(text));
+            }
+            controller.close();
+          } catch (error) {
+            console.error("Groq streaming error:", error);
+            controller.enqueue(encoder.encode("\n\n[AI response stream interrupted. Please try again.]"));
+            controller.close();
+          }
         },
       });
 
@@ -379,24 +353,6 @@ export async function POST(request) {
           Connection: "keep-alive",
         },
       });
-    }
-
-    const chatMessages = buildMessages(messages, "", attachments);
-    const encoder = new TextEncoder();
-
-    let responseStream;
-
-    try {
-      responseStream = await createGroqCompletion({
-        model: GROQ_MODEL,
-        messages: chatMessages,
-        temperature: 0.6,
-        top_p: 0.95,
-        reasoning_effort: safeReasoning,
-        include_reasoning: false,
-        max_completion_tokens: 4096,
-        stream: true,
-      });
     } catch (error) {
       console.error("Groq chat completion error:", error);
       const status = groqErrorStatus(error);
@@ -405,36 +361,6 @@ export async function POST(request) {
         { status: status >= 400 && status < 600 ? status : 500 }
       );
     }
-
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of responseStream) {
-            const text = chunk.choices?.[0]?.delta?.content || "";
-            if (text) controller.enqueue(encoder.encode(text));
-          }
-
-          if (webSearch) {
-            const sources = formatSources(search.results);
-            if (sources) controller.enqueue(encoder.encode(sources));
-          }
-
-          controller.close();
-        } catch (error) {
-          console.error("Groq streaming error:", error);
-          controller.enqueue(encoder.encode("\n\n[AI response stream interrupted. Please try again.]"));
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-      },
-    });
   } catch (error) {
     console.error("Chat API error:", error);
     return Response.json(
