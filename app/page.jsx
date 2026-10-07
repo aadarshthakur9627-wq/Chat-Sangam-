@@ -120,7 +120,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
-  const [attachedFile, setAttachedFile] = useState(null);
+  const [attachedFiles, setAttachedFiles] = useState([]);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -201,27 +201,30 @@ export default function Home() {
   }
 
   async function handleFileChange(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
     setFileLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await fetch("/api/file", { method: "POST", body: formData });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "File read failed.");
-      setAttachedFile(data);
+      const extracted = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch("/api/file", { method: "POST", body: formData });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "File read failed.");
+        extracted.push(data);
+      }
+      setAttachedFiles((current) => [...current, ...extracted].slice(0, 5));
     } catch (error) {
       alert(error?.message || "File read failed.");
-      setAttachedFile(null);
     } finally {
       setFileLoading(false);
       setFileInputKey((value) => value + 1);
     }
   }
 
-  function removeAttachedFile() {
-    setAttachedFile(null);
+  function removeAttachedFile(index) {
+    setAttachedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
     setFileInputKey((value) => value + 1);
   }
 
@@ -262,13 +265,20 @@ export default function Home() {
         role: msg.role,
         content: msg.content,
       }));
-      const attachments = nextMessages
-        .map((msg, index) => msg.fileContext ? ({
+      const attachments = nextMessages.flatMap((msg, index) => {
+        if (Array.isArray(msg.fileContexts)) {
+          return msg.fileContexts.map((file) => ({
+            messageIndex: index,
+            name: file.name || "Attached file",
+            text: file.text || "",
+          }));
+        }
+        return msg.fileContext ? [{
           messageIndex: index,
           name: msg.fileName || "Attached file",
           text: msg.fileContext,
-        }) : null)
-        .filter(Boolean);
+        }] : [];
+      });
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -330,7 +340,7 @@ export default function Home() {
   async function sendMessage(event) {
     event?.preventDefault();
     const text = message.trim();
-    if ((!text && !attachedFile) || loading || fileLoading || !activeChat) return;
+    if ((!text && !attachedFiles.length) || loading || fileLoading || !activeChat) return;
 
     let nextMessages;
     let title = activeChat.title;
@@ -340,8 +350,11 @@ export default function Home() {
         ...messages.slice(0, editingIndex),
         {
           role: "user",
-          content: attachedFile ? (text || "Please analyze the attached file.") : text,
-          ...(attachedFile ? { fileName: attachedFile.name, fileContext: attachedFile.text } : {}),
+          content: attachedFiles.length ? (text || "Please analyze the attached file(s).") : text,
+          ...(attachedFiles.length ? {
+            fileNames: attachedFiles.map((file) => file.name),
+            fileContexts: attachedFiles.map((file) => ({ name: file.name, text: file.text })),
+          } : {}),
         },
       ];
       title = editingIndex === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
@@ -350,8 +363,11 @@ export default function Home() {
         ...messages,
         {
           role: "user",
-          content: attachedFile ? (text || "Please analyze the attached file.") : text,
-          ...(attachedFile ? { fileName: attachedFile.name, fileContext: attachedFile.text } : {}),
+          content: attachedFiles.length ? (text || "Please analyze the attached file(s).") : text,
+          ...(attachedFiles.length ? {
+            fileNames: attachedFiles.map((file) => file.name),
+            fileContexts: attachedFiles.map((file) => ({ name: file.name, text: file.text })),
+          } : {}),
         },
       ];
       title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
@@ -365,7 +381,7 @@ export default function Home() {
     }));
     setMessage("");
     setEditingIndex(null);
-    setAttachedFile(null);
+    setAttachedFiles([]);
     setFileInputKey((value) => value + 1);
     await requestCompletion(activeChat.id, nextMessages);
   }
@@ -562,7 +578,19 @@ export default function Home() {
                         </div>
                       ) : (
                         <>
-                          {msg.fileName && (
+                          {Array.isArray(msg.fileNames) && msg.fileNames.length ? (
+                            <div className="message-file-list">
+                              {msg.fileNames.map((name, fileIndex) => (
+                                <div className="message-file-card" key={name + fileIndex}>
+                                  <span className="message-file-icon">📄</span>
+                                  <span className="message-file-copy">
+                                    <strong>{name}</strong>
+                                    <small>{msg.fileContexts?.[fileIndex]?.text ? msg.fileContexts[fileIndex].text.length.toLocaleString() + " characters" : "Attached document"}</small>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : msg.fileName && (
                             <div className="message-file-card">
                               <span className="message-file-icon">📄</span>
                               <span className="message-file-copy">
@@ -585,11 +613,15 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
-            {attachedFile && (
-              <div className="attachment-chip">
-                <span>📎</span>
-                <span><strong>{attachedFile.name}</strong><small>{attachedFile.characters.toLocaleString()} chars{attachedFile.truncated ? " · truncated" : ""}</small></span>
-                <button type="button" onClick={removeAttachedFile} disabled={loading}>×</button>
+            {attachedFiles.length > 0 && (
+              <div className="attachment-list">
+                {attachedFiles.map((file, index) => (
+                  <div className="attachment-chip" key={file.name + index}>
+                    <span>📎</span>
+                    <span><strong>{file.name}</strong><small>{file.characters.toLocaleString()} chars{file.truncated ? " · truncated" : ""}</small></span>
+                    <button type="button" onClick={() => removeAttachedFile(index)} disabled={loading}>×</button>
+                  </div>
+                ))}
               </div>
             )}
             <div className="composer-input-row">
@@ -599,6 +631,7 @@ export default function Home() {
                   key={fileInputKey}
                   id={"file-upload-" + fileInputKey}
                   type="file"
+                  multiple
                   accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
                   onChange={handleFileChange}
                   disabled={loading || fileLoading}
@@ -615,7 +648,7 @@ export default function Home() {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
                 }}
               />
-              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFile)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
+              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFiles.length)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
           <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
