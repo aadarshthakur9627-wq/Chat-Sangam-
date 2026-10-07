@@ -125,6 +125,7 @@ export default function Home() {
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -402,13 +403,39 @@ export default function Home() {
 
   function editMessage(index) {
     if (loading || !activeChat || messages[index]?.role !== "user") return;
+    const target = messages[index];
     setEditingIndex(index);
-    setMessage(messages[index].content);
+    setMessage(target.content || "");
+    if (Array.isArray(target.fileContexts) && target.fileContexts.length) {
+      setAttachedFiles(target.fileContexts.map((file) => ({
+        name: file.name || "Attached file",
+        text: file.text || "",
+        characters: (file.text || "").length,
+        truncated: false,
+      })));
+    } else {
+      setAttachedFiles([]);
+    }
     requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
-  function copyText(text) {
-    navigator.clipboard?.writeText(text);
+  function cancelEdit() {
+    if (loading) return;
+    setEditingIndex(null);
+    setMessage("");
+    setAttachedFiles([]);
+    setFileInputKey((value) => value + 1);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }
+
+  async function copyText(text, index = null) {
+    try {
+      await navigator.clipboard?.writeText(text);
+      if (index !== null) {
+        setCopiedMessageIndex(index);
+        setTimeout(() => setCopiedMessageIndex((current) => current === index ? null : current), 1200);
+      }
+    } catch {}
   }
 
   if (!loaded) {
@@ -556,7 +583,7 @@ export default function Home() {
                           {!loading && msg.content && (
                             <>
                               <div className="message-actions">
-                                <button type="button" onClick={() => copyText(msg.content)} title="Copy response">Copy</button>
+                                <button type="button" onClick={() => copyText(msg.content, index)} title="Copy response">{copiedMessageIndex === index ? "Copied" : "Copy"}</button>
                                 <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
                               </div>
                               {msg.sources?.length > 0 && (() => {
@@ -604,6 +631,12 @@ export default function Home() {
                             </div>
                           )}
                           <div className="message-user-text">{msg.content}</div>
+                          {!loading && (
+                            <div className="message-actions user-message-actions">
+                              <button type="button" onClick={() => editMessage(index)} title="Edit message">Edit</button>
+                              <button type="button" onClick={() => copyText(msg.content, index)} title="Copy message">{copiedMessageIndex === index ? "Copied" : "Copy"}</button>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>
@@ -616,7 +649,14 @@ export default function Home() {
 
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
-            <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{deepResearch ? <em> · Deep Research</em> : webSearch ? <em> · Web Search</em> : null}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
+            <div className="composer-top">
+              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{deepResearch ? <em> · Deep Research</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+              {editingIndex !== null ? (
+                <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
+              ) : (
+                <span className="composer-hint">Enter to send · Shift + Enter for new line</span>
+              )}
+            </div>
             {attachedFiles.length > 0 && (
               <div className="attachment-list">
                 {attachedFiles.map((file, index) => (
