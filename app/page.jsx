@@ -93,6 +93,11 @@ function prepareCitationMarkdown(content, sources) {
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
     .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
+    // Convert raw HTML breaks into clean Markdown line breaks.
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>\s*<p>/gi, "\n\n")
+    .replace(/<p>/gi, "")
+    .replace(/<\/p>/gi, "\n\n")
     // Remove accidental web-search table scaffolding.
     .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
     .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
