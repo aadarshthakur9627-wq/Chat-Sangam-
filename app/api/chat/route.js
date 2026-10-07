@@ -155,79 +155,9 @@ async function deepResearch(query) {
 }
 
 async function synthesizeDeepResearchAnswer(query, research) {
-  const sourceContext = research.results.map((item, index) =>
-    "SOURCE " + (index + 1) + "\nTITLE: " + item.title + "\nURL: " + item.url + "\nCONTENT: " + item.content
-  ).join("\n\n");
-
-  const response = await createGroqCompletion({
-    model: GROQ_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are Chat Sangam's Deep Research writer.",
-          "Synthesize a rigorous answer using ONLY the supplied research sources.",
-          "Cross-check claims across multiple sources and clearly distinguish agreement, disagreement, and uncertainty.",
-          "Prefer primary and authoritative sources.",
-          "Write a useful, structured answer in the user's language.",
-          "For important factual claims, cite the exact source number using [1], [2], [3], etc.",
-          "Source numbers are one-based and must match the supplied SOURCE numbers.",
-          "Never use [0] and never invent citations.",
-          "Do not use raw HTML. Use clean Markdown headings, bullets, numbered lists, and tables when useful.",
-          "End with a short 'Key takeaways' section when appropriate.",
-        ].join("\n"),
-      },
-      {
-        role: "user",
-        content: "USER QUESTION:\n" + query + "\n\nDEEP RESEARCH SOURCES:\n" + sourceContext,
-      },
-    ],
-    reasoning_effort: "high",
-    include_reasoning: false,
-    temperature: 0.2,
-    max_completion_tokens: 4096,
-    stream: false,
-  });
-
-  return response.choices?.[0]?.message?.content || "";
-}
-
-async function synthesizeWebAnswer(query, search) {
-  const sourceContext = search.results.map((item, index) =>
-    "SOURCE " + (index + 1) + "\nTITLE: " + item.title + "\nURL: " + item.url + "\nCONTENT: " + item.content
-  ).join("\n\n");
-
-  const response = await createGroqCompletion({
-    model: GROQ_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are Chat Sangam's final web-answer writer.",
-          "Answer the user's question using ONLY the supplied browser-search sources.",
-          "Write a concise, natural answer in the user's language.",
-          "For each important factual claim, cite the exact source number using [1], [2], [3], etc.",
-          "The source numbers are one-based and MUST match the SOURCE numbers supplied below.",
-          "Never use [0]. Never use citation formats containing L-lines, daggers, or special brackets.",
-          "Never invent or renumber sources.",
-          "Do not use Markdown tables unless explicitly requested.",
-          "If multiple claims use the same source, reuse that source number.",
-          "Do not add a separate sources list; Chat Sangam renders source cards separately.",
-        ].join("\n"),
-      },
-      {
-        role: "user",
-        content: "USER QUESTION:\n" + query + "\n\nBROWSER SEARCH SOURCES:\n" + sourceContext,
-      },
-    ],
-    reasoning_effort: "low",
-    include_reasoning: false,
-    temperature: 0.2,
-    max_completion_tokens: 2048,
-    stream: false,
-  });
-
-  return response.choices?.[0]?.message?.content || search.answer || "";
+  // Browser Search already returns a synthesized answer plus its source results.
+  // Reuse that answer so Deep Research costs one Groq request instead of two.
+  return research.searchAnswer || "";
 }
 
 function formatWebContext(search) {
