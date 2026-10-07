@@ -6,14 +6,13 @@ import remarkGfm from "remark-gfm";
 
 const STORAGE_KEY = "chat-sangam-history-v2";
 
-const ACTIVE_ENGINE = {
-  id: "groq",
-  name: "Groq",
-  model: "GPT-OSS 20B",
-  provider: "Groq API",
-  icon: "⚡",
-  color: "pink",
-};
+const GROQ_MODELS = [
+  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
+  { id: "openai/gpt-oss-120b", name: "GPT-OSS 120B", provider: "Groq API", icon: "🧠", color: "violet", description: "Advanced reasoning", kind: "text" },
+  { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
+];
+
+const ACTIVE_ENGINE = GROQ_MODELS[0];
 
 const FUTURE_ENGINES = [
   { name: "Gemini", icon: "✦" },
@@ -136,6 +135,9 @@ export default function Home() {
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState(ACTIVE_ENGINE.id);
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b", "openai/gpt-oss-120b"]);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedImages, setAttachedImages] = useState([]);
   const imageCacheRef = useRef(new Map());
@@ -214,7 +216,11 @@ export default function Home() {
     return chats.filter((chat) => (chat.title || "").toLowerCase().includes(query)).slice(0, 20);
   }, [chats, search]);
 
-  const selectedModel = ACTIVE_ENGINE;
+  const selectedModel = GROQ_MODELS.find((model) => model.id === selectedModelId) || ACTIVE_ENGINE;
+  const visionActive = attachedImages.length > 0;
+  const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
+  const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
+  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
@@ -377,7 +383,13 @@ export default function Home() {
     updateChat(chatId, (chat) => ({
       ...chat,
       updatedAt: Date.now(),
-      messages: [...nextMessages, { role: "assistant", content: "" }],
+      messages: [...nextMessages, {
+        role: "assistant",
+        content: "",
+        vision: imageAttachments.length > 0,
+        modelId: effectiveModel.id,
+        modelName: effectiveModel.name,
+      }],
     }));
 
     try {
@@ -401,7 +413,16 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, attachments, imageAttachments, webSearch, deepResearch, reasoningEffort }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          attachments,
+          imageAttachments,
+          webSearch,
+          deepResearch,
+          reasoningEffort,
+          model: effectiveModel.id,
+          compareModels: compareReady ? compareModels.map((model) => model.id) : [],
+        }),
         signal: controller.signal,
       });
 
@@ -414,6 +435,22 @@ export default function Home() {
         throw new Error(detail);
       }
       if (!response.body) throw new Error("AI response failed.");
+
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "AI response failed.");
+        if (data.mode === "compare" && Array.isArray(data.results)) {
+          updateChat(chatId, (chat) => ({
+            ...chat,
+            updatedAt: Date.now(),
+            messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+              ? { ...msg, content: "", comparisons: data.results }
+              : msg),
+          }));
+          return;
+        }
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -795,24 +832,48 @@ export default function Home() {
             </button>
             <div className="model-selector">
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
-                <span className="engine-dot" /> <strong>{selectedModel.name}</strong><span>{selectedModel.model}</span><b className="model-chevron">⌄</b>
+                <span className="engine-dot" /> <strong>Groq</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && (
                 <div className="model-menu" role="menu">
-                  <div className="model-menu-head"><span>SELECT MODEL</span><small>1 active</small></div>
-                  <button className="model-option active" type="button" role="menuitem" onClick={() => setModelMenuOpen(false)}>
-                    <span className="model-option-icon">⚡</span>
-                    <span className="model-option-copy"><strong>Groq · GPT-OSS 20B</strong><small>Groq API · Fast · Active</small></span>
-                    <span className="model-check">✓</span>
+                  <div className="model-menu-head"><span>GROQ MODELS</span><small>{GROQ_MODELS.length} active</small></div>
+                  {GROQ_MODELS.map((item) => (
+                    <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
+                      onClick={() => { setSelectedModelId(item.id); setModelMenuOpen(false); }}>
+                      <span className="model-option-icon">{item.icon}</span>
+                      <span className="model-option-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
+                      {selectedModelId === item.id && <span className="model-check">✓</span>}
+                    </button>
+                  ))}
+                  <div className="model-menu-divider" />
+                  <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={() => setCompareMode((value) => !value)} disabled={visionActive}>
+                    <span className="compare-toggle-icon">⇄</span>
+                    <span className="model-option-copy"><strong>Compare Groq models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
+                    <span className={"compare-switch " + (compareMode ? "on" : "")}><i /></span>
                   </button>
+                  {compareMode && !visionActive && (
+                    <div className="compare-picks">
+                      {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
+                        <label key={item.id} className="compare-pick">
+                          <input type="checkbox" checked={compareModelIds.includes(item.id)}
+                            onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
+                          <span>{item.icon}</span><strong>{item.name}</strong>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  <div className="model-menu-divider" />
+                  <div className="model-menu-head future-head"><span>FUTURE ENGINES</span><small>Coming soon</small></div>
                   {FUTURE_ENGINES.map((item) => (
-                    <button className="model-option disabled" type="button" role="menuitem" key={item.name} disabled title={`${item.name} integration coming soon`}>
+                    <button className="model-option disabled" type="button" role="menuitem" key={item.name} disabled>
                       <span className="model-option-icon">{item.icon}</span>
                       <span className="model-option-copy"><strong>{item.name}</strong><small>Integration coming soon</small></span>
                       <span className="model-lock">SOON</span>
                     </button>
                   ))}
                 </div>
+              )}
+            </div>
               )}
             </div>
             <label className="thinking-picker" title="Groq reasoning effort">
@@ -829,8 +890,8 @@ export default function Home() {
 
         <div className="model-strip">
           <div className="selected-model">
-            <span className={"model-orb " + selectedModel.color}>{selectedModel.icon}</span>
-            <span><strong>{selectedModel.name} · {selectedModel.model}</strong><small>{selectedModel.provider}</small></span>
+            <span className={"model-orb " + effectiveModel.color}>{effectiveModel.icon}</span>
+            <span><strong>{compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
             <i />
             <span className="live-label"><b /> Online</span>
           </div>
@@ -873,15 +934,34 @@ export default function Home() {
                 >
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
-                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? "Groq · GPT-OSS 20B" : "Message"}</span></div>
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : "Groq · " + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
                     <div className={"message-bubble " + (msg.role === "assistant" ? "assistant-answer-bubble" : "")}>
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
                           <div className="message-selectable" id={"message-selectable-" + index}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                            pre: CodeBlock,
-                            table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
-                          }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
+                            {Array.isArray(msg.comparisons) && msg.comparisons.length > 0 ? (
+                              <div className="comparison-grid">
+                                {msg.comparisons.map((result) => (
+                                  <div className="comparison-card" key={result.model}>
+                                    <div className="comparison-card-head">
+                                      <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
+                                      <span><strong>{result.name || result.model}</strong><small>Groq</small></span>
+                                    </div>
+                                    <div className="comparison-card-body">
+                                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                        pre: CodeBlock,
+                                        table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
+                                      }}>{result.content || "No response."}</ReactMarkdown>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                pre: CodeBlock,
+                                table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
+                              }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
+                            )}
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <>
@@ -1021,7 +1101,7 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{deepResearch ? <em> · Deep Research</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}{deepResearch ? <em> · Deep Research</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
