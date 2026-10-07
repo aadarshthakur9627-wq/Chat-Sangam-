@@ -528,7 +528,10 @@ export default function Home() {
                     <div className="message-bubble">
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                            pre: CodeBlock,
+                            table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
+                          }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <>
