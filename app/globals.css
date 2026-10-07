@@ -129,7 +129,7 @@
   .model-strip{padding:0 13px;min-height:46px}
   .coming-soon{display:none}
   .selected-model i{display:none}
-  .messages{padding:18px 12px calc(220px + env(safe-area-inset-bottom, 0px))}
+  .messages{padding:18px 12px 265px}
   .welcome{margin-top:8vh}
   .hero-mark{width:54px;height:54px;border-radius:17px}
   .hero-kicker{font-size:7px;letter-spacing:1.4px}
@@ -148,7 +148,7 @@
   .table-scroll{margin:12px 0;border-radius:8px}
   .markdown-content table{font-size:10px}
   .markdown-content th,.markdown-content td{padding:7px 8px}
-  .composer-dock{bottom:0;padding:14px 9px calc(10px + env(safe-area-inset-bottom, 0px))}
+  .composer-dock{bottom:44px;padding:14px 9px 10px}
   .composer{border-radius:14px;padding:7px 8px 8px}
   .composer-hint{display:none}
   .composer textarea{font-size:12px;min-height:40px}
