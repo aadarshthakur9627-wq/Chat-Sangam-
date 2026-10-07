@@ -134,6 +134,68 @@ async function browserSearch(query) {
   };
 }
 
+async function deepResearch(query) {
+  const queries = [
+    query,
+    query + " official primary sources evidence",
+    query + " recent developments statistics expert analysis",
+  ];
+
+  const searches = await Promise.all(
+    queries.map((researchQuery) => browserSearch(researchQuery))
+  );
+
+  const seen = new Set();
+  const results = searches
+    .flatMap((search) => search.results || [])
+    .filter((item) => {
+      if (!item?.url || seen.has(item.url)) return false;
+      seen.add(item.url);
+      return true;
+    })
+    .slice(0, 12);
+
+  return { results };
+}
+
+async function synthesizeDeepResearchAnswer(query, research) {
+  const sourceContext = research.results.map((item, index) =>
+    "SOURCE " + (index + 1) + "\nTITLE: " + item.title + "\nURL: " + item.url + "\nCONTENT: " + item.content
+  ).join("\n\n");
+
+  const response = await createGroqCompletion({
+    model: GROQ_MODEL,
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are Chat Sangam's Deep Research writer.",
+          "Synthesize a rigorous answer using ONLY the supplied research sources.",
+          "Cross-check claims across multiple sources and clearly distinguish agreement, disagreement, and uncertainty.",
+          "Prefer primary and authoritative sources.",
+          "Write a useful, structured answer in the user's language.",
+          "For important factual claims, cite the exact source number using [1], [2], [3], etc.",
+          "Source numbers are one-based and must match the supplied SOURCE numbers.",
+          "Never use [0] and never invent citations.",
+          "Do not use raw HTML. Use clean Markdown headings, bullets, numbered lists, and tables when useful.",
+          "End with a short 'Key takeaways' section when appropriate.",
+        ].join("\n"),
+      },
+      {
+        role: "user",
+        content: "USER QUESTION:\n" + query + "\n\nDEEP RESEARCH SOURCES:\n" + sourceContext,
+      },
+    ],
+    reasoning_effort: "high",
+    include_reasoning: false,
+    temperature: 0.2,
+    max_completion_tokens: 4096,
+    stream: false,
+  });
+
+  return response.choices?.[0]?.message?.content || "";
+}
+
 async function synthesizeWebAnswer(query, search) {
   const sourceContext = search.results.map((item, index) =>
     "SOURCE " + (index + 1) + "\nTITLE: " + item.title + "\nURL: " + item.url + "\nCONTENT: " + item.content
@@ -303,6 +365,44 @@ export async function POST(request) {
 
     const latest = latestUserMessage(messages);
     let search = { answer: "", results: [] };
+
+    if (deepResearch && latest) {
+      try {
+        const research = await deepResearch(latest);
+        if (!research.results.length) {
+          return Response.json(
+            { error: "Deep Research could not find usable sources. Please try a more specific question." },
+            { status: 503 }
+          );
+        }
+
+        const finalAnswer = await synthesizeDeepResearchAnswer(latest, research);
+        const answer = normalizeSearchAnswer(finalAnswer) || "I couldn't generate a deep research answer. Please try again.";
+        const sources = formatSources(research.results);
+        const payload = answer + sources;
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(payload));
+            controller.close();
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive",
+          },
+        });
+      } catch (error) {
+        console.error("Groq deep research error:", error);
+        return Response.json(
+          { error: groqErrorMessage(error) },
+          { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
+        );
+      }
+    }
 
     if (webSearch && latest) {
       try {
