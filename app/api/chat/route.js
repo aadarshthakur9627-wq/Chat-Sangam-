@@ -170,6 +170,8 @@ function normalizeSearchAnswer(answer) {
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
     .replace(/\s*【L\d+(?:[-–—]L?\d+)?】/gi, "")
     .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
+    // Groq/Exa can emit zero-based citation placeholders such as [0].
+    .replace(/\[0\]/g, "")
     .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
     .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
     .replace(/\](?=[A-Za-z])/g, "] ")
