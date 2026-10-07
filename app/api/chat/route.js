@@ -321,7 +321,7 @@ function buildVisionMessages(messages, attachments, imageAttachments) {
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nVISION ENGINE: Groq API using " + GROQ_VISION_MODEL + ". You can understand images, screenshots, photos, charts and OCR. Describe uncertainty instead of inventing unreadable text.",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nVISION ENGINE: Groq API using " + GROQ_VISION_MODEL + ". You can understand images, screenshots, photos, charts and OCR. Describe uncertainty instead of inventing unreadable text. For a broad image-analysis request with no specific question, default to a concise answer: start with a one-line identification, then 3-6 key observations, then a short summary. Extract visible text only when useful. Do not produce a long exhaustive report unless the user asks for detail, OCR, transcription, or a full analysis.",
     },
     ...messagesWithFiles.map((message, index) => {
       const images = imagesByIndex.get(index);
