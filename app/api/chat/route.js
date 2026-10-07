@@ -222,18 +222,55 @@ function formatSources(results) {
   return "\n\n__CHAT_SANGAM_SOURCES__" + JSON.stringify(payload) + "__END_CHAT_SANGAM_SOURCES__";
 }
 
-function buildMessages(messages, webContext) {
+function sanitizeFileText(text) {
+  return String(text ?? "")
+    .replace(/\u0000/g, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/[\uD800-\uDFFF]/g, "")
+    .slice(0, 120000)
+    .trim();
+}
+
+function attachFileContext(messages, attachments) {
+  if (!Array.isArray(attachments) || !attachments.length) return messages;
+
+  const byIndex = new Map(
+    attachments
+      .filter((item) => Number.isInteger(item?.messageIndex) && typeof item?.text === "string")
+      .map((item) => [item.messageIndex, item])
+  );
+
+  return messages.map((message, index) => {
+    const attachment = byIndex.get(index);
+    if (!attachment) return message;
+
+    const fileText = sanitizeFileText(attachment.text);
+    if (!fileText) return message;
+
+    return {
+      ...message,
+      content:
+        message.content +
+        "\n\n[Attached file: " + String(attachment.name || "document") + "]\n\n" +
+        fileText,
+    };
+  });
+}
+
+function buildMessages(messages, webContext, attachments) {
   const providerContext = [
     "CURRENT ENGINE: Groq API using " + GROQ_MODEL + ".",
     webContext || "",
   ].filter(Boolean).join("\n\n");
+
+  const messagesWithFiles = attachFileContext(messages, attachments);
 
   return [
     {
       role: "system",
       content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + providerContext,
     },
-    ...messages,
+    ...messagesWithFiles,
   ];
 }
 
@@ -241,6 +278,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const rawMessages = body.messages;
+    const attachments = Array.isArray(body.attachments) ? body.attachments : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch || false;
     const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort)
@@ -305,7 +343,7 @@ export async function POST(request) {
       });
     }
 
-    const chatMessages = buildMessages(messages, "");
+    const chatMessages = buildMessages(messages, "", attachments);
     const encoder = new TextEncoder();
 
     let responseStream;
