@@ -137,6 +137,7 @@ export default function Home() {
   const [deepResearch, setDeepResearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
@@ -266,6 +267,12 @@ export default function Home() {
       setFileInputKey((value) => value + 1);
     }
   }
+
+  function openAttachMenu() { if (!loading && !fileLoading) setAttachMenuOpen((current) => !current); }
+
+  function handleImageOption() { setAttachMenuOpen(false); alert("Image upload and image analysis will be available soon. Files/PDF upload is available now."); }
+
+  function handleFilesOption() { if (loading || fileLoading) return; setAttachMenuOpen(false); document.getElementById("file-upload-" + fileInputKey)?.click(); }
 
   function removeAttachedFile(index) {
     setAttachedFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
@@ -918,18 +925,20 @@ export default function Home() {
               </div>
             )}
             <div className="composer-input-row">
-              <label className="attach-button" htmlFor={"file-upload-" + fileInputKey} title="Attach PDF or document" aria-label="Attach file">
-                📎
-                <input
-                  key={fileInputKey}
-                  id={"file-upload-" + fileInputKey}
-                  type="file"
-                  multiple
-                  accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
-                  onChange={handleFileChange}
-                  disabled={loading || fileLoading}
-                />
-              </label>
+              <div className="attach-menu-wrap">
+                <button className={"attach-button " + (attachMenuOpen ? "active" : "")} type="button" onClick={openAttachMenu} title="Add attachment" aria-label="Add attachment" aria-expanded={attachMenuOpen}>+</button>
+                {attachMenuOpen && (
+                  <>
+                    <button className="attach-menu-backdrop" type="button" aria-label="Close attachment menu" onClick={() => setAttachMenuOpen(false)} />
+                    <div className="attach-menu" role="menu">
+                      <button type="button" role="menuitem" onClick={handleImageOption}><span className="attach-menu-icon">⌁</span><span><strong>Camera</strong><small>Take a photo</small></span></button>
+                      <button type="button" role="menuitem" onClick={handleImageOption}><span className="attach-menu-icon">▧</span><span><strong>Photos</strong><small>Choose from gallery</small></span></button>
+                      <button type="button" role="menuitem" onClick={handleFilesOption}><span className="attach-menu-icon">□</span><span><strong>Files</strong><small>PDF, TXT, CSV, JSON</small></span></button>
+                    </div>
+                  </>
+                )}
+                <input key={fileInputKey} id={"file-upload-" + fileInputKey} className="hidden-file-input" type="file" multiple accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json" onChange={handleFileChange} disabled={loading || fileLoading} />
+              </div>
               <textarea
                 ref={textareaRef}
                 value={message}
