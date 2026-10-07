@@ -127,6 +127,8 @@ export default function Home() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const [messageContextMenu, setMessageContextMenu] = useState(null);
+  const [assistantMenuIndex, setAssistantMenuIndex] = useState(null);
+  const [feedbackByIndex, setFeedbackByIndex] = useState({});
   const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
   const longPressTimerRef = useRef(null);
@@ -534,6 +536,74 @@ export default function Home() {
     } catch {}
   }
 
+  function toggleAssistantFeedback(index, value) {
+    setFeedbackByIndex((current) => ({ ...current, [index]: current[index] === value ? null : value }));
+  }
+
+  function speakMessage(text) {
+    if (!text || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  async function shareMessage(text) {
+    try {
+      if (navigator.share) await navigator.share({ title: "Chat Sangam response", text });
+      else {
+        await navigator.clipboard?.writeText(text);
+        alert("Response copied. Share it anywhere you want.");
+      }
+    } catch {}
+  }
+
+  function branchInNewChat(index) {
+    if (loading || !activeChat) return;
+    const branchMessages = messages.slice(0, index + 1).map((msg) => ({
+      ...msg,
+      ...(Array.isArray(msg.sources) ? { sources: [...msg.sources] } : {}),
+      ...(Array.isArray(msg.fileNames) ? { fileNames: [...msg.fileNames] } : {}),
+      ...(Array.isArray(msg.fileContexts) ? { fileContexts: msg.fileContexts.map((file) => ({ ...file })) } : {}),
+    }));
+    const sourceTitle = branchMessages.find((msg) => msg.role === "user")?.content || activeChat.title || "New conversation";
+    const chat = { ...createChat(), title: "Branch: " + sourceTitle.replace(/\s+/g, " ").slice(0, 38), messages: branchMessages, updatedAt: Date.now() };
+    setChats((current) => [chat, ...current]);
+    setActiveChatId(chat.id);
+    setAssistantMenuIndex(null);
+    setMessage("");
+    setEditingIndex(null);
+    setAttachedFiles([]);
+    setMobileMenuOpen(false);
+  }
+
+  function removeWebResults(index) {
+    if (!activeChat || !messages[index]) return;
+    updateChat(activeChat.id, (chat) => ({
+      ...chat,
+      updatedAt: Date.now(),
+      messages: chat.messages.map((msg, messageIndex) => messageIndex !== index ? msg : {
+        ...msg,
+        sources: [],
+        content: (msg.content || "")
+          .replace(/\[(\d+)\]\(#source-\d+\)/g, "")
+          .replace(/\[(\d+)\](?!\()/g, "")
+          .replace(/[ \t]{2,}/g, " ")
+          .replace(/ \n/g, "\n")
+          .trim(),
+      }),
+    }));
+    setAssistantMenuIndex(null);
+  }
+
+  function handleAssistantMenuAction(action, index) {
+    setAssistantMenuIndex(null);
+    if (action === "branch") branchInNewChat(index);
+    if (action === "retry") regenerateMessage(index);
+    if (action === "remove-web") removeWebResults(index);
+  }
+
   if (!loaded) {
     return <main className="boot-screen"><div className="boot-mark">✦</div><span>Loading Chat Sangam…</span></main>;
   }
@@ -687,26 +757,44 @@ export default function Home() {
                           {loading && index === messages.length - 1 && <span className="typing-cursor">▋</span>}
                           {!loading && msg.content && (
                             <>
-                              <div className="message-actions">
-                                <button type="button" onClick={() => copyText(msg.content, index)} title="Copy response">{copiedMessageIndex === index ? "Copied" : "Copy"}</button>
-                                <button type="button" onClick={() => regenerateMessage(index)} title="Regenerate response">Regenerate</button>
-                              </div>
-                              {msg.sources?.length > 0 && (() => {
+                              {(() => {
                                 const usedSources = getCitedSources(msg.content || "", msg.sources);
-                                if (!usedSources.length) return null;
                                 return (
-                                  <div className="source-panel">
-                                    <div className="source-heading"><span>⌕</span> Sources <small>{usedSources.length} used</small></div>
-                                    <div className="source-grid">
-                                      {usedSources.map((source) => (
-                                        <a className="source-card" id={`source-${source.id}`} key={source.id} href={source.url} target="_blank" rel="noreferrer">
-                                          <span className="source-number">{source.id}</span>
-                                          <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
-                                          <span className="source-arrow">↗</span>
-                                        </a>
-                                      ))}
+                                  <>
+                                    <div className="assistant-action-bar">
+                                      <button type="button" onClick={() => copyText(msg.content, index)} title="Copy response" aria-label="Copy response"><span>{copiedMessageIndex === index ? "✓" : "▣"}</span></button>
+                                      <button type="button" className={feedbackByIndex[index] === "up" ? "selected" : ""} onClick={() => toggleAssistantFeedback(index, "up")} title="Good response" aria-label="Good response"><span>👍</span></button>
+                                      <button type="button" className={feedbackByIndex[index] === "down" ? "selected" : ""} onClick={() => toggleAssistantFeedback(index, "down")} title="Bad response" aria-label="Bad response"><span>👎</span></button>
+                                      <button type="button" onClick={() => speakMessage(msg.content)} title="Read aloud" aria-label="Read aloud"><span>◖</span></button>
+                                      <button type="button" onClick={() => shareMessage(msg.content)} title="Share response" aria-label="Share response"><span>↗</span></button>
+                                      <div className="assistant-more-wrap">
+                                        <button type="button" className={assistantMenuIndex === index ? "active" : ""} onClick={() => setAssistantMenuIndex((current) => current === index ? null : index)} title="More actions" aria-label="More actions" aria-expanded={assistantMenuIndex === index}><span>⋮</span></button>
+                                        {assistantMenuIndex === index && (
+                                          <div className="assistant-more-menu" role="menu">
+                                            <div className="assistant-more-time">More actions</div>
+                                            <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("branch", index)}><span>↗</span> Branch in new chat</button>
+                                            <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("retry", index)}><span>↻</span> Retry</button>
+                                            {usedSources.length > 0 && <button type="button" role="menuitem" onClick={() => handleAssistantMenuAction("remove-web", index)}><span>◎</span> Remove web results</button>}
+                                          </div>
+                                        )}
+                                      </div>
+                                      {usedSources.length > 0 && <button type="button" className="assistant-sources-button" onClick={() => document.getElementById("sources-panel-" + index)?.scrollIntoView({ behavior: "smooth", block: "nearest" })} title="View sources"><span>▲</span> Sources</button>}
                                     </div>
-                                  </div>
+                                    {usedSources.length > 0 && (
+                                      <div className="source-panel" id={"sources-panel-" + index}>
+                                        <div className="source-heading"><span>⌕</span> Sources <small>{usedSources.length} used</small></div>
+                                        <div className="source-grid">
+                                          {usedSources.map((source) => (
+                                            <a className="source-card" id={`source-${source.id}`} key={source.id} href={source.url} target="_blank" rel="noreferrer">
+                                              <span className="source-number">{source.id}</span>
+                                              <span className="source-copy"><strong>{source.title}</strong><small>{source.url.replace(/^https?:\/\//, "").split("/")[0]}</small></span>
+                                              <span className="source-arrow">↗</span>
+                                            </a>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
                                 );
                               })()}
                             </>
