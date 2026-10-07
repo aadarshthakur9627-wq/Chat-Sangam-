@@ -8,6 +8,7 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 const GROQ_MODEL = "openai/gpt-oss-20b";
+const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 
 const CHAT_SANGAM_SYSTEM_PROMPT = [
   "You are Chat Sangam, the AI assistant inside the Chat Sangam platform.",
@@ -307,6 +308,35 @@ function attachFileContext(messages, attachments) {
   });
 }
 
+function buildVisionMessages(messages, attachments, imageAttachments) {
+  const messagesWithFiles = attachFileContext(messages, attachments);
+  const imagesByIndex = new Map();
+  for (const item of Array.isArray(imageAttachments) ? imageAttachments : []) {
+    if (!Number.isInteger(item?.messageIndex) || typeof item?.dataUrl !== "string") continue;
+    if (!item.dataUrl.startsWith("data:image/")) continue;
+    const current = imagesByIndex.get(item.messageIndex) || [];
+    if (current.length < 3) current.push(item);
+    imagesByIndex.set(item.messageIndex, current);
+  }
+  return [
+    {
+      role: "system",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nVISION ENGINE: Groq API using " + GROQ_VISION_MODEL + ". You can understand images, screenshots, photos, charts and OCR. Describe uncertainty instead of inventing unreadable text.",
+    },
+    ...messagesWithFiles.map((message, index) => {
+      const images = imagesByIndex.get(index);
+      if (!images?.length || message.role !== "user") return message;
+      return {
+        ...message,
+        content: [
+          { type: "text", text: message.content || "Analyze the attached image(s)." },
+          ...images.map((image) => ({ type: "image_url", image_url: { url: image.dataUrl } })),
+        ],
+      };
+    }),
+  ];
+}
+
 function buildMessages(messages, attachments) {
   const messagesWithFiles = attachFileContext(messages, attachments);
 
@@ -324,6 +354,7 @@ export async function POST(request) {
     const body = await request.json();
     const rawMessages = body.messages;
     const attachments = Array.isArray(body.attachments) ? body.attachments : [];
+    const imageAttachments = Array.isArray(body.imageAttachments) ? body.imageAttachments : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch || false;
     const deepResearchEnabled = body.deepResearch || false;
@@ -336,6 +367,60 @@ export async function POST(request) {
     }
 
     const latest = latestUserMessage(messages);
+
+    if (imageAttachments.length && latest) {
+      try {
+        const safeImages = imageAttachments
+          .filter((item) => Number.isInteger(item?.messageIndex) && typeof item?.dataUrl === "string" && item.dataUrl.startsWith("data:image/"))
+          .slice(0, 3);
+
+        if (!safeImages.length) {
+          return Response.json({ error: "The attached image could not be read. Please choose another image." }, { status: 400 });
+        }
+
+        const imageMessages = buildVisionMessages(messages, attachments, safeImages);
+        const responseStream = await createGroqCompletion({
+          model: GROQ_VISION_MODEL,
+          messages: imageMessages,
+          temperature: 0.7,
+          top_p: 0.8,
+          reasoning_effort: safeReasoning,
+          max_completion_tokens: 4096,
+          stream: true,
+        });
+
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              for await (const chunk of responseStream) {
+                const text = chunk.choices?.[0]?.delta?.content || "";
+                if (text) controller.enqueue(encoder.encode(text));
+              }
+              controller.close();
+            } catch (error) {
+              console.error("Groq vision streaming error:", error);
+              controller.enqueue(encoder.encode("\n\n[Vision response stream interrupted. Please try again.]"));
+              controller.close();
+            }
+          },
+        });
+
+        return new Response(stream, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+            Connection: "keep-alive",
+          },
+        });
+      } catch (error) {
+        console.error("Groq vision error:", error);
+        return Response.json(
+          { error: groqErrorMessage(error) },
+          { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
+        );
+      }
+    }
 
     if (deepResearchEnabled && latest) {
       try {
