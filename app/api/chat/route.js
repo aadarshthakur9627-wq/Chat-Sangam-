@@ -10,11 +10,21 @@ export const dynamic = "force-dynamic";
 const GROQ_MODEL = "openai/gpt-oss-20b";
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 
+const GROQ_MODEL_CATALOG = {
+  "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
+  "openai/gpt-oss-120b": { name: "GPT-OSS 120B", kind: "text" },
+  "qwen/qwen3.8-27b": { name: "Qwen 3.8 27B", kind: "vision" },
+};
+
+function resolveGroqModel(model) {
+  return GROQ_MODEL_CATALOG[model] ? model : GROQ_MODEL;
+}
+
 const CHAT_SANGAM_SYSTEM_PROMPT = [
   "You are Chat Sangam, the AI assistant inside the Chat Sangam platform.",
   "Your name is Chat Sangam.",
   "Never claim that your name is ChatGPT, Gemini, Claude, Perplexity, DeepSeek, Grok, or another product.",
-  "The underlying model is OpenAI GPT-OSS 20B served through Groq.",
+  "The underlying model is a Groq-hosted model selected by the user.",
   "Be helpful, accurate, concise, and natural.",
   "Match the user's language when practical, including Hindi/Hinglish.",
   "Use clean Markdown when it improves readability.",
@@ -77,9 +87,9 @@ async function createGroqCompletion(params) {
   throw lastError;
 }
 
-async function browserSearch(query, forceSearch = false) {
+async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
   const response = await createGroqCompletion({
-    model: GROQ_MODEL,
+    model: resolveGroqModel(model),
     messages: [
       {
         role: "system",
@@ -137,12 +147,13 @@ async function browserSearch(query, forceSearch = false) {
   };
 }
 
-async function deepResearch(query) {
+async function deepResearch(query, model = GROQ_MODEL) {
   // One browser-search request only, to stay rate-limit friendly.
   const search = await browserSearch(
     query +
       " — prioritize official primary sources, recent developments, statistics, expert analysis, and multiple independent sources",
-    true
+    true,
+    model
   );
 
   const seen = new Set();
@@ -343,7 +354,7 @@ function buildMessages(messages, attachments) {
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + GROQ_MODEL + ".",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + requestedModel + ".",
     },
     ...messagesWithFiles,
   ];
@@ -355,6 +366,10 @@ export async function POST(request) {
     const rawMessages = body.messages;
     const attachments = Array.isArray(body.attachments) ? body.attachments : [];
     const imageAttachments = Array.isArray(body.imageAttachments) ? body.imageAttachments : [];
+    const requestedModel = resolveGroqModel(body.model);
+    const requestedCompareModels = Array.isArray(body.compareModels)
+      ? [...new Set(body.compareModels.map(resolveGroqModel))].filter((model) => GROQ_MODEL_CATALOG[model]?.kind === "text").slice(0, 3)
+      : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch || false;
     const deepResearchEnabled = body.deepResearch || false;
@@ -367,6 +382,33 @@ export async function POST(request) {
     }
 
     const latest = latestUserMessage(messages);
+
+    if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
+      try {
+        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly.";
+        const results = await Promise.all(requestedCompareModels.map(async (model) => {
+          try {
+            const response = await createGroqCompletion({
+              model,
+              messages: [{ role: "system", content: system }, ...attachFileContext(messages, attachments)],
+              temperature: 0.6,
+              top_p: 0.95,
+              reasoning_effort: safeReasoning,
+              include_reasoning: false,
+              max_completion_tokens: 4096,
+              stream: false,
+            });
+            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: response.choices?.[0]?.message?.content || "No response." };
+          } catch (error) {
+            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: groqErrorMessage(error) };
+          }
+        }));
+        return Response.json({ mode: "compare", results });
+      } catch (error) {
+        console.error("Groq multi-model error:", error);
+        return Response.json({ error: groqErrorMessage(error) }, { status: 503 });
+      }
+    }
 
     if (imageAttachments.length && latest) {
       try {
@@ -424,7 +466,7 @@ export async function POST(request) {
 
     if (deepResearchEnabled && latest) {
       try {
-        const research = await deepResearch(latest);
+        const research = await deepResearch(latest, requestedModel);
         if (!research.results.length) {
           return Response.json(
             { error: "Deep Research could not find usable sources. Please try a more specific question." },
@@ -452,7 +494,7 @@ export async function POST(request) {
 
     if (webSearch && latest) {
       try {
-        const search = await browserSearch(latest, false);
+        const search = await browserSearch(latest, false, requestedModel);
         if (!search.results.length && !search.answer) {
           return Response.json(
             { error: "Web search is temporarily unavailable. Please turn Web Search off or try again." },
@@ -481,7 +523,7 @@ export async function POST(request) {
 
     try {
       const responseStream = await createGroqCompletion({
-        model: GROQ_MODEL,
+        model: requestedModel,
         messages: chatMessages,
         temperature: 0.6,
         top_p: 0.95,
