@@ -536,7 +536,13 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top"><span className="composer-model">{selectedModel.icon} {selectedModel.name} · {selectedModel.model}{webSearch && <em> · Web Search</em>}</span><span className="composer-hint">Enter to send · Shift + Enter for new line</span></div>
-            {attachedFile && (\n              <div className="attachment-chip"><span>📎</span><span><strong>{attachedFile.name}</strong><small>{attachedFile.characters.toLocaleString()} chars{attachedFile.truncated ? " · truncated" : ""}</small></span><button type="button" onClick={removeAttachedFile} disabled={loading}>×</button></div>\n            )}\n            <div className="composer-input-row">
+            {attachedFile && (
+              <div className="attachment-chip">
+                <span>📎</span>
+                <span><strong>{attachedFile.name}</strong><small>{attachedFile.characters.toLocaleString()} chars{attachedFile.truncated ? " · truncated" : ""}</small></span>
+                <button type="button" onClick={removeAttachedFile} disabled={loading}>×</button>
+              </div>
+            )}\n            <div className="composer-input-row">
               <textarea
                 ref={textareaRef}
                 value={message}
