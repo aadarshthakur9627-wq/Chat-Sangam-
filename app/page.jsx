@@ -251,17 +251,24 @@ export default function Home() {
     }));
 
     try {
-      // Diagnostic: send only visible message text.
-      // This isolates whether the attached file context is causing the browser fetch failure.
+      // Keep file text separate from provider messages.
+      // The API route safely injects it server-side, avoiding provider payload issues.
       const apiMessages = nextMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
+      const attachments = nextMessages
+        .map((msg, index) => msg.fileContext ? ({
+          messageIndex: index,
+          name: msg.fileName || "Attached file",
+          text: msg.fileContext,
+        }) : null)
+        .filter(Boolean);
 
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, webSearch, reasoningEffort }),
+        body: JSON.stringify({ messages: apiMessages, attachments, webSearch, reasoningEffort }),
         signal: controller.signal,
       });
 
