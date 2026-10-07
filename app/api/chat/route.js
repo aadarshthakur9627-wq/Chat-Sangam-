@@ -89,6 +89,7 @@ async function browserSearch(query, forceSearch = false) {
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Do not use Markdown tables unless the user explicitly asks for a table.",
+          "For Deep Research-style answers, use clear headings, short paragraphs, numbered steps, and bullet lists; never use a Markdown table.",
           "Do not output table headers, separator rows, or stray pipe characters around the answer.",
           "Cite important web-backed claims using the browser search citation format; Chat Sangam will normalize those citations for the UI.",
           "Do not manually invent source numbers or line references.",
@@ -174,6 +175,80 @@ function normalizeSearchAnswer(answer) {
     .replace(/\](?=[A-Za-z])/g, "] ")
     .replace(/\[(\d+)\]\s+\[\1\]/g, "[$1]")
     .replace(/\s{3,}/g, "  ")
+    .trim();
+}
+
+function normalizeDeepResearchAnswer(answer) {
+  const normalized = normalizeSearchAnswer(answer);
+  if (!normalized) return "";
+
+  const lines = normalized.split("\n");
+  const output = [];
+  let i = 0;
+
+  function cells(line) {
+    return line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim());
+  }
+
+  function isSeparator(line) {
+    const parts = cells(line);
+    return parts.length >= 2 && parts.every((part) => /^:?-{2,}:?$/.test(part));
+  }
+
+  while (i < lines.length) {
+    if (lines[i].includes("|") && i + 1 < lines.length && isSeparator(lines[i + 1])) {
+      const headers = cells(lines[i]);
+      const rows = [];
+      let j = i + 2;
+
+      while (j < lines.length && lines[j].includes("|") && lines[j].trim()) {
+        const row = cells(lines[j]);
+        if (row.length >= 2 && !isSeparator(lines[j])) rows.push(row);
+        j += 1;
+      }
+
+      if (headers.length >= 2 && rows.length) {
+        for (const row of rows) {
+          const parts = [];
+          headers.forEach((header, index) => {
+            const value = row[index] || "";
+            if (!value) return;
+            parts.push("**" + header + ":** " + value);
+          });
+          if (parts.length) output.push("- " + parts.join(" · "));
+        }
+        if (output.length) output.push("");
+        i = j;
+        continue;
+      }
+    }
+
+    if (isSeparator(lines[i])) {
+      i += 1;
+      continue;
+    }
+
+    if (lines[i].includes("|") && cells(lines[i]).length >= 2) {
+      const parts = cells(lines[i]).filter(Boolean);
+      if (parts.length >= 2) {
+        output.push("- " + parts.join(" · "));
+        i += 1;
+        continue;
+      }
+    }
+
+    output.push(lines[i]);
+    i += 1;
+  }
+
+  return output
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -270,7 +345,7 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(await synthesizeDeepResearchAnswer(latest, research))
+        const answer = normalizeDeepResearchAnswer(await synthesizeDeepResearchAnswer(latest, research))
           || "I couldn't generate a deep research answer. Please try again.";
         const payload = answer + formatSources(research.results);
         return new Response(payload, {
