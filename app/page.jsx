@@ -874,8 +874,6 @@ export default function Home() {
                 </div>
               )}
             </div>
-              )}
-            </div>
             <label className="thinking-picker" title="Groq reasoning effort">
               <span>THINK</span>
               <select value={reasoningEffort} onChange={(e) => setReasoningEffort(e.target.value)} disabled={loading} aria-label="Reasoning effort">
