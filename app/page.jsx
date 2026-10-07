@@ -226,6 +226,10 @@ export default function Home() {
     setChats((current) => [chat, ...current]);
     setActiveChatId(chat.id);
     setMessage("");
+    setAttachedFiles([]);
+    setAttachedImages([]);
+    setFileInputKey((value) => value + 1);
+    setImageInputKey((value) => value + 1);
     setSearch("");
     setMobileMenuOpen(false);
   }
@@ -234,6 +238,10 @@ export default function Home() {
     if (loading) return;
     setActiveChatId(id);
     setMessage("");
+    setAttachedFiles([]);
+    setAttachedImages([]);
+    setFileInputKey((value) => value + 1);
+    setImageInputKey((value) => value + 1);
     setMobileMenuOpen(false);
   }
 
@@ -608,7 +616,9 @@ export default function Home() {
     setEditingIndex(null);
     setMessage("");
     setAttachedFiles([]);
+    setAttachedImages([]);
     setFileInputKey((value) => value + 1);
+    setImageInputKey((value) => value + 1);
     requestAnimationFrame(() => textareaRef.current?.focus());
   }
 
@@ -661,6 +671,9 @@ export default function Home() {
     setMessage("");
     setEditingIndex(null);
     setAttachedFiles([]);
+    setAttachedImages([]);
+    setFileInputKey((value) => value + 1);
+    setImageInputKey((value) => value + 1);
     setMobileMenuOpen(false);
   }
 
@@ -1027,7 +1040,7 @@ export default function Home() {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
                 }}
               />
-              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFiles.length)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
+              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFiles.length && !attachedImages.length)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
           <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Deep Research is ON · Multiple web searches + source synthesis." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
