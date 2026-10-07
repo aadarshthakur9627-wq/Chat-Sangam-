@@ -126,8 +126,12 @@ export default function Home() {
   const [fileInputKey, setFileInputKey] = useState(0);
   const [editingIndex, setEditingIndex] = useState(null);
   const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
+  const [messageContextMenu, setMessageContextMenu] = useState(null);
   const abortControllerRef = useRef(null);
   const textareaRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const longPressStartRef = useRef(null);
+  const longPressTriggeredRef = useRef(false);
 
   useEffect(() => {
     try {
@@ -158,6 +162,27 @@ export default function Home() {
   useEffect(() => {
     if (!loading) textareaRef.current?.focus();
   }, [activeChatId, loading]);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!messageContextMenu) return;
+    function closeMenu(event) {
+      if (event.target?.closest?.(".message-context-menu")) return;
+      setMessageContextMenu(null);
+    }
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") setMessageContextMenu(null);
+    });
+    return () => {
+      document.removeEventListener("pointerdown", closeMenu);
+    };
+  }, [messageContextMenu]);
 
   const activeChat = chats.find((chat) => chat.id === activeChatId) || null;
   const messages = activeChat?.messages || [];
@@ -337,6 +362,77 @@ export default function Home() {
 
   function stopGeneration() {
     abortControllerRef.current?.abort();
+  }
+
+  function clearLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  }
+
+  function openMessageContextMenu(index, role, clientX, clientY) {
+    if (loading) return;
+    const menuWidth = 196;
+    const menuHeight = role === "user" ? 148 : 148;
+    const x = Math.min(Math.max(clientX, 8), Math.max(8, window.innerWidth - menuWidth - 8));
+    const y = Math.min(Math.max(clientY, 8), Math.max(8, window.innerHeight - menuHeight - 8));
+    window.getSelection?.()?.removeAllRanges();
+    setMessageContextMenu({ index, role, x, y });
+  }
+
+  function handleMessageTouchStart(event, index, role) {
+    if (loading || event.touches.length !== 1) return;
+    clearLongPress();
+    const touch = event.touches[0];
+    longPressTriggeredRef.current = false;
+    longPressStartRef.current = { x: touch.clientX, y: touch.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressTriggeredRef.current = true;
+      openMessageContextMenu(index, role, touch.clientX, touch.clientY);
+    }, 560);
+  }
+
+  function handleMessageTouchMove(event) {
+    if (!longPressTimerRef.current || !longPressStartRef.current || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const dx = Math.abs(touch.clientX - longPressStartRef.current.x);
+    const dy = Math.abs(touch.clientY - longPressStartRef.current.y);
+    if (dx > 10 || dy > 10) clearLongPress();
+  }
+
+  function handleMessageTouchEnd() {
+    clearLongPress();
+  }
+
+  function handleMessageContextMenu(event, index, role) {
+    event.preventDefault();
+    clearLongPress();
+    openMessageContextMenu(index, role, event.clientX, event.clientY);
+  }
+
+  function selectMessageText(index) {
+    const element = document.getElementById("message-selectable-" + index);
+    if (!element) return;
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    setMessageContextMenu(null);
+  }
+
+  function handleMessageMenuAction(action) {
+    if (!messageContextMenu) return;
+    const { index } = messageContextMenu;
+    setMessageContextMenu(null);
+
+    if (action === "edit") editMessage(index);
+    if (action === "copy") copyText(messages[index]?.content || "", index);
+    if (action === "regenerate") regenerateMessage(index);
+    if (action === "select") selectMessageText(index);
   }
 
   async function sendMessage(event) {
@@ -568,14 +664,23 @@ export default function Home() {
           ) : (
             <div className="conversation">
               {messages.map((msg, index) => (
-                <article className={"message-row " + msg.role} key={index}>
+                <article
+                  className={"message-row " + msg.role}
+                  key={index}
+                  onTouchStart={(event) => handleMessageTouchStart(event, index, msg.role)}
+                  onTouchMove={handleMessageTouchMove}
+                  onTouchEnd={handleMessageTouchEnd}
+                  onTouchCancel={handleMessageTouchEnd}
+                  onContextMenu={(event) => handleMessageContextMenu(event, index, msg.role)}
+                >
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
                     <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? "Groq · GPT-OSS 20B" : "Message"}</span></div>
                     <div className="message-bubble">
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                          <div className="message-selectable" id={"message-selectable-" + index}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
                             pre: CodeBlock,
                             table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
                           }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>
@@ -630,7 +735,7 @@ export default function Home() {
                               </span>
                             </div>
                           )}
-                          <div className="message-user-text">{msg.content}</div>
+                          <div className="message-user-text message-selectable" id={"message-selectable-" + index}>{msg.content}</div>
                           {!loading && (
                             <div className="message-actions user-message-actions">
                               <button type="button" onClick={() => editMessage(index)} title="Edit message">Edit</button>
@@ -646,6 +751,46 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {messageContextMenu && (
+          <>
+            <button
+              className="message-context-backdrop"
+              type="button"
+              aria-label="Close message actions"
+              onClick={() => setMessageContextMenu(null)}
+            />
+            <div
+              className="message-context-menu"
+              role="menu"
+              aria-label="Message actions"
+              style={{ left: messageContextMenu.x, top: messageContextMenu.y }}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <div className="message-context-title">
+                {messageContextMenu.role === "user" ? "Message actions" : "Response actions"}
+              </div>
+              <div className="message-context-grid">
+                {messageContextMenu.role === "user" && (
+                  <button type="button" role="menuitem" onClick={() => handleMessageMenuAction("edit")}>
+                    <span>✎</span> Edit
+                  </button>
+                )}
+                <button type="button" role="menuitem" onClick={() => handleMessageMenuAction("copy")}>
+                  <span>▣</span> Copy
+                </button>
+                {messageContextMenu.role === "assistant" && (
+                  <button type="button" role="menuitem" onClick={() => handleMessageMenuAction("regenerate")}>
+                    <span>↻</span> Regenerate
+                  </button>
+                )}
+                <button type="button" role="menuitem" onClick={() => handleMessageMenuAction("select")}>
+                  <span>⌁</span> Select text
+                </button>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
