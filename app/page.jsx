@@ -553,10 +553,15 @@ export default function Home() {
         ...messages,
         {
           role: "user",
-          content: attachedFiles.length ? (text || "Please analyze the attached file(s).") : text,
+          content: (attachedFiles.length || attachedImages.length)
+            ? (text || "Please analyze the attached file(s) and image(s).")
+            : text,
           ...(attachedFiles.length ? {
             fileNames: attachedFiles.map((file) => file.name),
             fileContexts: attachedFiles.map((file) => ({ name: file.name, text: file.text })),
+          } : {}),
+          ...(attachedImages.length ? {
+            imageNames: attachedImages.map((image) => image.name),
           } : {}),
         },
       ];
