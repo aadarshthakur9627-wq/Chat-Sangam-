@@ -251,10 +251,21 @@ export default function Home() {
     }));
 
     try {
+      const apiMessages = nextMessages.map((msg) => {
+        if (!msg.fileContext) return msg;
+        return {
+          ...msg,
+          content:
+            msg.content +
+            "\n\n[Attached file: " + msg.fileName + "]\n\n" +
+            msg.fileContext,
+        };
+      });
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages, webSearch, reasoningEffort }),
+        body: JSON.stringify({ messages: apiMessages, webSearch, reasoningEffort }),
         signal: controller.signal,
       });
 
@@ -317,10 +328,24 @@ export default function Home() {
     let title = activeChat.title;
 
     if (editingIndex !== null && messages[editingIndex]?.role === "user") {
-      nextMessages = [...messages.slice(0, editingIndex), { role: "user", content: attachedFile ? text + "\n\n[Attached file: " + attachedFile.name + "]\n\n" + attachedFile.text : text }];
+      nextMessages = [
+        ...messages.slice(0, editingIndex),
+        {
+          role: "user",
+          content: attachedFile ? (text || "Please analyze the attached file.") : text,
+          ...(attachedFile ? { fileName: attachedFile.name, fileContext: attachedFile.text } : {}),
+        },
+      ];
       title = editingIndex === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
     } else {
-      nextMessages = [...messages, { role: "user", content: attachedFile ? (text || "Please analyze the attached file.") + "\n\n[Attached file: " + attachedFile.name + "]\n\n" + attachedFile.text : text }];
+      nextMessages = [
+        ...messages,
+        {
+          role: "user",
+          content: attachedFile ? (text || "Please analyze the attached file.") : text,
+          ...(attachedFile ? { fileName: attachedFile.name, fileContext: attachedFile.text } : {}),
+        },
+      ];
       title = messages.length === 0 ? text.replace(/\s+/g, " ").slice(0, 42) || "New conversation" : activeChat.title;
     }
 
@@ -524,7 +549,20 @@ export default function Home() {
                             </>
                           )}
                         </div>
-                      ) : msg.content}
+                      ) : (
+                        <>
+                          {msg.fileName && (
+                            <div className="message-file-card">
+                              <span className="message-file-icon">📄</span>
+                              <span className="message-file-copy">
+                                <strong>{msg.fileName}</strong>
+                                <small>{msg.fileContext ? msg.fileContext.length.toLocaleString() + " characters" : "Attached document"}</small>
+                              </span>
+                            </div>
+                          )}
+                          <div className="message-user-text">{msg.content}</div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </article>
