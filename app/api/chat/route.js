@@ -521,6 +521,40 @@ export async function POST(request) {
 
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
+    // GPT-OSS 120B gets a non-streaming response in Chat Sangam.
+    // This avoids edge/runtime stream interruptions on longer reasoning responses
+    // while keeping the normal 20B experience fully streamed.
+    if (requestedModel === "openai/gpt-oss-120b") {
+      try {
+        const response = await createGroqCompletion({
+          model: requestedModel,
+          messages: chatMessages,
+          temperature: 0.6,
+          top_p: 0.95,
+          reasoning_effort: safeReasoning,
+          include_reasoning: false,
+          max_completion_tokens: 4096,
+          stream: false,
+        });
+        const content = typeof response.choices?.[0]?.message?.content === "string"
+          ? response.choices[0].message.content
+          : String(response.choices?.[0]?.message?.content ?? "No response.");
+        return new Response(content, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+          },
+        });
+      } catch (error) {
+        console.error("Groq GPT-OSS 120B error:", error);
+        const status = groqErrorStatus(error);
+        return Response.json(
+          { error: groqErrorMessage(error) },
+          { status: status >= 400 && status < 600 ? status : 500 }
+        );
+      }
+    }
+
     try {
       const responseStream = await createGroqCompletion({
         model: requestedModel,
