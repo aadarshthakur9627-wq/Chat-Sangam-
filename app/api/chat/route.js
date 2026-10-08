@@ -136,6 +136,8 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
           "For current-status questions, compare the dates of search results and prefer the newest reports.",
           "For questions asking whether a person is alive or dead, verify the current status from multiple recent credible reports when possible; never answer from an old obituary/report alone.",
           "If newer credible reports contradict older reports, the newer reports determine the current answer.",
+          "For a current-status question, do not use a source published before the current day unless you clearly label it as historical context.",
+          "For death/life-status questions, require at least one recent credible report before stating the current status."
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Do not use Markdown tables unless the user explicitly asks for a table.",
@@ -155,6 +157,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
     tool_choice: forceSearch ? "required" : "auto",
     reasoning_effort: "low",
     include_reasoning: false,
+    citation_options: "enabled",
     max_completion_tokens: 2048,
     stream: false,
   });
@@ -401,6 +404,34 @@ function buildMessages(messages, attachments, model = GROQ_MODEL) {
   ];
 }
 
+async function compareModelCompletion(model, messages, safeReasoning) {
+  const base = {
+    model,
+    messages,
+    temperature: 0.6,
+    top_p: 0.95,
+    reasoning_effort: safeReasoning,
+    include_reasoning: false,
+    max_completion_tokens: 4096,
+    stream: false,
+  };
+
+  try {
+    return await createGroqCompletion(base);
+  } catch (error) {
+    // Groq can reject optional generation parameters as a 400 when the API/model
+    // configuration changes. Retry with the minimal GPT-OSS-compatible request so
+    // one model's validation issue does not surface as the user's final answer.
+    if (groqErrorStatus(error) !== 400) throw error;
+    return await createGroqCompletion({
+      model,
+      messages,
+      max_completion_tokens: 4096,
+      stream: false,
+    });
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -429,16 +460,11 @@ export async function POST(request) {
         const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
           try {
-            const response = await createGroqCompletion({
+            const response = await compareModelCompletion(
               model,
-              messages: [{ role: "system", content: system }, ...attachFileContext(messages, attachments)],
-              temperature: 0.6,
-              top_p: 0.95,
-              reasoning_effort: safeReasoning,
-              include_reasoning: false,
-              max_completion_tokens: 4096,
-              stream: false,
-            });
+              [{ role: "system", content: system }, ...attachFileContext(messages, attachments)],
+              safeReasoning
+            );
             return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: response.choices?.[0]?.message?.content || "No response." };
           } catch (error) {
             return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: groqErrorMessage(error) };
