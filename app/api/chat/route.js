@@ -54,6 +54,29 @@ function latestUserMessage(messages) {
   return [...messages].reverse().find((message) => message.role === "user")?.content?.trim() || "";
 }
 
+function shouldAutoSearch(query) {
+  const text = String(query || "").toLowerCase().replace(/\\s+/g, " ").trim();
+  if (!text) return false;
+
+  // High-confidence freshness signals: these questions should not rely on the model's
+  // static knowledge. This deterministic layer complements tool_choice:"auto".
+  const freshnessPatterns = [
+    /\\b(today|tonight|tomorrow|yesterday|now|currently|current|latest|recent|recently|just now|this year|this month|this week|live|breaking|update|updates|news)\\b/,
+    /\\b(aaj|abhi|vartaman|वर्तमान|आज|अभी|लेटेस्ट|नवीनतम|हालिया|हाल में|ताजा|ताज़ा|ब्रेकिंग|खबर|समाचार|अपडेट)\\b/,
+    /\\b(alive|dead|died|dies|death|passed away|is he alive|is she alive)\\b/,
+    /(जिंदा|जीवित|मृत|मौत|मृत्यु|निधन|निधन हो गया|मर गया|मर गए|क्या .* की मृत्यु)/,
+    /\\b(price|cost|rate|stock price|share price|weather|temperature|score|result|results|vacancy|vacancies|recruitment|cutoff|cut-off|admit card|answer key|schedule|timetable|release date|availability)\\b/,
+    /(कीमत|दाम|रेट|शेयर|मौसम|तापमान|स्कोर|रिजल्ट|परिणाम|वैकेंसी|भर्ती|कटऑफ|कट-ऑफ|एडमिट कार्ड|उत्तर कुंजी|शेड्यूल|तारीख|उपलब्ध)/,
+    /\\b(who is the (current|new)|who's the (current|new)|current (pm|prime minister|president|cm|chief minister|governor|ceo))\\b/,
+    /(वर्तमान प्रधानमंत्री|वर्तमान राष्ट्रपति|वर्तमान मुख्यमंत्री|वर्तमान राज्यपाल|अभी के प्रधानमंत्री|अभी के राष्ट्रपति)/,
+    /\\b(law|rule|rules|policy|eligibility|guidelines|regulation|regulations|deadline|application last date)\\b/,
+    /(कानून|नियम|पॉलिसी|पात्रता|दिशानिर्देश|डेडलाइन|अंतिम तिथि|आवेदन की अंतिम तारीख)/
+  ];
+
+  return freshnessPatterns.some((pattern) => pattern.test(text));
+}
+
+
 function groqErrorStatus(error) {
   return Number(error?.status || error?.statusCode || 500);
 }
@@ -528,15 +551,17 @@ export async function POST(request) {
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
     // Normal chat has access to browser search automatically.
-    // GPT-OSS decides whether the question actually needs fresh web information.
-    // We keep this non-streaming because Groq's built-in browser-search flow
-    // returns the completed answer plus executed search results in one response.
+    // For high-confidence freshness questions (for example death/life status,
+    // latest news, prices, results, vacancies, current office-holders, etc.),
+    // the deterministic router FORCES a browser search. Other questions leave
+    // the choice to GPT-OSS via tool_choice:"auto".
+    const autoSearchRequired = shouldAutoSearch(latest);
     try {
       const response = await createGroqCompletion({
         model: requestedModel,
         messages: chatMessages,
         tools: [{ type: "browser_search" }],
-        tool_choice: "auto",
+        tool_choice: autoSearchRequired ? "required" : "auto",
         temperature: 0.6,
         top_p: 0.95,
         reasoning_effort: safeReasoning,
