@@ -153,6 +153,7 @@ export default function Home() {
   const [assistantMenuIndex, setAssistantMenuIndex] = useState(null);
   const [feedbackByIndex, setFeedbackByIndex] = useState({});
   const abortControllerRef = useRef(null);
+  const lastRequestRef = useRef({ fingerprint: "", at: 0 });
   const textareaRef = useRef(null);
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
@@ -597,6 +598,21 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
+
+    // Prevent accidental double-submits of the same request. This is especially
+    // useful on free/rate-limited provider tiers.
+    const fingerprint = JSON.stringify({
+      text,
+      webSearch,
+      deepResearch,
+      model: effectiveModel.id,
+      compare: compareReady ? compareModels.map((model) => model.id).sort() : [],
+    });
+    const now = Date.now();
+    if (lastRequestRef.current.fingerprint === fingerprint && now - lastRequestRef.current.at < 15000) {
+      return;
+    }
+    lastRequestRef.current = { fingerprint, at: now };
 
     let nextMessages;
     let title = activeChat.title;
