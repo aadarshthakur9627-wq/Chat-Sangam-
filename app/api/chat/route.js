@@ -176,7 +176,9 @@ function normalizeSearchAnswer(answer) {
   if (!answer) return "";
 
   return answer
+    // Normalize Groq browser-search citation wrappers into Chat Sangam source references.
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
+    .replace(/\[(?:browser\.search|web\.search)\s*[†:]?[^\]]*\]/gi, "")
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
