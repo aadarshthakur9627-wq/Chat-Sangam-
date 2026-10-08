@@ -137,7 +137,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
           "For questions asking whether a person is alive or dead, verify the current status from multiple recent credible reports when possible; never answer from an old obituary/report alone.",
           "If newer credible reports contradict older reports, the newer reports determine the current answer.",
           "For a current-status question, do not use a source published before the current day unless you clearly label it as historical context.",
-          "For death/life-status questions, require at least one recent credible report before stating the current status."
+          "For death/life-status questions, require at least one recent credible report before stating the current status.",
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Do not use Markdown tables unless the user explicitly asks for a table.",
