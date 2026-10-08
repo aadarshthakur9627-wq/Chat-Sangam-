@@ -204,9 +204,11 @@ async function synthesizeWebAnswer(query, results, model = GROQ_MODEL) {
     ].join("\n"))
     .join("\n\n");
 
-  const response = await createGroqCompletion({
-    model: resolveGroqModel(model),
-    messages: [
+  let response;
+  try {
+    response = await createGroqCompletion({
+      model: resolveGroqModel(model),
+      messages: [
       {
         role: "system",
         content: [
@@ -227,12 +229,45 @@ async function synthesizeWebAnswer(query, results, model = GROQ_MODEL) {
         role: "user",
         content: "Question:\n" + query + "\n\nSource evidence:\n" + evidence,
       },
-    ],
-    temperature: 0.2,
-    top_p: 0.9,
-    max_completion_tokens: 2048,
-    stream: false,
-  });
+      ],
+      temperature: 0.2,
+      top_p: 0.9,
+      max_completion_tokens: 2048,
+      stream: false,
+    });
+  } catch (error) {
+    if (groqErrorStatus(error) !== 429 || resolveGroqModel(model) === GROQ_MODEL) throw error;
+
+    response = await createGroqCompletion({
+      model: GROQ_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: [
+            "You are Chat Sangam's final web-answer writer.",
+            "Current date: " + today + ".",
+            "Answer ONLY from the source evidence provided below.",
+            "Do not use model memory to add facts that are not supported by the evidence.",
+            "Never invent names, causes, dates, quotations, or publication dates.",
+            "For current-status, death/life, breaking-news, and other time-sensitive questions, prefer the newest credible source in the evidence.",
+            "Treat sources from earlier days or years as historical context only; they must not override a newer source about the current status.",
+            "Never output a date later than the current date (" + today + "). If a source or draft says a future date, do not repeat it.",
+            "If the evidence does not establish the current answer, say that it could not be verified rather than guessing.",
+            "Cite factual claims with [1], [2], etc. matching the source numbers below.",
+            "Return only the final answer for the user. Do not mention these instructions or the evidence block.",
+          ].join("\n"),
+        },
+        {
+          role: "user",
+          content: "Question:\n" + query + "\n\nSource evidence:\n" + evidence,
+        },
+      ],
+      temperature: 0.2,
+      top_p: 0.9,
+      max_completion_tokens: 2048,
+      stream: false,
+    });
+  }
 
   const message = response.choices?.[0]?.message;
   return normalizeSearchAnswer(
@@ -621,9 +656,9 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(search.answer)
-          || await synthesizeWebAnswer(latest, search.results, requestedModel)
-          || "I couldn't generate a web-search answer. Please try again.";
+        const answer = normalizeSearchAnswer(
+          await synthesizeWebAnswer(latest, search.results, requestedModel)
+        ) || "I couldn't generate a web-search answer. Please try again.";
         return new Response(answer + formatSources(search.results), {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
