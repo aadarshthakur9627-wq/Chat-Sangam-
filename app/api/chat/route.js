@@ -124,44 +124,61 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
     "User question: " + query,
   ].join(" ");
 
-  const response = await createGroqCompletion({
-    // Keep the browser-search layer on the stable 20B search engine so
-    // 120B rate limits do not make current-information queries fail.
-    model: GROQ_MODEL,
-    messages: [
-      {
-        role: "system",
-        content: [
-          "You are Chat Sangam's web research layer.",
-          "Use browser search to retrieve current, relevant information.",
-          "Prefer primary and authoritative sources and the newest credible reporting.",
-          "For current-status questions, compare the dates of search results and prefer the newest reports.",
-          "For questions asking whether a person is alive or dead, verify the current status from multiple recent credible reports when possible; never answer from an old obituary/report alone.",
-          "If newer credible reports contradict older reports, the newer reports determine the current answer.",
-          "For a current-status question, do not use a source published before the current day unless you clearly label it as historical context.",
-          "For death/life-status questions, require at least one recent credible report before stating the current status.",
-          "Return the final answer for the user, not just research notes.",
-          "Use concise Markdown and answer the user's exact question.",
-          "Do not use Markdown tables unless the user explicitly asks for a table.",
-          "For Deep Research-style answers, use clear headings, short paragraphs, numbered steps, and bullet lists; never use a Markdown table.",
-          "Do not output table headers, separator rows, or stray pipe characters around the answer.",
-          "Cite important web-backed claims using the browser search citation format; Chat Sangam will normalize those citations for the UI.",
-          "Do not manually invent source numbers or line references.",
-          "Do not use structured/JSON output.",
-          "Return a concise synthesis, but do not hide the source URLs/results from the application.",
-        ].join("\n"),
-      },
-      { role: "user", content: freshnessQuery },
-    ],
-    tools: [{ type: "browser_search" }],
-    // Web Search can safely fall back to a normal answer for greetings/simple prompts.
-    // Deep Research passes forceSearch=true so it must actually use browser search.
-    tool_choice: forceSearch ? "required" : "auto",
-    reasoning_effort: "low",
-    include_reasoning: false,
-    max_completion_tokens: 2048,
-    stream: false,
-  });
+  const searchMessages = [
+    {
+      role: "system",
+      content: [
+        "You are Chat Sangam's web research layer.",
+        "Use browser search to retrieve current, relevant information.",
+        "For current-status, death/life, breaking-news, and recent-event questions, you MUST call browser_search before answering.",
+        "Search for the exact current status as of today, not historical articles.",
+        "Prefer primary and authoritative sources and the newest credible reporting.",
+        "For current-status questions, compare dates and prefer the newest reports.",
+        "If newer credible reports contradict older reports, the newer reports determine the current answer.",
+        "Do not use a source published before the current day as the basis for a current-status answer unless no newer source exists; if so, clearly say verification is limited.",
+        "Return the final answer for the user, not just research notes.",
+        "Use concise Markdown and answer the exact question.",
+        "Do not use Markdown tables unless explicitly requested.",
+        "Cite important web-backed claims using browser-search citations; Chat Sangam will normalize them.",
+        "Do not manually invent source numbers or line references.",
+      ].join("\n"),
+    },
+    { role: "user", content: freshnessQuery },
+  ];
+
+  let response;
+  try {
+    response = await createGroqCompletion({
+      model: GROQ_MODEL,
+      messages: searchMessages,
+      tools: [{ type: "browser_search" }],
+      tool_choice: forceSearch ? "required" : "auto",
+      temperature: 0.2,
+      top_p: 0.95,
+      reasoning_effort: "low",
+      include_reasoning: false,
+      max_completion_tokens: 2048,
+      stream: false,
+    });
+  } catch (error) {
+    // GPT-OSS can occasionally return a 400 when forced tool calling produces
+    // an invalid tool-call generation. Retry with auto tool selection rather
+    // than exposing the raw Groq error to the user.
+    if (groqErrorStatus(error) !== 400 || !forceSearch) throw error;
+
+    response = await createGroqCompletion({
+      model: GROQ_MODEL,
+      messages: searchMessages,
+      tools: [{ type: "browser_search" }],
+      tool_choice: "auto",
+      temperature: 0.1,
+      top_p: 0.95,
+      reasoning_effort: "low",
+      include_reasoning: false,
+      max_completion_tokens: 2048,
+      stream: false,
+    });
+  }
 
   const message = response.choices?.[0]?.message;
   const executedTools = message?.executed_tools || [];
