@@ -312,7 +312,7 @@ async function deepResearch(query, model = GROQ_MODEL) {
 
   return {
     results,
-    searchAnswer: normalizeSearchAnswer(message?.content || ""),
+    searchAnswer: normalizeSearchAnswer(search.answer || ""),
   };
 }
 
@@ -675,7 +675,7 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(search.searchAnswer)
+        const answer = normalizeSearchAnswer(search.answer)
           || "I couldn't generate a web-search answer. Please try again.";
         return new Response(answer + formatSources(search.results), {
           headers: {
@@ -708,7 +708,7 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(search.searchAnswer)
+        const answer = normalizeSearchAnswer(search.answer)
           || "I couldn't generate a current web-search answer. Please try again.";
 
         return new Response(answer + formatSources(search.results), {
