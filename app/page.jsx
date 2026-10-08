@@ -103,6 +103,7 @@ function prepareCitationMarkdown(content, sources) {
   const cleaned = content
     // Normalize Groq/browser-search citation wrappers to [N].
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
+    .replace(/\[(?:browser\.search|web\.search)\s*[†:]?[^\]]*\]/gi, "")
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
     .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
     .replace(/\s*\[L\d+(?:[-–—]L?\d+)?\]/gi, "")
