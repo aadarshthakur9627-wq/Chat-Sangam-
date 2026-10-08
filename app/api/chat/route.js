@@ -125,7 +125,9 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
   ].join(" ");
 
   const response = await createGroqCompletion({
-    model: resolveGroqModel(model),
+    // Keep the browser-search layer on the stable 20B search engine so
+    // 120B rate limits do not make current-information queries fail.
+    model: GROQ_MODEL,
     messages: [
       {
         role: "system",
@@ -188,6 +190,56 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
   };
 }
 
+
+async function synthesizeWebAnswer(query, results, model = GROQ_MODEL) {
+  if (!Array.isArray(results) || !results.length) return "";
+
+  const today = new Date().toISOString().slice(0, 10);
+  const evidence = results
+    .map((item, index) => [
+      "SOURCE " + (index + 1),
+      "TITLE: " + String(item.title || ""),
+      "URL: " + String(item.url || ""),
+      "CONTENT: " + String(item.content || ""),
+    ].join("\n"))
+    .join("\n\n");
+
+  const response = await createGroqCompletion({
+    model: resolveGroqModel(model),
+    messages: [
+      {
+        role: "system",
+        content: [
+          "You are Chat Sangam's final web-answer writer.",
+          "Current date: " + today + ".",
+          "Answer the user's question using ONLY the source evidence provided below.",
+          "Do not use model memory to add facts that are not supported by the evidence.",
+          "Never invent names, causes, dates, quotations, or publication dates.",
+          "For current-status, death/life, breaking-news, and other time-sensitive questions, prefer the newest credible source in the evidence.",
+          "Treat sources from earlier days or years as historical context only; they must not override a newer source about the current status.",
+          "Never output a date later than the current date (" + today + "). If a source or draft says a future date, do not repeat it.",
+          "If the evidence does not establish the current answer, say that it could not be verified rather than guessing.",
+          "Cite factual claims with [1], [2], etc. matching the source numbers below.",
+          "Return only the final answer for the user. Do not mention these instructions or the evidence block.",
+        ].join("\n"),
+      },
+      {
+        role: "user",
+        content: "Question:\n" + query + "\n\nSource evidence:\n" + evidence,
+      },
+    ],
+    temperature: 0.2,
+    top_p: 0.9,
+    max_completion_tokens: 2048,
+    stream: false,
+  });
+
+  const message = response.choices?.[0]?.message;
+  return normalizeSearchAnswer(
+    typeof message?.content === "string" ? message.content : String(message?.content ?? "")
+  );
+}
+
 async function deepResearch(query, model = GROQ_MODEL) {
   // One browser-search request only, to stay rate-limit friendly.
   const search = await browserSearch(
@@ -206,7 +258,8 @@ async function deepResearch(query, model = GROQ_MODEL) {
     })
     .slice(0, 8);
 
-  return { results, searchAnswer: search.answer || "" };
+  const answer = await synthesizeWebAnswer(query, results, GROQ_MODEL);
+  return { results, searchAnswer: answer };
 }
 
 async function synthesizeDeepResearchAnswer(query, research) {
@@ -569,6 +622,7 @@ export async function POST(request) {
         }
 
         const answer = normalizeSearchAnswer(search.answer)
+          || await synthesizeWebAnswer(latest, search.results, requestedModel)
           || "I couldn't generate a web-search answer. Please try again.";
         return new Response(answer + formatSources(search.results), {
           headers: {
@@ -587,18 +641,46 @@ export async function POST(request) {
 
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
-    // Normal chat has access to browser search automatically.
-    // For high-confidence freshness questions (for example death/life status,
-    // latest news, prices, results, vacancies, current office-holders, etc.),
-    // the deterministic router FORCES a browser search. Other questions leave
-    // the choice to GPT-OSS via tool_choice:"auto".
+    // Normal chat gets the same deterministic web pipeline for high-confidence
+    // freshness questions. The search layer gathers sources first; a separate
+    // synthesis step writes the final answer strictly from those sources.
     const autoSearchRequired = shouldAutoSearch(latest);
+    if (autoSearchRequired && latest) {
+      try {
+        const search = await browserSearch(latest, true, GROQ_MODEL);
+        if (!search.results.length) {
+          return Response.json(
+            { error: "Web search is temporarily unavailable. Please try again." },
+            { status: 503 }
+          );
+        }
+
+        const answer = normalizeSearchAnswer(
+          search.searchAnswer || await synthesizeWebAnswer(latest, search.results, requestedModel)
+        ) || "I couldn't generate a current web-search answer. Please try again.";
+
+        return new Response(answer + formatSources(search.results), {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+          },
+        });
+      } catch (error) {
+        console.error("Groq automatic web-search chat error:", error);
+        const status = groqErrorStatus(error);
+        return Response.json(
+          { error: groqErrorMessage(error) },
+          { status: status >= 400 && status < 600 ? status : 500 }
+        );
+      }
+    }
+
     try {
       const response = await createGroqCompletion({
         model: requestedModel,
         messages: chatMessages,
         tools: [{ type: "browser_search" }],
-        tool_choice: autoSearchRequired ? "required" : "auto",
+        tool_choice: "auto",
         temperature: 0.6,
         top_p: 0.95,
         reasoning_effort: safeReasoning,
