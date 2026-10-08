@@ -523,78 +523,53 @@ export async function POST(request) {
 
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
-    // GPT-OSS 120B gets a non-streaming response in Chat Sangam.
-    // This avoids edge/runtime stream interruptions on longer reasoning responses
-    // while keeping the normal 20B experience fully streamed.
-    if (requestedModel === "openai/gpt-oss-120b") {
-      try {
-        const response = await createGroqCompletion({
-          model: requestedModel,
-          messages: chatMessages,
-          temperature: 0.6,
-          top_p: 0.95,
-          reasoning_effort: safeReasoning,
-          include_reasoning: false,
-          max_completion_tokens: 4096,
-          stream: false,
-        });
-        const content = typeof response.choices?.[0]?.message?.content === "string"
-          ? response.choices[0].message.content
-          : String(response.choices?.[0]?.message?.content ?? "No response.");
-        return new Response(content, {
-          headers: {
-            "Content-Type": "text/plain; charset=utf-8",
-            "Cache-Control": "no-cache, no-transform",
-          },
-        });
-      } catch (error) {
-        console.error("Groq GPT-OSS 120B error:", error);
-        const status = groqErrorStatus(error);
-        return Response.json(
-          { error: groqErrorMessage(error) },
-          { status: status >= 400 && status < 600 ? status : 500 }
-        );
-      }
-    }
-
+    // Normal chat has access to browser search automatically.
+    // GPT-OSS decides whether the question actually needs fresh web information.
+    // We keep this non-streaming because Groq's built-in browser-search flow
+    // returns the completed answer plus executed search results in one response.
     try {
-      const responseStream = await createGroqCompletion({
+      const response = await createGroqCompletion({
         model: requestedModel,
         messages: chatMessages,
+        tools: [{ type: "browser_search" }],
+        tool_choice: "auto",
         temperature: 0.6,
         top_p: 0.95,
         reasoning_effort: safeReasoning,
         include_reasoning: false,
         max_completion_tokens: 4096,
-        stream: true,
+        stream: false,
       });
 
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        async start(controller) {
+      const message = response.choices?.[0]?.message;
+      const answer = typeof message?.content === "string" ? message.content : String(message?.content ?? "No response.");
+      const executedTools = message?.executed_tools || [];
+      const results = executedTools
+        .flatMap((tool) => tool?.search_results?.results || [])
+        .map((item) => ({
+          title: item.title || "Web result",
+          url: item.url || "",
+          content: item.content || "",
+          score: typeof item.score === "number" ? item.score : null,
+        }))
+        .filter((item) => {
           try {
-            for await (const chunk of responseStream) {
-              const text = chunk.choices?.[0]?.delta?.content || "";
-              if (text) controller.enqueue(encoder.encode(text));
-            }
-            controller.close();
-          } catch (error) {
-            console.error("Groq streaming error:", error);
-            controller.enqueue(encoder.encode("\n\n[AI response stream interrupted. Please try again.]"));
-            controller.close();
+            new URL(item.url);
+            return true;
+          } catch {
+            return false;
           }
-        },
-      });
+        })
+        .slice(0, 6);
 
-      return new Response(stream, {
+      return new Response(normalizeSearchAnswer(answer) + formatSources(results), {
         headers: {
           "Content-Type": "text/plain; charset=utf-8",
           "Cache-Control": "no-cache, no-transform",
-          Connection: "keep-alive",
         },
       });
     } catch (error) {
-      console.error("Groq chat completion error:", error);
+      console.error("Groq automatic web-search chat error:", error);
       const status = groqErrorStatus(error);
       return Response.json(
         { error: groqErrorMessage(error) },
