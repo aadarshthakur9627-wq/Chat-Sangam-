@@ -101,7 +101,7 @@ async function createGroqCompletion(params) {
     } catch (error) {
       lastError = error;
       const status = groqErrorStatus(error);
-      const retryable = status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+      const retryable = status === 500 || status === 502 || status === 503 || status === 504;
 
       if (!retryable || attempt === 1) throw error;
 
@@ -310,8 +310,10 @@ async function deepResearch(query, model = GROQ_MODEL) {
     })
     .slice(0, 8);
 
-  const answer = await synthesizeWebAnswer(query, results, GROQ_MODEL);
-  return { results, searchAnswer: answer };
+  return {
+    results,
+    searchAnswer: normalizeSearchAnswer(message?.content || ""),
+  };
 }
 
 async function synthesizeDeepResearchAnswer(query, research) {
@@ -673,9 +675,8 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(
-          await synthesizeWebAnswer(latest, search.results, requestedModel)
-        ) || "I couldn't generate a web-search answer. Please try again.";
+        const answer = normalizeSearchAnswer(search.searchAnswer)
+          || "I couldn't generate a web-search answer. Please try again.";
         return new Response(answer + formatSources(search.results), {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
@@ -707,9 +708,8 @@ export async function POST(request) {
           );
         }
 
-        const answer = normalizeSearchAnswer(
-          search.searchAnswer || await synthesizeWebAnswer(latest, search.results, requestedModel)
-        ) || "I couldn't generate a current web-search answer. Please try again.";
+        const answer = normalizeSearchAnswer(search.searchAnswer)
+          || "I couldn't generate a current web-search answer. Please try again.";
 
         return new Response(answer + formatSources(search.results), {
           headers: {
