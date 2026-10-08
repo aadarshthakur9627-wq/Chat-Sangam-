@@ -392,6 +392,11 @@ export default function Home() {
     abortControllerRef.current = controller;
     setLoading(true);
 
+    const imageAttachments = nextMessages.flatMap((msg, index) => {
+      const cached = imageCacheRef.current.get(index);
+      return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
+    });
+
     updateChat(chatId, (chat) => ({
       ...chat,
       updatedAt: Date.now(),
@@ -417,11 +422,6 @@ export default function Home() {
         }
         return msg.fileContext ? [{ messageIndex: index, name: msg.fileName || "Attached file", text: msg.fileContext }] : [];
       });
-      const imageAttachments = nextMessages.flatMap((msg, index) => {
-        const cached = imageCacheRef.current.get(index);
-        return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
-      });
-
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
