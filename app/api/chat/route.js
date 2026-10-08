@@ -115,6 +115,15 @@ async function createGroqCompletion(params) {
 }
 
 async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
+  const today = new Date().toISOString().slice(0, 10);
+  const freshnessQuery = [
+    "Current date: " + today + ".",
+    "Search the web for the latest information available as of today.",
+    "If this is a current-status, death/life, breaking-news, or recent-event question, prioritize reports published today or the newest credible reports.",
+    "Do not rely on old articles merely because they rank highly.",
+    "User question: " + query,
+  ].join(" ");
+
   const response = await createGroqCompletion({
     model: resolveGroqModel(model),
     messages: [
@@ -122,8 +131,11 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
         role: "system",
         content: [
           "You are Chat Sangam's web research layer.",
-          "Use browser search to retrieve current, relevant information when useful.",
-          "Prefer primary and authoritative sources when possible.",
+          "Use browser search to retrieve current, relevant information.",
+          "Prefer primary and authoritative sources and the newest credible reporting.",
+          "For current-status questions, compare the dates of search results and prefer the newest reports.",
+          "For questions asking whether a person is alive or dead, verify the current status from multiple recent credible reports when possible; never answer from an old obituary/report alone.",
+          "If newer credible reports contradict older reports, the newer reports determine the current answer.",
           "Return the final answer for the user, not just research notes.",
           "Use concise Markdown and answer the user's exact question.",
           "Do not use Markdown tables unless the user explicitly asks for a table.",
@@ -135,7 +147,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
           "Return a concise synthesis, but do not hide the source URLs/results from the application.",
         ].join("\n"),
       },
-      { role: "user", content: query },
+      { role: "user", content: freshnessQuery },
     ],
     tools: [{ type: "browser_search" }],
     // Web Search can safely fall back to a normal answer for greetings/simple prompts.
@@ -523,7 +535,7 @@ export async function POST(request) {
 
     if (webSearch && latest) {
       try {
-        const search = await browserSearch(latest, false, requestedModel);
+        const search = await browserSearch(latest, true, requestedModel);
         if (!search.results.length && !search.answer) {
           return Response.json(
             { error: "Web search is temporarily unavailable. Please turn Web Search off or try again." },
