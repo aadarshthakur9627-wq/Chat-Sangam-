@@ -157,7 +157,6 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
     tool_choice: forceSearch ? "required" : "auto",
     reasoning_effort: "low",
     include_reasoning: false,
-    citation_options: "enabled",
     max_completion_tokens: 2048,
     stream: false,
   });
