@@ -9,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 const GROQ_MODEL = "openai/gpt-oss-20b";
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const GROQ_MODEL_CATALOG = {
   "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
@@ -427,6 +428,88 @@ function formatSources(results) {
   return "\n\n__CHAT_SANGAM_SOURCES__" + JSON.stringify(payload) + "__END_CHAT_SANGAM_SOURCES__";
 }
 
+function geminiErrorMessage(status, payload) {
+  const detail = payload?.error?.message || "";
+  if (status === 400) return "Gemini rejected the request. Please try a shorter prompt or retry once.";
+  if (status === 401 || status === 403) return "Gemini API access was denied. Check GEMINI_API_KEY and the Google AI Studio API access.";
+  if (status === 404) return "The selected Gemini model is unavailable for this API key or endpoint.";
+  if (status === 429) return "Gemini free-tier rate limit reached. Wait before retrying; Chat Sangam will not automatically repeat this request.";
+  if (status >= 500) return "Gemini is temporarily unavailable. Please try again later.";
+  return detail ? "Gemini API error: " + detail.slice(0, 240) : "Gemini request failed. Please try again.";
+}
+
+async function generateGeminiAnswer(messages, attachments, query, useSearch) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini is not configured on the server. Add GEMINI_API_KEY in Vercel Production environment variables.");
+  }
+
+  const builtMessages = attachFileContext(messages, attachments);
+  const systemText = CHAT_SANGAM_SYSTEM_PROMPT
+    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")
+    + "\\n\\nCURRENT ENGINE: Google Gemini using " + GEMINI_MODEL + "."
+    + (useSearch
+      ? "\\n\\nUse Google Search grounding for current or time-sensitive claims. Prefer official primary sources. Do not invent citations; state when evidence is insufficient."
+      : "");
+
+  const contents = builtMessages
+    .filter((message) => message && (message.role === "user" || message.role === "assistant"))
+    .map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: typeof message.content === "string" ? message.content : String(message.content ?? "") }],
+    }))
+    .filter((message) => message.parts[0].text.trim());
+
+  const requestBody = {
+    systemInstruction: { parts: [{ text: systemText }] },
+    contents,
+    generationConfig: {
+      temperature: 0.5,
+      maxOutputTokens: 3072,
+    },
+  };
+  if (useSearch) requestBody.tools = [{ google_search: {} }];
+
+  let response;
+  try {
+    response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent?key=" + encodeURIComponent(apiKey),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+        cache: "no-store",
+      }
+    );
+  } catch {
+    throw new Error("Could not connect to Gemini. Check the connection and try again.");
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(geminiErrorMessage(response.status, payload));
+
+  const candidate = payload?.candidates?.[0];
+  const answer = (candidate?.content?.parts || [])
+    .map((part) => typeof part.text === "string" ? part.text : "")
+    .filter(Boolean)
+    .join("\\n")
+    .trim();
+  if (!answer) {
+    const reason = candidate?.finishReason ? " (" + candidate.finishReason + ")" : "";
+    throw new Error("Gemini returned an empty answer" + reason + ". Please retry with a shorter prompt.");
+  }
+
+  const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
+  const sources = groundingChunks
+    .map((chunk) => chunk?.web)
+    .filter((web) => web?.uri && /^https?:\\/\\//i.test(web.uri))
+    .map((web) => ({ title: web.title || web.uri, url: web.uri, content: "" }))
+    .filter((source, index, all) => all.findIndex((item) => item.url === source.url) === index)
+    .slice(0, 6);
+
+  return { answer, sources };
+}
+
 function sanitizeFileText(text) {
   return String(text ?? "")
     .replace(/\u0000/g, "")
@@ -544,6 +627,8 @@ export async function POST(request) {
     const rawMessages = body.messages;
     const attachments = Array.isArray(body.attachments) ? body.attachments : [];
     const imageAttachments = Array.isArray(body.imageAttachments) ? body.imageAttachments : [];
+    const requestedModelId = typeof body.model === "string" ? body.model : GROQ_MODEL;
+    const isGeminiModel = requestedModelId === GEMINI_MODEL;
     const requestedModel = resolveGroqModel(body.model);
     const requestedCompareModels = Array.isArray(body.compareModels)
       ? [...new Set(body.compareModels.map(resolveGroqModel))].filter((model) => GROQ_MODEL_CATALOG[model]?.kind === "text").slice(0, 3)
@@ -633,6 +718,25 @@ export async function POST(request) {
         return Response.json(
           { error: groqErrorMessage(error) },
           { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
+        );
+      }
+    }
+
+    if (isGeminiModel && latest && !imageAttachments.length) {
+      try {
+        const useGeminiSearch = Boolean(webSearch || deepResearchEnabled || shouldAutoSearch(latest));
+        const result = await generateGeminiAnswer(messages, attachments, latest, useGeminiSearch);
+        return new Response(result.answer + formatSources(result.sources), {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+          },
+        });
+      } catch (error) {
+        console.error("Gemini chat error:", error);
+        return Response.json(
+          { error: error?.message || "Gemini request failed. Please try again." },
+          { status: 503 }
         );
       }
     }
