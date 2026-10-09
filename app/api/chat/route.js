@@ -686,7 +686,7 @@ export async function POST(request) {
         top_p: 0.95,
         reasoning_effort: safeReasoning,
         include_reasoning: false,
-        max_completion_tokens: 4096,
+        max_completion_tokens: 3072,
         stream: false,
       });
 
