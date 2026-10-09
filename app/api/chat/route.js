@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const GROQ_MODEL = "openai/gpt-oss-20b";
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 const GROQ_MODEL_CATALOG = {
   "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
@@ -432,7 +432,7 @@ function geminiErrorMessage(status, payload) {
   const detail = payload?.error?.message || "";
   if (status === 400) return "Gemini rejected the request. Please try a shorter prompt or retry once.";
   if (status === 401 || status === 403) return "Gemini API access was denied. Check GEMINI_API_KEY and the Google AI Studio API access.";
-  if (status === 404) return "The selected Gemini model is unavailable for this API key or endpoint.";
+  if (status === 404) return "Gemini model not found or unavailable for this API key. Chat Sangam is configured for Gemini 3.5 Flash-Lite; verify the model access in Google AI Studio if this continues.";
   if (status === 429) return "Gemini free-tier rate limit reached. Wait before retrying; Chat Sangam will not automatically repeat this request.";
   if (status >= 500) return "Gemini is temporarily unavailable. Please try again later.";
   return detail ? "Gemini API error: " + detail.slice(0, 240) : "Gemini request failed. Please try again.";

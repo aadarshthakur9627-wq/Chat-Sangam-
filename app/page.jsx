@@ -9,7 +9,7 @@ const STORAGE_KEY = "chat-sangam-history-v2";
 
 const GROQ_MODELS = [
   { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
-  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google Gemini", icon: "✦", color: "violet", description: "Fast · Google Search grounding", kind: "text" },
+  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite", provider: "Google Gemini", icon: "✦", color: "violet", description: "Free-tier friendly · Google Search grounding", kind: "text" },
   { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
 ];
 
