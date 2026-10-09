@@ -486,7 +486,11 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   }
 
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(geminiErrorMessage(response.status, payload));
+  if (!response.ok) {
+    const error = new Error(geminiErrorMessage(response.status, payload));
+    error.status = response.status;
+    throw error;
+  }
 
   const candidate = payload?.candidates?.[0];
   const answer = (candidate?.content?.parts || [])
@@ -734,9 +738,10 @@ export async function POST(request) {
         });
       } catch (error) {
         console.error("Gemini chat error:", error);
+        const status = Number(error?.status);
         return Response.json(
           { error: error?.message || "Gemini request failed. Please try again." },
-          { status: 503 }
+          { status: status >= 400 && status < 600 ? status : 503 }
         );
       }
     }
