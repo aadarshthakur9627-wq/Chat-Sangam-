@@ -492,7 +492,7 @@ export async function POST(request) {
 
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {
-        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly.";
+        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. If the user asks for current information, state the limitation instead of attempting a browser tool call.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
           try {
             const response = await compareModelCompletion(
