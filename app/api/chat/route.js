@@ -96,7 +96,7 @@ function groqRetryAfterSeconds(error) {
   const numeric = Number(raw);
   if (Number.isFinite(numeric) && numeric > 0) return Math.ceil(numeric);
 
-  const secondsMatch = String(raw).match(/^(\\d+(?:\\.\\d+)?)s$/i);
+  const secondsMatch = String(raw).match(/^(\d+(?:\.\d+)?)s$/i);
   if (secondsMatch) return Math.ceil(Number(secondsMatch[1]));
   const date = Date.parse(String(raw));
   if (Number.isFinite(date)) return Math.max(1, Math.ceil((date - Date.now()) / 1000));
@@ -666,9 +666,7 @@ export async function POST(request) {
 
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
-    // Normal chat gets the same deterministic web pipeline for high-confidence
-    // freshness questions. The search layer gathers sources first; a separate
-    // synthesis step writes the final answer strictly from those sources.
+    // Route high-confidence freshness questions through web search so stale model memory is not treated as current evidence.
     const autoSearchRequired = shouldAutoSearch(latest);
     if (autoSearchRequired && latest) {
       try {
