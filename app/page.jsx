@@ -9,7 +9,6 @@ const STORAGE_KEY = "chat-sangam-history-v2";
 
 const GROQ_MODELS = [
   { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
-  { id: "openai/gpt-oss-120b", name: "GPT-OSS 120B", provider: "Groq API", icon: "🧠", color: "violet", description: "Advanced reasoning", kind: "text" },
   { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
 ];
 
@@ -139,7 +138,7 @@ export default function Home() {
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState(ACTIVE_ENGINE.id);
   const [compareMode, setCompareMode] = useState(false);
-  const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b", "openai/gpt-oss-120b"]);
+  const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b"]);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedImages, setAttachedImages] = useState([]);
   const imageCacheRef = useRef(new Map());
@@ -226,12 +225,11 @@ export default function Home() {
   const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
   function toggleCompareMode() {
-    if (loading || visionActive) return;
+    const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
+    if (loading || visionActive || textModels.length < 2) return;
     setCompareModelIds((current) => {
-      const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
       const valid = current.filter((id) => textModels.includes(id));
-      const next = valid.length >= 2 ? valid : textModels.slice(0, 2);
-      return next;
+      return valid.length >= 2 ? valid : textModels.slice(0, 2);
     });
     setCompareMode((value) => !value);
   }
@@ -880,24 +878,28 @@ export default function Home() {
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
-                  <div className="model-menu-divider" />
-                  <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
-                    <span className="compare-toggle-icon">⇄</span>
-                    <span className="model-option-copy"><strong>Compare Groq models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
-                    <span className={"compare-switch " + (compareMode ? "on" : "")} aria-hidden="true"><i /></span>
-                  </button>
-                  {compareMode && !visionActive && (
-                    <div className="compare-picks">
-                      {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
-                        <label key={item.id} className="compare-pick">
-                          <input type="checkbox" checked={compareModelIds.includes(item.id)}
-                            onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
-                          <span>{item.icon}</span><strong>{item.name}</strong>
-                        </label>
-                      ))}
-                    </div>
+                  {GROQ_MODELS.filter((item) => item.kind === "text").length >= 2 && (
+                    <>
+                      <div className="model-menu-divider" />
+                      <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
+                        <span className="compare-toggle-icon">⇄</span>
+                        <span className="model-option-copy"><strong>Compare Groq models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
+                        <span className={"compare-switch " + (compareMode ? "on" : "")} aria-hidden="true"><i /></span>
+                      </button>
+                      {compareMode && !visionActive && (
+                        <div className="compare-picks">
+                          {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
+                            <label key={item.id} className="compare-pick">
+                              <input type="checkbox" checked={compareModelIds.includes(item.id)}
+                                onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
+                              <span>{item.icon}</span><strong>{item.name}</strong>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                      <div className="model-menu-divider" />
+                    </>
                   )}
-                  <div className="model-menu-divider" />
                   <div className="model-menu-head future-head"><span>FUTURE ENGINES</span><small>Coming soon</small></div>
                   {FUTURE_ENGINES.map((item) => (
                     <button className="model-option disabled" type="button" role="menuitem" key={item.name} disabled>
