@@ -78,9 +78,9 @@ function shouldAutoSearch(query) {
     /(वर्तमान प्रधानमंत्री|वर्तमान राष्ट्रपति|वर्तमान मुख्यमंत्री|वर्तमान राज्यपाल|अभी के प्रधानमंत्री|अभी के राष्ट्रपति)/,
     /\b(law|rule|rules|policy|eligibility|guidelines|regulation|regulations|deadline|application last date)\b/,
     /(कानून|नियम|पॉलिसी|पात्रता|दिशानिर्देश|डेडलाइन|अंतिम तिथि|आवेदन की अंतिम तारीख)/,
-    /\\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\\b.*\\b(19|20)\\d{2}\\b/,
+    /\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\b.*\b(19|20)\d{2}\b/,
     /\\b(19|20)\\d{2}\\b.*\\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\\b/,
-    /(नोबेल|पुरस्कार|अवार्ड).*(19|20)\\d{2}/
+    /(नोबेल|पुरस्कार|अवार्ड).*(19|20)\d{2}/
   ];
 
   return freshnessPatterns.some((pattern) => pattern.test(text));
@@ -234,7 +234,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
               "For current awards, use official category-specific announcements. Never name a winner unless an official announcement exists and its scheduled time has passed in the stated time zone.",
               "For broad award questions, cover all requested categories. If a category cannot be verified, say so rather than guessing.",
               "Use concise Markdown. Cite only sources actually retrieved; never invent citations.",
-            ].join("\\n"),
+            ].join("\n"),
           },
           { role: "user", content: freshnessQuery },
         ]
