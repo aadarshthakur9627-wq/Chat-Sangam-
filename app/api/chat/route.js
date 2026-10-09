@@ -114,10 +114,12 @@ async function createGroqCompletion(params) {
 }
 
 async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const currentTimestamp = now.toISOString();
   const freshnessQuery = [
-    "Current date: " + today + ".",
-    "Search the web for the latest information available as of today.",
+    "Current date: " + today + ". Current timestamp: " + currentTimestamp + " (UTC).",
+    "Search the web for the latest information available as of this exact timestamp, not merely as of the calendar date.",
     "If this is a current-status, death/life, breaking-news, or recent-event question, prioritize reports published today or the newest credible reports.",
     "Do not rely on old articles merely because they rank highly.",
     "User question: " + query,
@@ -132,8 +134,11 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
         "For current-status, death/life, breaking-news, and recent-event questions, you MUST call browser_search before answering.",
         "Search for the exact current status as of today, not historical articles.",
         "Interpret the scope of the user's question carefully. If the user asks who won a broad award or event (for example, 'Nobel Prize 2026') without naming a category, search for winners across every relevant category rather than answering with only one category.",
-        "For broad Nobel Prize winner lists, verify each category separately using category-specific searches or sources: Physics, Chemistry, Physiology or Medicine, Literature, Peace, and Economic Sciences. Do not rely on a single generic 'All Nobel Prizes' page if it does not contain current-year winners for every category.",
-        "Check the Peace Prize explicitly whenever its announcement date has passed. A category missing from one source is not evidence that it has not been announced; search for its official announcement and a reliable independent report.",
+        "For broad Nobel Prize winner lists, verify each category separately using category-specific official press releases or result pages: Physics, Chemistry, Physiology or Medicine, Literature, Peace, and Economic Sciences. Do not rely on a single generic 'All Nobel Prizes' page if it does not contain current-year winners for every category.",
+        "Time-sensitive awards safety rule: never state a winner as announced before the official scheduled announcement time has passed in the event's stated time zone. Compare the current UTC timestamp supplied in the user query with the official schedule, converting time zones carefully.",
+        "A search snippet, future-dated page, generic prize summary, or unsupported result is not sufficient evidence that an award was announced. To name a current-year winner, retrieve an official category-specific announcement/press release that confirms that exact winner and whose announcement time is not in the future.",
+        "If the official schedule says an announcement is still in the future, explicitly mark that category 'not yet announced as of [current timestamp]' and do not name a winner, even if other retrieved snippets claim one. If schedule or announcement status cannot be reliably established, say 'not verified' rather than guessing.",
+        "Check the Peace Prize explicitly, but do not infer it has been announced just because its calendar date has arrived; verify that the scheduled announcement time has passed and find the official category-specific announcement.",
         "Only mark a category as not yet announced when a current official announcement schedule supports that status. If a category cannot be verified, label it 'not verified' rather than guessing.",
         "Do not claim the list is complete or that all winners are officially announced unless every category scheduled by the current date has been checked. Include the source-supported winner names and category for each verified result, and be transparent about any gaps.",
         "Prefer primary and authoritative sources and the newest credible reporting.",
