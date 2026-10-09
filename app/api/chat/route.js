@@ -132,6 +132,8 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
         "Use browser search to retrieve current, relevant information.",
         "For current-status, death/life, breaking-news, and recent-event questions, you MUST call browser_search before answering.",
         "Search for the exact current status as of today, not historical articles.",
+        "Interpret the scope of the user's question carefully. If the user asks who won a broad award or event (for example, 'Nobel Prize 2026') without naming a category, search for the winners across the relevant categories rather than answering with only one category.",
+        "For Nobel Prize questions with no category specified, retrieve the latest winners across all announced categories for that year, clearly label each category, and mention if any category has not yet been announced or verified. If only one category can be verified from retrieved results, explicitly say that the answer covers only that category.",
         "Prefer primary and authoritative sources and the newest credible reporting.",
         "For current-status questions, compare dates and prefer the newest reports.",
         "If newer credible reports contradict older reports, the newer reports determine the current answer.",
