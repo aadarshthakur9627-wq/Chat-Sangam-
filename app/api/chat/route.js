@@ -12,7 +12,6 @@ const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 
 const GROQ_MODEL_CATALOG = {
   "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
-  "openai/gpt-oss-120b": { name: "GPT-OSS 120B", kind: "text" },
   "qwen/qwen3.8-27b": { name: "Qwen 3.8 27B", kind: "vision" },
 };
 
