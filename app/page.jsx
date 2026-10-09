@@ -222,7 +222,7 @@ export default function Home() {
   const visionActive = attachedImages.length > 0;
   const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
-  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
+  const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
   function toggleCompareMode() {
     const textModels = GROQ_MODELS.filter((model) => model.kind === "text" && model.provider === "Groq API").map((model) => model.id);
@@ -871,7 +871,7 @@ export default function Home() {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
                         setModelMenuOpen(false);
-                        if (item.kind === "vision") setCompareMode(false);
+                        if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
                       }}
                       disabled={item.kind === "vision" && !visionActive}>
                       <span className="model-option-icon">{item.icon}</span>
