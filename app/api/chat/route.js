@@ -447,9 +447,9 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   const builtMessages = attachFileContext(messages, attachments);
   const systemText = CHAT_SANGAM_SYSTEM_PROMPT
     .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")
-    + "\\n\\nCURRENT ENGINE: Google Gemini using " + GEMINI_MODEL + "."
+    + "\n\nCURRENT ENGINE: Google Gemini using " + GEMINI_MODEL + "."
     + (useSearch
-      ? "\\n\\nUse Google Search grounding for current or time-sensitive claims. Prefer official primary sources. Do not invent citations; state when evidence is insufficient."
+      ? "\n\nUse Google Search grounding for current or time-sensitive claims. Prefer official primary sources. Do not invent citations; state when evidence is insufficient."
       : "");
 
   const contents = builtMessages
@@ -492,7 +492,7 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   const answer = (candidate?.content?.parts || [])
     .map((part) => typeof part.text === "string" ? part.text : "")
     .filter(Boolean)
-    .join("\\n")
+    .join("\n")
     .trim();
   if (!answer) {
     const reason = candidate?.finishReason ? " (" + candidate.finishReason + ")" : "";
@@ -502,7 +502,7 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
   const sources = groundingChunks
     .map((chunk) => chunk?.web)
-    .filter((web) => web?.uri && /^https?:\\/\\//i.test(web.uri))
+    .filter((web) => web?.uri && /^https?:\/\//i.test(web.uri))
     .map((web) => ({ title: web.title || web.uri, url: web.uri, content: "" }))
     .filter((source, index, all) => all.findIndex((item) => item.url === source.url) === index)
     .slice(0, 6);
