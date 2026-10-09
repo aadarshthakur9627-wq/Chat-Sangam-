@@ -79,7 +79,7 @@ function shouldAutoSearch(query) {
     /\b(law|rule|rules|policy|eligibility|guidelines|regulation|regulations|deadline|application last date)\b/,
     /(कानून|नियम|पॉलिसी|पात्रता|दिशानिर्देश|डेडलाइन|अंतिम तिथि|आवेदन की अंतिम तारीख)/,
     /\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\b.*\b(19|20)\d{2}\b/,
-    /\\b(19|20)\\d{2}\\b.*\\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\\b/,
+    /\b(19|20)\d{2}\b.*\b(nobel|prize|prizes|award|awards|laureate|laureates|oscar|grammy|pulitzer|booker)\b/,
     /(नोबेल|पुरस्कार|अवार्ड).*(19|20)\d{2}/
   ];
 
