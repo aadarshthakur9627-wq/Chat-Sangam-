@@ -9,13 +9,13 @@ const STORAGE_KEY = "chat-sangam-history-v2";
 
 const GROQ_MODELS = [
   { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
+  { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", provider: "Google Gemini", icon: "✦", color: "violet", description: "Fast · Google Search grounding", kind: "text" },
   { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
 ];
 
 const ACTIVE_ENGINE = GROQ_MODELS[0];
 
 const FUTURE_ENGINES = [
-  { name: "Gemini", icon: "✦" },
   { name: "OpenAI", icon: "◉" },
   { name: "Claude", icon: "◌" },
   { name: "Perplexity", icon: "⌕" },
@@ -222,10 +222,10 @@ export default function Home() {
   const visionActive = attachedImages.length > 0;
   const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
-  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
+  const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
   function toggleCompareMode() {
-    const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
+    const textModels = GROQ_MODELS.filter((model) => model.kind === "text" && model.provider === "Groq API").map((model) => model.id);
     if (loading || visionActive || textModels.length < 2) return;
     setCompareModelIds((current) => {
       const valid = current.filter((id) => textModels.includes(id));
@@ -406,6 +406,7 @@ export default function Home() {
         vision: imageAttachments.length > 0,
         modelId: effectiveModel.id,
         modelName: effectiveModel.name,
+        modelProvider: effectiveModel.provider,
       }],
     }));
 
@@ -859,18 +860,18 @@ export default function Home() {
             </button>
             <div className="model-selector">
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
-                <span className="engine-dot" /> <strong>Groq</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
+                <span className="engine-dot" /> <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className="model-menu model-menu-portal" role="menu">
-                  <div className="model-menu-head"><span>GROQ MODELS</span><small>{GROQ_MODELS.length} active</small></div>
+                  <div className="model-menu-head"><span>AI MODELS</span><small>{GROQ_MODELS.length} available</small></div>
                   {GROQ_MODELS.map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
                       onClick={() => {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
                         setModelMenuOpen(false);
-                        if (item.kind === "vision") setCompareMode(false);
+                        if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
                       }}
                       disabled={item.kind === "vision" && !visionActive}>
                       <span className="model-option-icon">{item.icon}</span>
@@ -878,7 +879,7 @@ export default function Home() {
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
-                  {GROQ_MODELS.filter((item) => item.kind === "text").length >= 2 && (
+                  {GROQ_MODELS.filter((item) => item.kind === "text" && item.provider === "Groq API").length >= 2 && (
                     <>
                       <div className="model-menu-divider" />
                       <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
@@ -888,7 +889,7 @@ export default function Home() {
                       </button>
                       {compareMode && !visionActive && (
                         <div className="compare-picks">
-                          {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
+                          {GROQ_MODELS.filter((item) => item.kind === "text" && item.provider === "Groq API").map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)}
                                 onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
@@ -927,7 +928,7 @@ export default function Home() {
         <div className="model-strip">
           <div className="selected-model">
             <span className={"model-orb " + effectiveModel.color}>{effectiveModel.icon}</span>
-            <span><strong>{compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
+            <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
             <i />
             <span className="live-label"><b /> Online</span>
           </div>
@@ -970,7 +971,7 @@ export default function Home() {
                 >
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
-                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : "Groq · " + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : (msg.modelProvider === "Google Gemini" ? "Gemini · " : "Groq · ") + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
                     <div className={"message-bubble " + (msg.role === "assistant" ? "assistant-answer-bubble" : "")}>
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
@@ -1137,7 +1138,7 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
