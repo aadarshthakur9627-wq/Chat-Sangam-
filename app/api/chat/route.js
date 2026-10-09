@@ -41,6 +41,7 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "Accuracy comes before confidence: do not invent facts, names, dates, quotes, citations, sources, product features, code execution, or test results. Separate verified facts from assumptions and clearly state uncertainty when evidence is insufficient.",
   "For factual questions, answer the exact question first, then give only the context needed. For multi-part requests, address every requested part or clearly identify what could not be verified.",
   "For calculations, show concise steps and check the result when practical. For teaching, define unfamiliar terms, explain from the learner's level, and use a simple example when useful.",
+  "For science explanations, distinguish established mechanisms from analogies and examples. Check that examples are scientifically accurate; do not describe water vapour or mist as oxygen, and state uncertainty when a process is simplified.",
   "For coding help, state important assumptions, preserve existing behavior unless asked to change it, and never claim that code was run or tests passed unless that actually happened.",
   "Use concise, well-structured Markdown. Prefer bullets for steps and comparisons; use a table only when it makes the answer easier to understand.",
   "Ask a clarification only when a missing detail materially blocks a correct answer; otherwise make a reasonable, explicitly stated assumption and proceed.",
@@ -61,21 +62,21 @@ function latestUserMessage(messages) {
 }
 
 function shouldAutoSearch(query) {
-  const text = String(query || "").toLowerCase().replace(/\\s+/g, " ").trim();
+  const text = String(query || "").toLowerCase().replace(/\s+/g, " ").trim();
   if (!text) return false;
 
   // High-confidence freshness signals: these questions should not rely on the model's
   // static knowledge. This deterministic layer complements tool_choice:"auto".
   const freshnessPatterns = [
-    /\\b(today|tonight|tomorrow|yesterday|now|currently|current|latest|recent|recently|just now|this year|this month|this week|live|breaking|update|updates|news)\\b/,
-    /\\b(aaj|abhi|vartaman|वर्तमान|आज|अभी|लेटेस्ट|नवीनतम|हालिया|हाल में|ताजा|ताज़ा|ब्रेकिंग|खबर|समाचार|अपडेट)\\b/,
-    /\\b(alive|dead|died|dies|death|passed away|is he alive|is she alive)\\b/,
+    /\b(today|tonight|tomorrow|yesterday|now|currently|current|latest|recent|recently|just now|this year|this month|this week|live|breaking|update|updates|news)\b/,
+    /\b(aaj|abhi|vartaman|वर्तमान|आज|अभी|लेटेस्ट|नवीनतम|हालिया|हाल में|ताजा|ताज़ा|ब्रेकिंग|खबर|समाचार|अपडेट)\b/,
+    /\b(alive|dead|died|dies|death|passed away|is he alive|is she alive)\b/,
     /(जिंदा|जीवित|मृत|मौत|मृत्यु|निधन|निधन हो गया|मर गया|मर गए|क्या .* की मृत्यु)/,
-    /\\b(price|cost|rate|stock price|share price|weather|temperature|score|result|results|vacancy|vacancies|recruitment|cutoff|cut-off|admit card|answer key|schedule|timetable|release date|availability)\\b/,
+    /\b(price|cost|rate|stock price|share price|weather|temperature|score|result|results|vacancy|vacancies|recruitment|cutoff|cut-off|admit card|answer key|schedule|timetable|release date|availability)\b/,
     /(कीमत|दाम|रेट|शेयर|मौसम|तापमान|स्कोर|रिजल्ट|परिणाम|वैकेंसी|भर्ती|कटऑफ|कट-ऑफ|एडमिट कार्ड|उत्तर कुंजी|शेड्यूल|तारीख|उपलब्ध)/,
-    /\\b(who is the (current|new)|who's the (current|new)|current (pm|prime minister|president|cm|chief minister|governor|ceo))\\b/,
+    /\b(who is the (current|new)|who's the (current|new)|current (pm|prime minister|president|cm|chief minister|governor|ceo))\b/,
     /(वर्तमान प्रधानमंत्री|वर्तमान राष्ट्रपति|वर्तमान मुख्यमंत्री|वर्तमान राज्यपाल|अभी के प्रधानमंत्री|अभी के राष्ट्रपति)/,
-    /\\b(law|rule|rules|policy|eligibility|guidelines|regulation|regulations|deadline|application last date)\\b/,
+    /\b(law|rule|rules|policy|eligibility|guidelines|regulation|regulations|deadline|application last date)\b/,
     /(कानून|नियम|पॉलिसी|पात्रता|दिशानिर्देश|डेडलाइन|अंतिम तिथि|आवेदन की अंतिम तारीख)/
   ];
 
@@ -87,13 +88,33 @@ function groqErrorStatus(error) {
   return Number(error?.status || error?.statusCode || 500);
 }
 
+function groqRetryAfterSeconds(error) {
+  const headers = error?.headers;
+  const raw = headers?.get?.("retry-after") || headers?.["retry-after"];
+  if (!raw) return null;
+
+  const numeric = Number(raw);
+  if (Number.isFinite(numeric) && numeric > 0) return Math.ceil(numeric);
+
+  const secondsMatch = String(raw).match(/^(\d+(?:\.\d+)?)s$/i);
+  if (secondsMatch) return Math.ceil(Number(secondsMatch[1]));
+  const date = Date.parse(String(raw));
+  if (Number.isFinite(date)) return Math.max(1, Math.ceil((date - Date.now()) / 1000));
+  return null;
+}
+
 function groqErrorMessage(error) {
   const status = groqErrorStatus(error);
   const apiMessage = error?.error?.message || error?.message || "";
 
   if (status === 401) return "Groq API key is invalid or missing. Check GROQ_API_KEY in Vercel Production environment variables.";
   if (status === 403) return "Groq API access was denied. Check the Groq API key permissions and account status.";
-  if (status === 429) return "Groq rate limit reached. Please wait a few seconds and try again.";
+  if (status === 429) {
+    const retryAfter = groqRetryAfterSeconds(error);
+    return retryAfter
+      ? `Groq rate limit reached. Please wait about ${retryAfter} seconds before trying again.`
+      : "Groq rate limit reached. Please wait a little before trying again; repeated retries can extend the limit.";
+  }
   if (status >= 500) return "Groq is temporarily unavailable. Please try again in a moment.";
   return apiMessage ? `Groq API error: ${apiMessage}` : "AI response failed. Please try again.";
 }
@@ -234,11 +255,13 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
 
 
 async function synthesizeWebAnswer(query, results, model = GROQ_MODEL, draftAnswer = "") {
-  // Web search already returns both retrieved sources and a model-generated answer
-  // in the same Groq request. Reuse that answer instead of making a second Groq
-  // completion, which is especially important on free/rate-limited Groq tiers.
-  if (!Array.isArray(results) || !results.length) return "";
-  return normalizeSearchAnswer(draftAnswer || "");
+  // Reuse the browser-search draft to avoid a second Groq completion on free/rate-limited tiers.
+  const answer = normalizeSearchAnswer(draftAnswer || "");
+  if (!answer) return "";
+  if (!Array.isArray(results) || !results.length) {
+    return answer + "\n\n> Verification note: the search returned no usable source links, so this answer could not be source-verified.";
+  }
+  return answer;
 }
 
 async function deepResearch(query, model = GROQ_MODEL) {
@@ -643,16 +666,14 @@ export async function POST(request) {
 
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
-    // Normal chat gets the same deterministic web pipeline for high-confidence
-    // freshness questions. The search layer gathers sources first; a separate
-    // synthesis step writes the final answer strictly from those sources.
+    // Route high-confidence freshness questions through web search so stale model memory is not treated as current evidence.
     const autoSearchRequired = shouldAutoSearch(latest);
     if (autoSearchRequired && latest) {
       try {
         const search = await browserSearch(latest, true, GROQ_MODEL);
-        if (!search.results.length) {
+        if (!search.results.length && !search.answer) {
           return Response.json(
-            { error: "Web search is temporarily unavailable. Please try again." },
+            { error: "Web search returned neither a usable answer nor source links. Please try again in a moment." },
             { status: 503 }
           );
         }
