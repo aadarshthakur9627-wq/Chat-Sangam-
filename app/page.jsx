@@ -854,8 +854,8 @@ export default function Home() {
             <button className={"web-search-toggle " + (webSearch ? "active" : "")} onClick={() => setWebSearch((value) => !value)} disabled={loading} type="button" aria-pressed={webSearch} title="Search the live web before answering">
               <span>⌕</span> Web Search <b>{webSearch ? "ON" : "OFF"}</b>
             </button>
-            <button className={"deep-research-toggle " + (deepResearch ? "active" : "")} onClick={() => { setDeepResearch((value) => !value); setWebSearch(true); }} disabled={loading} type="button" aria-pressed={deepResearch} title="Run a deeper multi-source research pass">
-              <span>◈</span> Deep Research <b>{deepResearch ? "ON" : "OFF"}</b>
+            <button className={"deep-research-toggle " + (deepResearch ? "active" : "")} onClick={() => { setDeepResearch((value) => !value); setWebSearch(true); }} disabled={loading} type="button" aria-pressed={deepResearch} title="Run a focused web research pass with sources">
+              <span>◈</span> Research Mode <b>{deepResearch ? "ON" : "OFF"}</b>
             </button>
             <div className="model-selector">
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
@@ -1137,7 +1137,7 @@ export default function Home() {
         <div className="composer-dock">
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}{deepResearch ? <em> · Deep Research</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : "Groq · " + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
@@ -1197,7 +1197,7 @@ export default function Home() {
               <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFiles.length && !attachedImages.length)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Deep Research is ON · Multiple web searches + source synthesis." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
+          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web search with source-backed answer." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
