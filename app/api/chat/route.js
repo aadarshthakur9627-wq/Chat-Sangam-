@@ -1,8 +1,17 @@
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groqClient;
+
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("The GROQ_API_KEY environment variable is missing or empty. Add it in Vercel Project Settings → Environment Variables.");
+  }
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -132,7 +141,7 @@ async function createGroqCompletion(params) {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await groq.chat.completions.create(params);
+      return await getGroqClient().chat.completions.create(params);
     } catch (error) {
       lastError = error;
       const status = groqErrorStatus(error);
