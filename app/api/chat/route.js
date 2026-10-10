@@ -5,7 +5,7 @@ let groqClient;
 function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    throw new Error("The GROQ_API_KEY environment variable is missing or empty. Add it in Vercel Project Settings → Environment Variables.");
+    throw new Error("The GROQ_API_KEY environment variable is missing or empty. Add it in Vercel Project Settings → Environment Variables for this deployment's environment (Preview or Production).");
   }
   if (!groqClient) {
     groqClient = new Groq({ apiKey });
@@ -124,7 +124,7 @@ function groqErrorMessage(error) {
   const status = groqErrorStatus(error);
   const apiMessage = error?.error?.message || error?.message || "";
 
-  if (status === 401) return "Groq API key is invalid or missing. Check GROQ_API_KEY in Vercel Production environment variables.";
+  if (status === 401) return "Groq API key is invalid or missing. Check GROQ_API_KEY in Vercel Environment Variables and enable it for this deployment's environment (Preview or Production).";
   if (status === 403) return "Groq API access was denied. Check the Groq API key permissions and account status.";
   if (status === 429) {
     const retryAfter = groqRetryAfterSeconds(error);
@@ -454,7 +454,7 @@ function geminiErrorMessage(status, payload) {
 async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini is not configured on the server. Add GEMINI_API_KEY in Vercel Production environment variables.");
+    throw new Error("Gemini is not configured on the server. Add GEMINI_API_KEY in Vercel Environment Variables and enable it for this deployment's environment (Preview or Production).");
   }
 
   const builtMessages = attachFileContext(messages, attachments);
