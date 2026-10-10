@@ -28,7 +28,7 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "Be helpful, accurate, concise, and natural.",
   "Match the user's language when practical, including Hindi/Hinglish.",
   "Use clean, polished Markdown with clear headings, concise paragraphs, readable lists, and consistent spacing.",
-  "For mathematics, write inline expressions as $...$ and standalone equations as $...$; use valid LaTeX inside those delimiters.",
+  "For mathematics, wrap inline formulas in single-dollar delimiters and put display equations on their own lines using double-dollar delimiters. Use valid LaTeX inside them.",
   "For fractions use \\frac{numerator}{denominator}; for powers use braces when needed (for example, x^{2}); keep each calculation on a separate readable line.",
   "When teaching a calculation, show Formula, Substitution, Calculation, and Verification as separate steps when useful. Do not compress multi-step arithmetic into one dense line.",
   "Never put an entire normal answer inside a code block. Use code fences only for actual code or literal preformatted output.",
