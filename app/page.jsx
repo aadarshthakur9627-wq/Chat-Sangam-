@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { createPortal } from "react-dom";
 
 const STORAGE_KEY = "chat-sangam-history-v2";
@@ -31,7 +33,9 @@ const PROMPTS = [
 
 function CodeBlock({ children }) {
   const [copied, setCopied] = useState(false);
-  const code = String(children?.props?.children ?? children).replace(/\n$/, "");
+  const codeElement = children?.props;
+  const code = String(codeElement?.children ?? children).replace(/\n$/, "");
+  const language = codeElement?.className?.match(/language-([\w+-]+)/)?.[1] || "text";
 
   async function copyCode() {
     try {
@@ -44,7 +48,7 @@ function CodeBlock({ children }) {
   return (
     <div className="code-block">
       <div className="code-toolbar">
-        <span>CODE</span>
+        <span>{language.toUpperCase()}</span>
         <button type="button" onClick={copyCode}>{copied ? "Copied" : "Copy"}</button>
       </div>
       <pre>{children}</pre>
@@ -95,11 +99,18 @@ function getCitedSources(content, sources) {
   return sources.filter((source) => citedIds.has(String(source.id)));
 }
 
+function normalizeMathDelimiters(content) {
+  return String(content || "")
+    // Support both $-delimited Markdown math and the \(...\), \[...\] delimiters emitted by some models.
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, expression) => "$$\n" + expression.trim() + "\n$$")
+    .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$");
+}
+
 function prepareCitationMarkdown(content, sources) {
   if (!content) return "";
 
   const available = new Set((sources || []).map((source) => String(source.id)));
-  const cleaned = content
+  const cleaned = normalizeMathDelimiters(content)
     // Normalize Groq/browser-search citation wrappers to [N].
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
     .replace(/\[(?:browser\.search|web\.search)\s*[†:]?[^\]]*\]/gi, "")
@@ -985,7 +996,7 @@ export default function Home() {
                                       <span><strong>{result.name || result.model}</strong><small>Groq</small></span>
                                     </div>
                                     <div className="comparison-card-body">
-                                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                                      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                         pre: CodeBlock,
                                         table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
                                       }}>{result.content || "No response."}</ReactMarkdown>
@@ -994,7 +1005,7 @@ export default function Home() {
                                 ))}
                               </div>
                             ) : (
-                              <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+                              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                 pre: CodeBlock,
                                 table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
                               }}>{prepareCitationMarkdown(msg.content || "", msg.sources)}</ReactMarkdown>

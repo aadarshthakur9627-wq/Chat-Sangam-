@@ -1,8 +1,17 @@
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+let groqClient;
+
+function getGroqClient() {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new Error("The GROQ_API_KEY environment variable is missing or empty. Add it in Vercel Project Settings → Environment Variables.");
+  }
+  if (!groqClient) {
+    groqClient = new Groq({ apiKey });
+  }
+  return groqClient;
+}
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -27,7 +36,11 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "The underlying model is a Groq-hosted model selected by the user.",
   "Be helpful, accurate, concise, and natural.",
   "Match the user's language when practical, including Hindi/Hinglish.",
-  "Use clean Markdown when it improves readability.",
+  "Use clean, polished Markdown with clear headings, concise paragraphs, readable lists, and consistent spacing.",
+  "For mathematics, wrap inline formulas in single-dollar delimiters and put display equations on their own lines using double-dollar delimiters. Use valid LaTeX inside them.",
+  "For fractions use \\frac{numerator}{denominator}; for powers use braces when needed (for example, x^{2}); keep each calculation on a separate readable line.",
+  "When teaching a calculation, show Formula, Substitution, Calculation, and Verification as separate steps when useful. Do not compress multi-step arithmetic into one dense line.",
+  "Never put an entire normal answer inside a code block. Use code fences only for actual code or literal preformatted output.",
   "Never output raw HTML tags such as <br>, <p>, or <div>; use Markdown paragraphs, lists, headings, and line breaks instead.",
   "When presenting tabular data, use a valid Markdown table with a header row and separator row.",
   "Attached documents are persistent conversation context. When the user asks a follow-up question without re-uploading a file, use the previously attached document context from this conversation when relevant.",
@@ -128,7 +141,7 @@ async function createGroqCompletion(params) {
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      return await groq.chat.completions.create(params);
+      return await getGroqClient().chat.completions.create(params);
     } catch (error) {
       lastError = error;
       const status = groqErrorStatus(error);
