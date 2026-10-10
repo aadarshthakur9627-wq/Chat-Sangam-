@@ -35,7 +35,7 @@ function CodeBlock({ children }) {
   const [copied, setCopied] = useState(false);
   const codeElement = children?.props;
   const code = String(codeElement?.children ?? children).replace(/\n$/, "");
-  const language = codeElement?.className?.match(/language-([\\w+-]+)/)?.[1] || "text";
+  const language = codeElement?.className?.match(/language-([\w+-]+)/)?.[1] || "text";
 
   async function copyCode() {
     try {
@@ -101,110 +101,9 @@ function getCitedSources(content, sources) {
 
 function normalizeMathDelimiters(content) {
   return String(content || "")
-    // Support the LaTeX delimiters often returned by AI models, as well as Markdown dollar delimiters.
-    .replace(/\\\\\\[([\\s\\S]+?)\\\\\\]/g, (_, expression) => `$\\n${expression.trim()}\\n$`)
-    .replace(/\\\\\\(([^]*?)\\\\\\)/g, (_, expression) => `${expression}"use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import { createPortal } from "react-dom";
-
-const STORAGE_KEY = "chat-sangam-history-v2";
-
-const GROQ_MODELS = [
-  { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
-  { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite", provider: "Google Gemini", icon: "✦", color: "violet", description: "Free-tier friendly · Google Search grounding", kind: "text" },
-  { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
-];
-
-const ACTIVE_ENGINE = GROQ_MODELS[0];
-
-const FUTURE_ENGINES = [
-  { name: "OpenAI", icon: "◉" },
-  { name: "Claude", icon: "◌" },
-  { name: "Perplexity", icon: "⌕" },
-  { name: "DeepSeek", icon: "◆" },
-];
-
-const PROMPTS = [
-  { icon: "✦", title: "Learn", text: "Teach me a difficult topic from basics with examples." },
-  { icon: "⌁", title: "Plan", text: "Create a practical step-by-step plan for my goal." },
-  { icon: "✎", title: "Create", text: "Help me create a polished piece of content." },
-  { icon: "⌘", title: "Code", text: "Review this idea and help me build it cleanly." },
-];
-
-function CodeBlock({ children }) {
-  const [copied, setCopied] = useState(false);
-  const codeElement = children?.props;
-  const code = String(codeElement?.children ?? children).replace(/\n$/, "");
-  const language = codeElement?.className?.match(/language-([\\w+-]+)/)?.[1] || "text";
-
-  async function copyCode() {
-    try {
-      await navigator.clipboard?.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1200);
-    } catch {}
-  }
-
-  return (
-    <div className="code-block">
-      <div className="code-toolbar">
-        <span>{language.toUpperCase()}</span>
-        <button type="button" onClick={copyCode}>{copied ? "Copied" : "Copy"}</button>
-      </div>
-      <pre>{children}</pre>
-    </div>
-  );
-}
-
-function ActionIcon({ type, size = 17 }) {
-  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": "true" };
-  if (type === "copy") return <svg {...common}><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>;
-  if (type === "check") return <svg {...common}><path d="m5 12 4 4L19 6" /></svg>;
-  if (type === "up") return <svg {...common}><path d="M7 10v10" /><path d="M11 10V5.5A2.5 2.5 0 0 1 13.5 3L14 3v7h5.2a2 2 0 0 1 2 2.3l-1 6A2 2 0 0 1 18.2 20H7" /></svg>;
-  if (type === "down") return <svg {...common}><path d="M7 14V4" /><path d="M11 14v4.5a2.5 2.5 0 0 0 2.5 2.5l.5 0v-7h5.2a2 2 0 0 0 2-2.3l-1-6A2 2 0 0 0 18.2 4H7" /></svg>;
-  if (type === "volume") return <svg {...common}><path d="M11 5 6 9H3v6h3l5 4V5Z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 6a9 9 0 0 1 0 12" /></svg>;
-  if (type === "share") return <svg {...common}><path d="M12 16V3" /><path d="m7 8 5-5 5 5" /><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>;
-  if (type === "more") return <svg {...common}><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1" fill="currentColor" stroke="none" /></svg>;
-  if (type === "branch") return <svg {...common}><path d="M6 4v12" /><path d="M6 8h8a4 4 0 0 1 4 4v1" /><path d="m15 10 3 3 3-3" /><circle cx="6" cy="4" r="2" /><circle cx="6" cy="20" r="2" /></svg>;
-  if (type === "retry") return <svg {...common}><path d="M20 11a8 8 0 1 0 1 5" /><path d="M20 4v7h-7" /></svg>;
-  if (type === "web") return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z" /></svg>;
-  return null;
-}
-
-function createChat() {
-  return {
-    id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 7),
-    title: "New conversation",
-    messages: [],
-    updatedAt: Date.now(),
-  };
-}
-
-function formatTime(timestamp) {
-  if (!timestamp) return "";
-  return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(timestamp);
-}
-
-function getCitedSources(content, sources) {
-  if (!content || !Array.isArray(sources)) return [];
-  const citedIds = new Set();
-  const cleaned = content
-    .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
-    .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
-    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]");
-  for (const match of cleaned.matchAll(/\[(\d+)\]/g)) {
-    const id = Number(match[1]);
-    if (id > 0) citedIds.add(String(id));
-  }
-  return sources.filter((source) => citedIds.has(String(source.id)));
-}
-
-);
+    // Support both $-delimited Markdown math and the \(...\), \[...\] delimiters emitted by some models.
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, expression) => "$$\n" + expression.trim() + "\n$$")
+    .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$");
 }
 
 function prepareCitationMarkdown(content, sources) {
