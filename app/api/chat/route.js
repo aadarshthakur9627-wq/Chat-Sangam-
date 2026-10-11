@@ -896,6 +896,96 @@ async function compareModelCompletion(model, messages, safeReasoning) {
   }
 }
 
+
+const AUTO_FREE_MODEL_ID = "auto-free";
+
+function isProviderConfigured(modelId) {
+  if (modelId === GEMINI_MODEL || modelId === ANTIGRAVITY_MODEL_ID) {
+    return Boolean(process.env.GEMINI_API_KEY?.trim());
+  }
+  return Boolean(process.env.GROQ_API_KEY?.trim());
+}
+
+function shouldRetryWithAnotherProvider(error) {
+  const status = Number(error?.status);
+  return !status || [401, 403, 404, 408, 429].includes(status) || status >= 500;
+}
+
+async function generateRoutedProviderAnswer(modelId, messages, attachments, query, webSearch, deepResearchEnabled, safeReasoning) {
+  if (modelId === ANTIGRAVITY_MODEL_ID) {
+    return generateAntigravityAnswer(messages, attachments, query, webSearch, deepResearchEnabled);
+  }
+
+  if (modelId === GEMINI_MODEL) {
+    const useGeminiSearch = Boolean(webSearch || deepResearchEnabled || (shouldAutoSearch(query) && !isDirectClockQuestion(query)));
+    const result = await generateGeminiAnswer(messages, attachments, query, useGeminiSearch);
+    return { answer: result.answer + formatSources(result.sources) };
+  }
+
+  const model = resolveGroqModel(modelId);
+  if (deepResearchEnabled) {
+    const research = await deepResearch(query, model);
+    if (!research.results.length) {
+      const error = new Error("Deep Research could not find usable sources. Please try a more specific question.");
+      error.status = 503;
+      throw error;
+    }
+    const answer = normalizeDeepResearchAnswer(await synthesizeDeepResearchAnswer(query, research))
+      || "I couldn't generate a deep research answer. Please try again.";
+    return { answer: answer + formatSources(research.results) };
+  }
+
+  if (webSearch || (shouldAutoSearch(query) && !isDirectClockQuestion(query))) {
+    const search = await browserSearch(query, true, model);
+    if (!search.results.length && !search.answer) {
+      const error = new Error("Web search returned neither a usable answer nor source links. Please try again in a moment.");
+      error.status = 503;
+      throw error;
+    }
+    const answer = normalizeSearchAnswer(await synthesizeWebAnswer(query, search.results, model, search.answer))
+      || "I couldn't generate a web-search answer. Please try again.";
+    return { answer: answer + formatSources(search.results) };
+  }
+
+  const response = await createGroqCompletion({
+    model,
+    messages: buildMessages(messages, attachments, model),
+    temperature: 0.6,
+    top_p: 0.95,
+    reasoning_effort: safeReasoning,
+    include_reasoning: false,
+    max_completion_tokens: 3072,
+    stream: false,
+  });
+  const message = response.choices?.[0]?.message;
+  const answer = typeof message?.content === "string" ? message.content : String(message?.content ?? "No response.");
+  const results = (message?.executed_tools || [])
+    .flatMap((tool) => tool?.search_results?.results || [])
+    .map((item) => ({
+      title: item.title || "Web result",
+      url: item.url || "",
+      content: item.content || "",
+      score: typeof item.score === "number" ? item.score : null,
+    }))
+    .filter((item) => {
+      try { new URL(item.url); return true; } catch { return false; }
+    })
+    .slice(0, 6);
+
+  return { answer: normalizeSearchAnswer(answer) + formatSources(results) };
+}
+
+function routedModelOrder(requestedModelId) {
+  const freeOrder = [GROQ_MODEL, GEMINI_MODEL, ANTIGRAVITY_MODEL_ID];
+  if (requestedModelId === AUTO_FREE_MODEL_ID) return freeOrder;
+  const primary = requestedModelId === ANTIGRAVITY_MODEL_ID
+    ? ANTIGRAVITY_MODEL_ID
+    : requestedModelId === GEMINI_MODEL
+      ? GEMINI_MODEL
+      : resolveGroqModel(requestedModelId);
+  return [primary, ...freeOrder.filter((modelId) => modelId !== primary)];
+}
+
 export async function POST(request) {
   try {
     let body;
@@ -1019,6 +1109,49 @@ export async function POST(request) {
           { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
         );
       }
+    }
+
+    if (latest && !imageAttachments.length) {
+      const isAutoFree = requestedModelId === AUTO_FREE_MODEL_ID;
+      const order = routedModelOrder(requestedModelId);
+      const candidates = order.filter((modelId) => isProviderConfigured(modelId));
+      if (!candidates.length) {
+        return Response.json(
+          { error: "No free AI provider is configured. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables." },
+          { status: 503 }
+        );
+      }
+
+      let lastError = null;
+      const tried = [];
+      for (const modelId of candidates) {
+        tried.push(modelId);
+        try {
+          const result = await generateRoutedProviderAnswer(
+            modelId, messages, attachments, latest, webSearch, deepResearchEnabled, safeReasoning
+          );
+          const fallbackFrom = !isAutoFree && modelId !== order[0] ? order[0] : "";
+          return new Response(result.answer, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-cache, no-transform",
+              "X-Chat-Sangam-Model": modelId,
+              ...(fallbackFrom ? { "X-Chat-Sangam-Fallback-From": fallbackFrom } : {}),
+            },
+          });
+        } catch (error) {
+          lastError = error;
+          console.error("Provider routing attempt failed:", { modelId, message: error?.message, status: error?.status });
+          if (!shouldRetryWithAnotherProvider(error)) break;
+        }
+      }
+
+      const message = lastError?.message || "All configured free AI providers are temporarily unavailable. Please retry shortly.";
+      const status = Number(lastError?.status);
+      return Response.json(
+        { error: message },
+        { status: status >= 400 && status < 600 ? status : 503 }
+      );
     }
 
     if (requestedModelId === ANTIGRAVITY_MODEL_ID && latest && !imageAttachments.length) {
