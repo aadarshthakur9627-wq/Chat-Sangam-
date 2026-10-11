@@ -439,10 +439,16 @@ export default function Home() {
     abortControllerRef.current = controller;
     setLoading(true);
 
+    // Send a bounded recent history window so long chats do not eventually exceed
+    // serverless request limits. Attachment/image indexes are remapped to this window.
+    const historyStart = Math.max(0, nextMessages.length - 40);
+    const requestMessages = nextMessages.slice(historyStart);
     const imageAttachments = nextMessages.flatMap((msg, index) => {
       const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
-    }).slice(-3);
+    }).slice(-3)
+      .filter((image) => image.messageIndex >= historyStart)
+      .map((image) => ({ ...image, messageIndex: image.messageIndex - historyStart }));
     const requestModel = imageAttachments.length
       ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
       : effectiveModel;
@@ -463,16 +469,16 @@ export default function Home() {
     try {
       // Keep file text separate from provider messages.
       // The API route safely injects it server-side, avoiding provider payload issues.
-      const apiMessages = nextMessages.map((msg) => ({
+      const apiMessages = requestMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
-      const attachments = nextMessages.flatMap((msg, index) => {
+      const attachments = requestMessages.flatMap((msg, index) => {
         if (Array.isArray(msg.fileContexts)) {
           return msg.fileContexts.map((file) => ({ messageIndex: index, name: file.name || "Attached file", text: file.text || "" }));
         }
         return msg.fileContext ? [{ messageIndex: index, name: msg.fileName || "Attached file", text: msg.fileContext }] : [];
-      });
+      }).slice(-5);
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
