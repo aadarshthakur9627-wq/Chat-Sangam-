@@ -88,7 +88,7 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "Attached documents are persistent conversation context. When the user asks a follow-up question without re-uploading a file, use the previously attached document context from this conversation when relevant.",
   "When multiple documents are attached, keep their names distinct and compare them accurately; do not merge facts from one document into another.",
   "If the attached documents do not contain enough information to answer a question, say so rather than inventing details.",
-  "When the user asks for current, latest, recent, today, this year, live, changing, or otherwise time-sensitive information, use the browser search tool before answering.",
+  "When the user asks for current, latest, recent, this year, live, changing, or otherwise time-sensitive factual information, use browser search before answering. Exception: for a direct question asking only the current date or time, use the trusted server clock provided in context without web search.",
   "Also use browser search when the answer depends on facts that may have changed since the model's knowledge cutoff, such as current office-holders, prices, laws, schedules, product availability, sports results, or recent events.",
   "For stable timeless questions, answer directly without searching unless web evidence would materially improve accuracy.",
   "When browser search is used, incorporate retrieved information naturally and let Chat Sangam show the sources. Never imply that a search happened when it did not.",
@@ -115,6 +115,18 @@ function normalizeMessages(messages) {
 
 function latestUserMessage(messages) {
   return [...messages].reverse().find((message) => message.role === "user")?.content?.trim() || "";
+}
+
+function isDirectClockQuestion(query) {
+  const text = String(query || "").toLowerCase().replace(/\\s+/g, " ").trim();
+  if (!text) return false;
+  const directPatterns = [
+    /\\b(what(?:'s| is) the )?(today'?s |current |exact )?(date|time)\\b/,
+    /\\b(today|aaj|abhi)\\b.*\\b(date|time|tareekh|tarikh|tariikh|din|baje)\\b/,
+    /\\b(date|time|tareekh|tarikh|tariikh)\\b.*\\b(today|aaj|abhi)\\b/,
+    /(आज|अभी).*(तारीख|दिनांक|दिन|समय|कितने बजे|बजे)/,
+  ];
+  return directPatterns.some((pattern) => pattern.test(text));
 }
 
 function shouldAutoSearch(query) {
@@ -816,7 +828,7 @@ export async function POST(request) {
 
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {
-        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. If the user asks for current information, state the limitation instead of attempting a browser tool call.";
+        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. For direct date/time questions, use the trusted server clock in context. For other current information, state the limitation instead of attempting a browser tool call.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
           try {
             const response = await compareModelCompletion(
@@ -892,7 +904,7 @@ export async function POST(request) {
 
     if (isGeminiModel && latest && !imageAttachments.length) {
       try {
-        const useGeminiSearch = Boolean(webSearch || deepResearchEnabled || shouldAutoSearch(latest));
+        const useGeminiSearch = Boolean(webSearch || deepResearchEnabled || (shouldAutoSearch(latest) && !isDirectClockQuestion(latest)));
         const result = await generateGeminiAnswer(messages, attachments, latest, useGeminiSearch);
         return new Response(result.answer + formatSources(result.sources), {
           headers: {
@@ -968,7 +980,7 @@ export async function POST(request) {
     const chatMessages = buildMessages(messages, attachments, requestedModel);
 
     // Route high-confidence freshness questions through web search so stale model memory is not treated as current evidence.
-    const autoSearchRequired = shouldAutoSearch(latest);
+    const autoSearchRequired = shouldAutoSearch(latest) && !isDirectClockQuestion(latest);
     if (autoSearchRequired && latest) {
       try {
         const search = await browserSearch(latest, true, GROQ_MODEL);
