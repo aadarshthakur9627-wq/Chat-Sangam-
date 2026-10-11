@@ -4,8 +4,8 @@ export async function GET() {
   return Response.json(
     {
       providers: {
-        groq: { configured: Boolean(process.env.GROQ_API_KEY) },
-        gemini: { configured: Boolean(process.env.GEMINI_API_KEY) },
+        groq: { configured: Boolean(process.env.GROQ_API_KEY?.trim()) },
+        gemini: { configured: Boolean(process.env.GEMINI_API_KEY?.trim()) },
       },
     },
     {
