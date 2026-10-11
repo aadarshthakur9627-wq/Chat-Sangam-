@@ -689,3 +689,21 @@ html, body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSyste
   .welcome h2 { margin-bottom: 16px !important; }
   .prompt-card { min-height: 54px !important; }
 }
+
+
+/* Mobile conversation spacing: reserve enough room for the fixed composer without leaving a large dead zone. */
+@media (max-width: 700px) {
+  .messages {
+    padding-bottom: 145px !important;
+    scroll-padding-bottom: 145px;
+  }
+  .conversation > .message-row:last-child {
+    margin-bottom: 16px;
+  }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .messages {
+    padding-bottom: 132px !important;
+    scroll-padding-bottom: 132px;
+  }
+}
