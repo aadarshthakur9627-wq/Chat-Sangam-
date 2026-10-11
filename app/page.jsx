@@ -191,6 +191,7 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [accentColour, setAccentColour] = useState("#f43f8c");
+  const [accentGradient, setAccentGradient] = useState("linear");
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
@@ -222,6 +223,8 @@ export default function Home() {
     try {
       const savedAccent = localStorage.getItem("chat-sangam-accent");
       if (savedAccent && ["#f43f8c", "#0a84ff", "#30d158", "#bf5af2", "#ff9f0a"].includes(savedAccent)) setAccentColour(savedAccent);
+      const savedGradient = localStorage.getItem("chat-sangam-gradient");
+      if (savedGradient && ["linear", "soft", "aurora"].includes(savedGradient)) setAccentGradient(savedGradient);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
@@ -238,8 +241,8 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem("chat-sangam-accent", accentColour); } catch {}
-  }, [accentColour]);
+    try { localStorage.setItem("chat-sangam-accent", accentColour); localStorage.setItem("chat-sangam-gradient", accentGradient); } catch {}
+  }, [accentColour, accentGradient]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -1014,7 +1017,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell" style={{ "--user-accent": accentColour }}>
+    <main className="app-shell" style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35,#8b5cf625 55%,#0a84ff18)" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)" }}>
       <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
         <div className="sidebar-head">
           <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
@@ -1052,7 +1055,7 @@ export default function Home() {
         <div className="sidebar-footer">
           <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
           <div className="footer-links"><button type="button" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}>⚙ Settings</button><span>◉ Account</span></div>
-          {settingsOpen && <div className="appearance-panel"><strong>Appearance</strong><span className="appearance-label">Accent colour</span><div className="accent-options" role="group" aria-label="Accent colour">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} aria-pressed={accentColour === colour} title={label}><span /></button>)}</div></div>}
+          {settingsOpen && <div className="appearance-panel"><strong>Appearance</strong><span className="appearance-label">Accent colour</span><div className="accent-options" role="group" aria-label="Accent colour">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} aria-pressed={accentColour === colour} title={label}><span /></button>)}</div><span className="appearance-label">Gradient style</span><div className="gradient-options" role="group" aria-label="Gradient style">{[["linear","Linear"],["soft","Soft"],["aurora","Aurora"]].map(([value,label]) => <button type="button" key={value} className={"gradient-chip " + (accentGradient === value ? "selected" : "")} onClick={() => setAccentGradient(value)} aria-pressed={accentGradient === value}>{label}</button>)}</div></div>}
         </div>
       </aside>
 
@@ -1358,7 +1361,7 @@ export default function Home() {
           )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-               <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.kind === "auto" ? "Auto routing · " : effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+               <button type="button" className="composer-model composer-model-button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu"><span>{effectiveModel.icon} {effectiveModel.kind === "auto" ? "Auto" : effectiveModel.name}</span><b>⌄</b>{deepResearch ? <em>Research</em> : webSearch ? <em>Web Search</em> : null}</button>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
@@ -1394,6 +1397,7 @@ export default function Home() {
                   <>
                     <button className="attach-menu-backdrop" type="button" aria-label="Close attachment menu" onClick={() => setAttachMenuOpen(false)} />
                     <div className="attach-menu" role="menu">
+                      <div className="reasoning-quick-picks"><span>Reasoning</span><div>{[["low","Low"],["medium","Medium"],["high","High"]].map(([value,label]) => <button type="button" key={value} className={"reasoning-chip " + (reasoningEffort === value ? "selected" : "")} onClick={() => setReasoningEffort(value)} aria-pressed={reasoningEffort === value}>{label}</button>)}</div></div>
                       <button type="button" role="menuitem" onClick={handleImageOption}><span className="attach-menu-icon">⌁</span><span><strong>Camera</strong><small>Take a photo</small></span></button>
                       <button type="button" role="menuitem" onClick={() => { setAttachMenuOpen(false); document.getElementById("image-upload-" + imageInputKey)?.click(); }}><span className="attach-menu-icon">▧</span><span><strong>Photos</strong><small>Choose from gallery</small></span></button>
                       <button type="button" role="menuitem" onClick={handleFilesOption}><span className="attach-menu-icon">□</span><span><strong>Files</strong><small>PDF, TXT, CSV, JSON</small></span></button>
