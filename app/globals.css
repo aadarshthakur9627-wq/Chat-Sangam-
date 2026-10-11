@@ -258,3 +258,30 @@
   .comparison-card-body { padding: 10px 11px; }
   .comparison-card-body .markdown-content { font-size: 13px; }
 }
+
+
+/* Provider configuration feedback: never imply an API is online just because the UI loaded. */
+.live-label.offline-label { color: #ffb4c8; }
+.live-label.offline-label b { background: #ff6b8a; box-shadow: 0 0 8px rgba(255,107,138,.35); }
+.provider-offline { background: #ff6b8a !important; box-shadow: 0 0 8px rgba(255,107,138,.35) !important; }
+.provider-config-warning {
+  max-width: 900px;
+  margin: 0 auto 9px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255,107,138,.24);
+  border-radius: 11px;
+  background: rgba(255,107,138,.07);
+  color: #e8d5dc;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.provider-config-warning strong { color: #ffb4c8; }
+.model-option:disabled { opacity: .48; cursor: not-allowed; }
+@media (max-width: 700px) {
+  .provider-config-warning {
+    margin: 0 2px 8px;
+    padding: 9px 10px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+}
