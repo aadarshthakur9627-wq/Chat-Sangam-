@@ -6,6 +6,7 @@ export async function GET() {
       providers: {
         groq: { configured: Boolean(process.env.GROQ_API_KEY?.trim()) },
         gemini: { configured: Boolean(process.env.GEMINI_API_KEY?.trim()) },
+        antigravity: { configured: Boolean(process.env.GEMINI_API_KEY?.trim()) },
       },
     },
     {
