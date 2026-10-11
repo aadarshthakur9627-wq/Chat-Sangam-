@@ -527,15 +527,46 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
     throw new Error("Gemini returned an empty answer" + reason + ". Please retry with a shorter prompt.");
   }
 
-  const groundingChunks = candidate?.groundingMetadata?.groundingChunks || [];
-  const sources = groundingChunks
-    .map((chunk) => chunk?.web)
-    .filter((web) => web?.uri && /^https?:\/\//i.test(web.uri))
-    .map((web) => ({ title: web.title || web.uri, url: web.uri, content: "" }))
-    .filter((source, index, all) => all.findIndex((item) => item.url === source.url) === index)
-    .slice(0, 6);
+  const groundingMetadata = candidate?.groundingMetadata || {};
+  const groundingChunks = groundingMetadata.groundingChunks || [];
+  const sources = [];
+  const sourceIdByUrl = new Map();
+  const sourceIdByChunkIndex = new Map();
 
-  return { answer, sources };
+  groundingChunks.forEach((chunk, chunkIndex) => {
+    const web = chunk?.web;
+    if (!web?.uri || !/^https?:\/\//i.test(web.uri)) return;
+
+    let sourceId = sourceIdByUrl.get(web.uri);
+    if (!sourceId && sources.length < 6) {
+      sources.push({ title: web.title || web.uri, url: web.uri, content: "" });
+      sourceId = sources.length;
+      sourceIdByUrl.set(web.uri, sourceId);
+    }
+    if (sourceId) sourceIdByChunkIndex.set(chunkIndex, sourceId);
+  });
+
+  // Gemini returns grounding metadata separately from the answer text. Insert
+  // source markers at the supported segment boundaries so the UI can render
+  // clickable citations and a source panel instead of silently dropping them.
+  const insertions = (groundingMetadata.groundingSupports || [])
+    .map((support) => {
+      const endIndex = support?.segment?.endIndex;
+      const ids = [...new Set((support?.groundingChunkIndices || [])
+        .map((index) => sourceIdByChunkIndex.get(index))
+        .filter(Boolean))];
+      if (!Number.isInteger(endIndex) || endIndex < 0 || !ids.length) return null;
+      return { index: Math.min(endIndex, answer.length), marker: " " + ids.map((id) => "[" + id + "]").join(" ") };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.index - a.index);
+
+  let citedAnswer = answer;
+  for (const insertion of insertions) {
+    citedAnswer = citedAnswer.slice(0, insertion.index) + insertion.marker + citedAnswer.slice(insertion.index);
+  }
+
+  return { answer: citedAnswer, sources };
 }
 
 function sanitizeFileText(text) {
