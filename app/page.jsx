@@ -106,9 +106,19 @@ function normalizeMathDelimiters(content) {
     // Convert LaTeX bracket delimiters to Markdown math delimiters.
     .replace(/\\\[([\s\S]+?)\\\]/g, (_, expression) => "$$\n" + expression.trim() + "\n$$")
     .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$")
-    // Some models wrap a one-line inline equation in $$...$$. remark-math
-    // expects single dollars for inline math; preserve multiline display math.
-    .replace(/\$\$([^\n]*?)\$\$/g, (_, expression) => "$" + expression.trim() + "$");
+    // Models sometimes emit $$...$$ for a short inline equation. Normalize paired
+    // single-line or wrapped formulas, while leaving multiline paragraphs alone.
+    .replace(/\$\$([\s\S]{1,280}?)\$\$/g, (match, expression) => {
+      if (/\n\s*\n/.test(expression)) return match;
+      if (!/[\\][a-zA-Z]+|[=×÷]/.test(expression)) return match;
+      return "$" + expression.replace(/\s*\n\s*/g, " ").trim() + "$";
+    })
+    // Repair common malformed inline equations that start with $$ but omit the
+    // closing delimiter. Restrict this to LaTeX math commands and one line.
+    .replace(/\$\$\s*((?=[^\n]*\\(?:times|frac|div|cdot|sqrt|text)\b)[^\n]+)/g, (_, expression) => {
+      const clean = expression.trim().replace(/\s*\$\s*$/, "");
+      return "$" + clean + "$";
+    });
 }
 
 function prepareCitationMarkdown(content, sources) {
