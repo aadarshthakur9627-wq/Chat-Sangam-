@@ -563,3 +563,129 @@ button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
   .prompt-card { min-height: 78px !important; }
   .trust-row { margin-top: 9px !important; }
 }
+
+
+/* ChatGPT-inspired conversation-first visual hierarchy; keep Chat Sangam accent identity. */
+:root {
+  --bg: #0b0b0d;
+  --panel: #171719;
+  --panel2: #202023;
+  --line: rgba(255,255,255,.09);
+  --text: #f5f5f5;
+  --muted: #b4b4b8;
+  --dim: #85858b;
+}
+html, body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.topbar { background: rgba(11,11,13,.92); backdrop-filter: blur(16px); }
+.topbar h1 { font-family: inherit; font-weight: 600; letter-spacing: -.2px; }
+.model-strip { background: rgba(17,17,19,.78); }
+.hero-glow { opacity: .45; }
+.hero-mark { box-shadow: 0 5px 24px rgba(244,63,140,.16); }
+.welcome h2 { font-family: inherit; font-weight: 650; letter-spacing: -1.8px; }
+.welcome h2 span {
+  background: linear-gradient(90deg,#f5d5e5,#d8c6ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.prompt-card {
+  background: #151517;
+  border-color: rgba(255,255,255,.08);
+  box-shadow: none;
+  transition: background .16s ease, border-color .16s ease;
+}
+.prompt-card:hover { transform: none; background: #1d1d20; border-color: rgba(244,63,140,.25); }
+.composer {
+  background: #19191c;
+  border-color: rgba(255,255,255,.13);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  backdrop-filter: blur(18px);
+}
+.composer:focus-within {
+  border-color: rgba(244,63,140,.38);
+  box-shadow: 0 8px 28px rgba(0,0,0,.22);
+}
+.composer textarea { font-family: inherit; }
+.attach-button { background: transparent; border-color: transparent; }
+.attach-button:hover, .attach-button.active { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.08); transform:none; }
+.send-button { box-shadow: none; }
+.message-row.user .message-bubble {
+  background: #252528;
+  border-color: rgba(255,255,255,.04);
+}
+.message-row.assistant .assistant-answer-bubble {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+@media (max-width: 700px) {
+  .topbar { padding-top: max(7px, env(safe-area-inset-top, 0px)) !important; }
+  .topbar-left { align-items: center !important; }
+  .eyebrow { color: #a4a4aa !important; letter-spacing: .7px !important; }
+  .model-strip { min-height: 38px !important; height: 38px !important; }
+  .model-orb { width: 23px !important; height: 23px !important; border-radius: 8px !important; }
+  .selected-model strong { font-size: 10px !important; font-weight: 600 !important; }
+  .selected-model .live-label { font-size: 9px !important; }
+  .messages { padding-top: 12px !important; }
+  .welcome { margin: 5vh auto 0 !important; max-width: 440px !important; }
+  .hero-mark, .hero-kicker, .welcome > p, .trust-row { display: none !important; }
+  .welcome h2 {
+    margin: 0 0 22px !important;
+    font-size: clamp(27px, 7.5vw, 34px) !important;
+    line-height: 1.15 !important;
+    letter-spacing: -1.25px !important;
+    font-weight: 600 !important;
+  }
+  .welcome h2 span {
+    background: none !important;
+    color: #f5f5f5 !important;
+  }
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 9px !important;
+    margin-top: 0 !important;
+  }
+  .prompt-card {
+    min-height: 58px !important;
+    display: grid !important;
+    grid-template-columns: 28px minmax(0,1fr) 12px !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 11px !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.035) !important;
+    text-align: left !important;
+  }
+  .prompt-card:hover { background: rgba(255,255,255,.07) !important; }
+  .prompt-icon {
+    width: 28px !important; height: 28px !important;
+    background: rgba(244,63,140,.10) !important;
+    color: #e9a4cc !important;
+    border-radius: 9px !important;
+  }
+  .prompt-card > span:nth-child(2) { padding-right: 0 !important; gap: 0 !important; }
+  .prompt-card strong { font-size: 12px !important; font-weight: 550 !important; }
+  .prompt-card small { display: none !important; }
+  .prompt-card > b { position: static !important; color: #77777d !important; font-size: 14px !important; }
+  .composer-dock {
+    padding: 10px 10px max(18px, env(safe-area-inset-bottom, 0px)) !important;
+    background: linear-gradient(to bottom, transparent, rgba(11,11,13,.92) 22%, #0b0b0d 55%) !important;
+  }
+  .composer {
+    padding: 8px 9px !important;
+    border-radius: 25px !important;
+    background: #202023 !important;
+    border-color: rgba(255,255,255,.10) !important;
+  }
+  .composer-top { padding: 0 5px 5px !important; }
+  .composer-model { font-size: 9px !important; color: #aaaab0 !important; }
+  .composer textarea { padding: 8px 3px !important; }
+  .attach-button { background: transparent !important; color: #d5d5da !important; }
+  .send-button { border-radius: 50% !important; }
+  .composer-note { color: #6e6e74 !important; }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .welcome { margin-top: 2vh !important; }
+  .welcome h2 { margin-bottom: 16px !important; }
+  .prompt-card { min-height: 54px !important; }
+}
