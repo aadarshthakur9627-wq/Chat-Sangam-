@@ -5,7 +5,10 @@ let groqClient;
 function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    throw new Error("The GROQ_API_KEY environment variable is missing or empty. Add it in Vercel Project Settings → Environment Variables for this deployment's environment (Preview or Production).");
+    const error = new Error("Groq is not configured on this deployment. Add GROQ_API_KEY in Vercel Project Settings → Environment Variables and enable it for the Preview or Production environment you are testing.");
+    error.code = "GROQ_API_KEY_MISSING";
+    error.status = 503;
+    throw error;
   }
   if (!groqClient) {
     groqClient = new Groq({ apiKey });
@@ -123,6 +126,9 @@ function groqRetryAfterSeconds(error) {
 function groqErrorMessage(error) {
   const status = groqErrorStatus(error);
   const apiMessage = error?.error?.message || error?.message || "";
+  if (error?.code === "GROQ_API_KEY_MISSING" || /GROQ_API_KEY.*missing|Groq is not configured on this deployment/i.test(apiMessage)) {
+    return "Groq is not configured on this deployment. Add GROQ_API_KEY in Vercel Environment Variables and enable it for the Preview or Production environment you are testing.";
+  }
 
   if (status === 401) return "Groq API key is invalid or missing. Check GROQ_API_KEY in Vercel Environment Variables and enable it for this deployment's environment (Preview or Production).";
   if (status === 403) return "Groq API access was denied. Check the Groq API key permissions and account status.";
@@ -640,7 +646,16 @@ async function compareModelCompletion(model, messages, safeReasoning) {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ error: "Invalid request body. Please refresh the page and try again." }, { status: 400 });
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return Response.json({ error: "Invalid request payload." }, { status: 400 });
+    }
+
     const rawMessages = body.messages;
     const attachments = Array.isArray(body.attachments) ? body.attachments : [];
     const imageAttachments = Array.isArray(body.imageAttachments) ? body.imageAttachments : [];
@@ -657,8 +672,23 @@ export async function POST(request) {
       ? body.reasoningEffort
       : "medium";
 
-    if (!Array.isArray(messages)) {
-      return Response.json({ error: "Messages are required." }, { status: 400 });
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return Response.json({ error: "At least one chat message is required." }, { status: 400 });
+    }
+    if (messages.length > 60) {
+      return Response.json({ error: "This conversation is too long for one request. Start a new chat or shorten the conversation." }, { status: 413 });
+    }
+    const totalMessageChars = messages.reduce((total, item) => total + item.content.length, 0);
+    if (totalMessageChars > 200000) {
+      return Response.json({ error: "This conversation contains too much text for one request. Start a new chat or shorten the conversation." }, { status: 413 });
+    }
+    const totalAttachmentChars = attachments.reduce((total, item) => total + (typeof item?.text === "string" ? item.text.length : 0), 0);
+    if (totalAttachmentChars > 700000) {
+      return Response.json({ error: "Attached document context is too large for one request. Start a new chat or attach fewer/smaller files." }, { status: 413 });
+    }
+    const totalImageChars = imageAttachments.reduce((total, item) => total + (typeof item?.dataUrl === "string" ? item.dataUrl.length : 0), 0);
+    if (imageAttachments.length > 3 || totalImageChars > 3600000) {
+      return Response.json({ error: "Image upload is too large for one request. Please attach up to 3 smaller images." }, { status: 413 });
     }
 
     const latest = latestUserMessage(messages);
