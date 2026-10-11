@@ -443,12 +443,23 @@ export default function Home() {
     // serverless request limits. Attachment/image indexes are remapped to this window.
     const historyStart = Math.max(0, nextMessages.length - 40);
     const requestMessages = nextMessages.slice(historyStart);
-    const imageAttachments = nextMessages.flatMap((msg, index) => {
+    const cachedImageAttachments = nextMessages.flatMap((msg, index) => {
       const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
     }).slice(-3)
-      .filter((image) => image.messageIndex >= historyStart)
-      .map((image) => ({ ...image, messageIndex: image.messageIndex - historyStart }));
+      .filter((image) => image.messageIndex >= historyStart);
+
+    // Web/research questions should not be hijacked by an image attached many
+    // turns earlier. Keep image context for the current message, but do not
+    // forward stale images during a text-only live-search request.
+    const currentMessageIndex = nextMessages.length - 1;
+    const relevantImageAttachments = (webSearch || deepResearch)
+      ? cachedImageAttachments.filter((image) => image.messageIndex === currentMessageIndex)
+      : cachedImageAttachments;
+    const imageAttachments = relevantImageAttachments.map((image) => ({
+      ...image,
+      messageIndex: image.messageIndex - historyStart,
+    }));
     const requestModel = imageAttachments.length
       ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
       : effectiveModel;
