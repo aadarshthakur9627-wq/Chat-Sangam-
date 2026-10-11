@@ -1225,7 +1225,7 @@ export default function Home() {
           )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
@@ -1285,7 +1285,7 @@ export default function Home() {
               <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (selectedProviderConfigured === false || (!message.trim() && !attachedFiles.length && !attachedImages.length))} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web search with source-backed answer." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
+          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web research with source links." : webSearch ? (effectiveModel.provider === "Google Antigravity" ? "⌕ Live web search is ON · Antigravity agent can search and verify current information." : "⌕ Live web search is ON · Search current information with sources.") : effectiveModel.provider === "Google Antigravity" ? "🚀 Google Antigravity Agent · Agent tools and usage limits apply." : effectiveModel.provider === "Google Gemini" ? "✦ Powered by Google Gemini · Verify important information." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
