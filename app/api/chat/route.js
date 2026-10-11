@@ -716,7 +716,7 @@ export async function POST(request) {
       return Response.json({ error: "This conversation is too long for one request. Start a new chat or shorten the conversation." }, { status: 413 });
     }
     const totalMessageChars = messages.reduce((total, item) => total + item.content.length, 0);
-    if (totalMessageChars > 200000) {
+    if (totalMessageChars > 300000) {
       return Response.json({ error: "This conversation contains too much text for one request. Start a new chat or shorten the conversation." }, { status: 413 });
     }
     const totalAttachmentChars = attachments.reduce((total, item) => total + (typeof item?.text === "string" ? item.text.length : 0), 0);
