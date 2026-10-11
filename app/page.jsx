@@ -1091,9 +1091,9 @@ export default function Home() {
             <div className="welcome">
               <div className="hero-glow" />
               <div className="hero-mark">✦</div>
-              <div className="hero-kicker">THE MULTI-MODEL AI WORKSPACE</div>
-              <h2>One question.<br /><span>Many minds.</span></h2>
-              <p>Chat Sangam brings powerful AI models into one clean workspace. Pick a model, ask anything, and build faster.</p>
+              <div className="hero-kicker">CHAT SANGAM</div>
+              <h2>What can I <span>help with?</span></h2>
+              <p>Choose a starting point or type your own question below.</p>
               <div className="prompt-grid">
                 {PROMPTS.map((prompt) => (
                   <button key={prompt.title} className="prompt-card" onClick={() => usePrompt(prompt.text)}>
