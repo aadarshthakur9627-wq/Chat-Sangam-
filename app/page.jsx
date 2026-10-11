@@ -331,7 +331,9 @@ export default function Home() {
   }
 
   async function fileToDataUrl(file) {
-    if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      throw new Error("Please choose a JPG, PNG, WEBP or GIF image.");
+    }
     if (file.size > 10 * 1024 * 1024) throw new Error("Image is too large. Maximum size is 10 MB.");
     const source = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -533,6 +535,8 @@ export default function Home() {
     } finally {
       abortControllerRef.current = null;
       setLoading(false);
+      // Allow the same question to be retried immediately after success or failure.
+      lastRequestRef.current = { fingerprint: "", at: 0 };
     }
   }
 
