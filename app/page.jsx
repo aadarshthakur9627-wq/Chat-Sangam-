@@ -148,6 +148,7 @@ export default function Home() {
   const [deepResearch, setDeepResearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState(ACTIVE_ENGINE.id);
+  const [providerStatus, setProviderStatus] = useState({ groq: null, gemini: null });
   const [compareMode, setCompareMode] = useState(false);
   const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b"]);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -196,6 +197,24 @@ export default function Home() {
   }, [chats, loaded]);
 
   useEffect(() => {
+    let cancelled = false;
+    fetch("/api/status", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (cancelled || !data?.providers) return;
+        setProviderStatus({
+          groq: Boolean(data.providers.groq?.configured),
+          gemini: Boolean(data.providers.gemini?.configured),
+        });
+      })
+      .catch(() => {
+        // Keep provider status unknown when the status endpoint is unavailable.
+        // The chat API will still return the detailed configuration error.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     if (!loading) textareaRef.current?.focus();
   }, [activeChatId, loading]);
 
@@ -211,12 +230,14 @@ export default function Home() {
       if (event.target?.closest?.(".message-context-menu")) return;
       setMessageContextMenu(null);
     }
-    document.addEventListener("pointerdown", closeMenu);
-    document.addEventListener("keydown", (event) => {
+    function closeMenuOnEscape(event) {
       if (event.key === "Escape") setMessageContextMenu(null);
-    });
+    }
+    document.addEventListener("pointerdown", closeMenu);
+    document.addEventListener("keydown", closeMenuOnEscape);
     return () => {
       document.removeEventListener("pointerdown", closeMenu);
+      document.removeEventListener("keydown", closeMenuOnEscape);
     };
   }, [messageContextMenu]);
 
@@ -232,6 +253,7 @@ export default function Home() {
   const selectedModel = GROQ_MODELS.find((model) => model.id === selectedModelId) || ACTIVE_ENGINE;
   const visionActive = attachedImages.length > 0;
   const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
+  const selectedProviderConfigured = providerStatus[effectiveModel.provider === "Google Gemini" ? "gemini" : "groq"];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
   const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
@@ -247,6 +269,15 @@ export default function Home() {
 
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
+  }
+
+  function clearImageCacheForChat(chatId, fromIndex = 0) {
+    const prefix = String(chatId) + ":";
+    for (const key of imageCacheRef.current.keys()) {
+      if (!key.startsWith(prefix)) continue;
+      const index = Number(key.slice(prefix.length));
+      if (Number.isInteger(index) && index >= fromIndex) imageCacheRef.current.delete(key);
+    }
   }
 
   function startNewChat() {
@@ -277,6 +308,7 @@ export default function Home() {
   function deleteChat(id, event) {
     event?.stopPropagation();
     if (loading) return;
+    clearImageCacheForChat(id);
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id);
       const next = remaining.length ? remaining : [createChat()];
@@ -309,7 +341,9 @@ export default function Home() {
   }
 
   async function fileToDataUrl(file) {
-    if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      throw new Error("Please choose a JPG, PNG, WEBP or GIF image.");
+    }
     if (file.size > 10 * 1024 * 1024) throw new Error("Image is too large. Maximum size is 10 MB.");
     const source = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -331,11 +365,13 @@ export default function Home() {
     canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
     let quality = 0.82;
     let dataUrl = canvas.toDataURL("image/jpeg", quality);
-    while (dataUrl.length > 1_350_000 && quality > 0.52) {
+    // Keep three-image requests below Vercel's serverless request-body ceiling,
+    // leaving room for chat history and extracted document text.
+    while (dataUrl.length > 900_000 && quality > 0.46) {
       quality -= 0.06;
       dataUrl = canvas.toDataURL("image/jpeg", quality);
     }
-    if (dataUrl.length > 1_500_000) throw new Error("Image is still too large after compression. Please choose a smaller image.");
+    if (dataUrl.length > 950_000) throw new Error("This image is still too large after compression. Please choose a smaller image.");
     return dataUrl;
   }
 
@@ -403,10 +439,30 @@ export default function Home() {
     abortControllerRef.current = controller;
     setLoading(true);
 
-    const imageAttachments = nextMessages.flatMap((msg, index) => {
-      const cached = imageCacheRef.current.get(index);
+    // Send a bounded recent history window so long chats do not eventually exceed
+    // serverless request limits. Attachment/image indexes are remapped to this window.
+    const historyStart = Math.max(0, nextMessages.length - 40);
+    const requestMessages = nextMessages.slice(historyStart);
+    const cachedImageAttachments = nextMessages.flatMap((msg, index) => {
+      const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
-    });
+    }).slice(-3)
+      .filter((image) => image.messageIndex >= historyStart);
+
+    // Web/research questions should not be hijacked by an image attached many
+    // turns earlier. Keep image context for the current message, but do not
+    // forward stale images during a text-only live-search request.
+    const currentMessageIndex = nextMessages.length - 1;
+    const relevantImageAttachments = (webSearch || deepResearch)
+      ? cachedImageAttachments.filter((image) => image.messageIndex === currentMessageIndex)
+      : cachedImageAttachments;
+    const imageAttachments = relevantImageAttachments.map((image) => ({
+      ...image,
+      messageIndex: image.messageIndex - historyStart,
+    }));
+    const requestModel = imageAttachments.length
+      ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
+      : effectiveModel;
 
     updateChat(chatId, (chat) => ({
       ...chat,
@@ -415,25 +471,25 @@ export default function Home() {
         role: "assistant",
         content: "",
         vision: imageAttachments.length > 0,
-        modelId: effectiveModel.id,
-        modelName: effectiveModel.name,
-        modelProvider: effectiveModel.provider,
+        modelId: requestModel.id,
+        modelName: requestModel.name,
+        modelProvider: requestModel.provider,
       }],
     }));
 
     try {
       // Keep file text separate from provider messages.
       // The API route safely injects it server-side, avoiding provider payload issues.
-      const apiMessages = nextMessages.map((msg) => ({
+      const apiMessages = requestMessages.map((msg) => ({
         role: msg.role,
         content: msg.content,
       }));
-      const attachments = nextMessages.flatMap((msg, index) => {
+      const attachments = requestMessages.flatMap((msg, index) => {
         if (Array.isArray(msg.fileContexts)) {
           return msg.fileContexts.map((file) => ({ messageIndex: index, name: file.name || "Attached file", text: file.text || "" }));
         }
         return msg.fileContext ? [{ messageIndex: index, name: msg.fileName || "Attached file", text: msg.fileContext }] : [];
-      });
+      }).slice(-5);
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -509,6 +565,8 @@ export default function Home() {
     } finally {
       abortControllerRef.current = null;
       setLoading(false);
+      // Allow the same question to be retried immediately after success or failure.
+      lastRequestRef.current = { fingerprint: "", at: 0 };
     }
   }
 
@@ -608,6 +666,12 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
+    if (selectedProviderConfigured === false) {
+      const providerName = effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq";
+      const variableName = effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY";
+      alert(providerName + " is not configured for this deployment. Add " + variableName + " in Vercel Environment Variables or switch to a configured model.");
+      return;
+    }
 
     // Prevent accidental double-submits of the same request. This is especially
     // useful on free/rate-limited provider tiers.
@@ -628,6 +692,8 @@ export default function Home() {
     let title = activeChat.title;
 
     if (editingIndex !== null && messages[editingIndex]?.role === "user") {
+      // Truncate cached image attachments with the edited branch so indices cannot drift.
+      clearImageCacheForChat(activeChat.id, editingIndex);
       nextMessages = [
         ...messages.slice(0, editingIndex),
         {
@@ -675,7 +741,7 @@ export default function Home() {
     setMessage("");
     setEditingIndex(null);
     const imageMessageIndex = nextMessages.length - 1;
-    if (attachedImages.length) imageCacheRef.current.set(imageMessageIndex, attachedImages.map((image) => ({ ...image })));
+    if (attachedImages.length) imageCacheRef.current.set(String(activeChat.id) + ":" + imageMessageIndex, attachedImages.map((image) => ({ ...image })));
     setAttachedFiles([]);
     setAttachedImages([]);
     setFileInputKey((value) => value + 1);
@@ -688,6 +754,7 @@ export default function Home() {
     const userIndex = index - 1;
     if (messages[userIndex]?.role !== "user") return;
     const nextMessages = messages.slice(0, index);
+    clearImageCacheForChat(activeChat.id, index);
     updateChat(activeChat.id, (chat) => ({
       ...chat,
       updatedAt: Date.now(),
@@ -875,7 +942,7 @@ export default function Home() {
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className="model-menu model-menu-portal" role="menu">
-                  <div className="model-menu-head"><span>AI MODELS</span><small>{GROQ_MODELS.length} available</small></div>
+                  <div className="model-menu-head"><span>AI MODELS</span><small>Provider setup status</small></div>
                   {GROQ_MODELS.map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
                       onClick={() => {
@@ -884,9 +951,9 @@ export default function Home() {
                         setModelMenuOpen(false);
                         if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
                       }}
-                      disabled={item.kind === "vision" && !visionActive}>
+                      disabled={(item.kind === "vision" && !visionActive) || (item.provider === "Google Gemini" ? providerStatus.gemini === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
-                      <span className="model-option-copy"><strong>{item.name}</strong><small>{item.description}</small></span>
+                      <span className="model-option-copy"><strong>{item.name}</strong><small>{(item.provider === "Google Gemini" ? providerStatus.gemini : providerStatus.groq) === false ? "API key missing in this deployment" : item.description}</small></span>
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
@@ -940,8 +1007,8 @@ export default function Home() {
           <div className="selected-model">
             <span className={"model-orb " + effectiveModel.color}>{effectiveModel.icon}</span>
             <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
-            <i />
-            <span className="live-label"><b /> Online</span>
+            <i className={selectedProviderConfigured === false ? "provider-offline" : ""} />
+            <span className={"live-label " + (selectedProviderConfigured === false ? "offline-label" : "")}><b /> {selectedProviderConfigured === null ? "Checking" : selectedProviderConfigured ? "Key set" : "Setup needed"}</span>
           </div>
           <div className="coming-soon">
             <span>FUTURE ENGINES</span>
@@ -1147,6 +1214,12 @@ export default function Home() {
         )}
 
         <div className="composer-dock">
+          {selectedProviderConfigured === false && (
+            <div className="provider-config-warning" role="status">
+              <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq"} needs setup.</strong>
+              {" "}This deployment is missing {effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY"}. Switch to a configured model or add the key in Vercel Environment Variables for this environment.
+            </div>
+          )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
               <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
@@ -1206,7 +1279,7 @@ export default function Home() {
                   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(e); }
                 }}
               />
-              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (!message.trim() && !attachedFiles.length && !attachedImages.length)} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
+              <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (selectedProviderConfigured === false || (!message.trim() && !attachedFiles.length && !attachedImages.length))} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
           <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web search with source-backed answer." : webSearch ? "⌕ Live web search is ON · Groq browser search verifies current information with sources." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
