@@ -271,6 +271,15 @@ export default function Home() {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
   }
 
+  function clearImageCacheForChat(chatId, fromIndex = 0) {
+    const prefix = String(chatId) + ":";
+    for (const key of imageCacheRef.current.keys()) {
+      if (!key.startsWith(prefix)) continue;
+      const index = Number(key.slice(prefix.length));
+      if (Number.isInteger(index) && index >= fromIndex) imageCacheRef.current.delete(key);
+    }
+  }
+
   function startNewChat() {
     if (loading) return;
     const chat = createChat();
@@ -299,6 +308,7 @@ export default function Home() {
   function deleteChat(id, event) {
     event?.stopPropagation();
     if (loading) return;
+    clearImageCacheForChat(id);
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id);
       const next = remaining.length ? remaining : [createChat()];
@@ -430,7 +440,7 @@ export default function Home() {
     setLoading(true);
 
     const imageAttachments = nextMessages.flatMap((msg, index) => {
-      const cached = imageCacheRef.current.get(index);
+      const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
     });
 
@@ -662,6 +672,8 @@ export default function Home() {
     let title = activeChat.title;
 
     if (editingIndex !== null && messages[editingIndex]?.role === "user") {
+      // Truncate cached image attachments with the edited branch so indices cannot drift.
+      clearImageCacheForChat(activeChat.id, editingIndex);
       nextMessages = [
         ...messages.slice(0, editingIndex),
         {
@@ -709,7 +721,7 @@ export default function Home() {
     setMessage("");
     setEditingIndex(null);
     const imageMessageIndex = nextMessages.length - 1;
-    if (attachedImages.length) imageCacheRef.current.set(imageMessageIndex, attachedImages.map((image) => ({ ...image })));
+    if (attachedImages.length) imageCacheRef.current.set(String(activeChat.id) + ":" + imageMessageIndex, attachedImages.map((image) => ({ ...image })));
     setAttachedFiles([]);
     setAttachedImages([]);
     setFileInputKey((value) => value + 1);
@@ -722,6 +734,7 @@ export default function Home() {
     const userIndex = index - 1;
     if (messages[userIndex]?.role !== "user") return;
     const nextMessages = messages.slice(0, index);
+    clearImageCacheForChat(activeChat.id, index);
     updateChat(activeChat.id, (chat) => ({
       ...chat,
       updatedAt: Date.now(),
