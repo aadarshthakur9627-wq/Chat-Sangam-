@@ -285,3 +285,425 @@
     line-height: 1.5;
   }
 }
+
+
+/* Chat Sangam UI polish — mobile-first, keep existing interactions intact. */
+:focus-visible {
+  outline: 2px solid rgba(255, 115, 181, .9);
+  outline-offset: 3px;
+}
+button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
+@media (pointer: coarse) {
+  .icon-button, .mobile-menu-button, .top-action, .web-search-toggle,
+  .deep-research-toggle, .model-selector-button, .attach-button, .send-button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 700px) {
+  .topbar {
+    height: 96px;
+    flex-basis: 96px;
+    padding: 7px 10px 6px;
+  }
+  .topbar-left { min-height: 39px; flex-basis: 39px; }
+  .topbar-right { gap: 5px; padding: 1px 0; }
+  .web-search-toggle, .deep-research-toggle, .engine-badge,
+  .thinking-picker, .top-action { height: 36px; }
+  .web-search-toggle, .deep-research-toggle { padding: 0 9px; }
+  .model-strip {
+    min-height: 40px;
+    padding: 0 12px;
+    gap: 8px;
+    background: rgba(13, 11, 18, .32);
+  }
+  .model-orb { width: 24px; height: 24px; border-radius: 8px; }
+  .selected-model { gap: 8px; }
+  .selected-model strong { font-size: 10px; }
+  .selected-model small { display: none; }
+  .live-label { font-size: 9px; }
+  .messages { padding: 12px 12px 230px; }
+  .welcome { margin-top: 3vh; }
+  .hero-mark {
+    width: 43px;
+    height: 43px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    font-size: 22px;
+  }
+  .hero-kicker { font-size: 8px; letter-spacing: 1.25px; }
+  .welcome h2 {
+    margin: 10px 0 9px;
+    font-size: clamp(33px, 8.8vw, 39px);
+    line-height: 1.04;
+    letter-spacing: -1.7px;
+  }
+  .welcome > p {
+    max-width: 340px;
+    padding: 0 8px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .prompt-card {
+    min-height: 88px;
+    gap: 8px;
+    padding: 11px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .022);
+  }
+  .prompt-icon { width: 28px; height: 28px; border-radius: 9px; }
+  .prompt-card strong { font-size: 12px; }
+  .prompt-card small { font-size: 9px; line-height: 1.35; }
+  .prompt-card > b { right: 10px; bottom: 9px; }
+  .trust-row { margin-top: 15px; gap: 8px; font-size: 8px; }
+  .composer-dock {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, transparent, rgba(7, 6, 10, .96) 25%, var(--bg) 52%);
+  }
+  .composer {
+    padding: 8px 9px 9px;
+    border-color: rgba(255, 255, 255, .12);
+    border-radius: 17px;
+    background: rgba(15, 13, 20, .97);
+  }
+  .composer-top { padding: 0 3px 5px; }
+  .composer-model { font-size: 10px; }
+  .composer textarea {
+    min-height: 44px;
+    padding: 11px 6px;
+    font-size: 16px;
+  }
+  .attach-button, .send-button { border-radius: 13px; }
+  .composer-note { margin-top: 6px; font-size: 8px; line-height: 1.35; }
+  .model-menu {
+    top: 103px;
+    right: 9px;
+    width: min(320px, calc(100vw - 18px));
+    max-height: calc(100dvh - 115px);
+    border-radius: 17px;
+  }
+}
+@media (max-width: 380px) {
+  .topbar { padding-left: 8px; padding-right: 8px; }
+  .topbar-right { gap: 4px; }
+  .web-search-toggle, .deep-research-toggle { padding: 0 7px; }
+  .welcome h2 { font-size: 32px; letter-spacing: -1.4px; }
+  .welcome > p { font-size: 11px; }
+  .prompt-card { min-height: 84px; padding: 9px; }
+  .prompt-card small { font-size: 8px; }
+  .messages { padding-left: 9px; padding-right: 9px; }
+}
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* Final mobile workspace refinement: compact controls, quieter hero, stronger composer. */
+@media (max-width: 700px) {
+  .topbar {
+    height: 94px !important;
+    flex-basis: 94px !important;
+    padding: 7px 10px 6px !important;
+    gap: 3px !important;
+    background: rgba(8, 7, 11, .96) !important;
+  }
+  .topbar-left {
+    min-height: 36px !important;
+    flex-basis: 36px !important;
+    gap: 8px !important;
+  }
+  .mobile-menu-button {
+    width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    border-radius: 12px !important;
+    background: #121019 !important;
+  }
+  .eyebrow { font-size: 7px !important; letter-spacing: 1.5px !important; }
+  .topbar h1 { font-size: 13px !important; line-height: 1.2 !important; }
+  .topbar-right {
+    min-height: 39px !important;
+    flex: 0 0 39px !important;
+    gap: 6px !important;
+    padding: 0 !important;
+    align-items: center !important;
+  }
+  .web-search-toggle, .deep-research-toggle, .engine-badge,
+  .thinking-picker, .top-action {
+    height: 34px !important;
+    min-height: 34px !important;
+    border-radius: 11px !important;
+    font-size: 10px !important;
+  }
+  .web-search-toggle, .deep-research-toggle { padding: 0 10px !important; }
+  .engine-badge { padding: 0 10px !important; gap: 6px !important; }
+  .engine-badge strong { font-size: 10px !important; }
+  .thinking-picker { padding: 0 9px !important; }
+  .thinking-picker select { font-size: 10px !important; }
+  .top-action { width: 36px !important; padding: 0 !important; }
+  .model-strip {
+    min-height: 43px !important;
+    height: 43px !important;
+    padding: 0 13px !important;
+    gap: 8px !important;
+    background: rgba(14, 12, 18, .78) !important;
+  }
+  .model-orb { width: 25px !important; height: 25px !important; }
+  .selected-model { gap: 8px !important; min-width: 0 !important; }
+  .selected-model strong { font-size: 10px !important; }
+  .live-label { white-space: nowrap !important; font-size: 9px !important; }
+  .messages { padding: 8px 12px 220px !important; }
+  .welcome { margin-top: 2vh !important; }
+  .hero-glow { width: 250px !important; height: 145px !important; top: -20px !important; }
+  .hero-mark {
+    width: 46px !important; height: 46px !important;
+    margin-bottom: 12px !important; border-radius: 15px !important;
+    font-size: 23px !important;
+  }
+  .hero-kicker { font-size: 8px !important; letter-spacing: 1.3px !important; }
+  .welcome h2 {
+    margin: 9px 0 10px !important;
+    font-size: clamp(32px, 8.3vw, 38px) !important;
+    line-height: 1.04 !important; letter-spacing: -1.8px !important;
+  }
+  .welcome > p {
+    max-width: 370px !important; padding: 0 8px !important;
+    font-size: 12px !important; line-height: 1.55 !important;
+  }
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important; margin-top: 17px !important;
+  }
+  .prompt-card {
+    min-height: 90px !important; padding: 10px !important;
+    gap: 7px !important; border-radius: 15px !important;
+    background: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012)) !important;
+  }
+  .prompt-icon { width: 29px !important; height: 29px !important; border-radius: 10px !important; }
+  .prompt-card strong { font-size: 12px !important; }
+  .prompt-card small { font-size: 9px !important; line-height: 1.35 !important; }
+  .prompt-card > b { right: 10px !important; bottom: 8px !important; }
+  .trust-row { margin-top: 12px !important; gap: 7px !important; font-size: 8px !important; }
+  .composer-dock {
+    bottom: 0 !important;
+    padding: 12px 10px max(9px, env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(to bottom, transparent 0%, rgba(7,6,10,.94) 20%, var(--bg) 48%) !important;
+  }
+  .composer {
+    padding: 8px 9px 9px !important;
+    border: 1px solid rgba(244, 63, 140, .22) !important;
+    border-radius: 19px !important;
+    background: rgba(15, 13, 20, .98) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.28) !important;
+  }
+  .composer-top { padding: 0 3px 6px !important; }
+  .composer-model { font-size: 10px !important; }
+  .composer-input-row { gap: 8px !important; }
+  .attach-button {
+    width: 42px !important; height: 42px !important; min-height: 42px !important;
+    border-radius: 14px !important;
+  }
+  .composer textarea {
+    min-height: 42px !important; padding: 10px 4px !important;
+    font-size: 16px !important; line-height: 1.4 !important;
+  }
+  .send-button {
+    width: 42px !important; height: 42px !important; min-height: 42px !important;
+    flex-basis: 42px !important; border-radius: 14px !important;
+  }
+  .composer-note { margin-top: 6px !important; font-size: 8px !important; line-height: 1.35 !important; }
+}
+@media (max-width: 380px) {
+  .topbar { padding-left: 8px !important; padding-right: 8px !important; }
+  .topbar-right { gap: 4px !important; }
+  .web-search-toggle, .deep-research-toggle { padding: 0 8px !important; }
+  .welcome h2 { font-size: 31px !important; }
+  .prompt-card { min-height: 86px !important; }
+  .prompt-card small { font-size: 8px !important; }
+}
+
+
+/* Mobile viewport and control overflow fixes based on device screenshot. */
+@media (max-width: 700px) {
+  .app-shell { min-height: 100dvh !important; height: 100dvh !important; }
+  .workspace { height: 100dvh !important; min-height: 0 !important; }
+  /* New conversation remains available in the menu/sidebar; don't leave a clipped plus button. */
+  .topbar-right > .top-action { display: none !important; }
+  .topbar-right {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none !important;
+    padding-right: 2px !important;
+  }
+  .topbar-right::-webkit-scrollbar { display: none !important; }
+  .composer-dock {
+    bottom: 0 !important;
+    padding-bottom: max(22px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .messages { padding-bottom: 245px !important; }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .welcome { margin-top: 0 !important; }
+  .hero-mark { width: 40px !important; height: 40px !important; margin-bottom: 8px !important; }
+  .welcome h2 { margin: 7px 0 8px !important; }
+  .prompt-grid { margin-top: 13px !important; }
+  .prompt-card { min-height: 78px !important; }
+  .trust-row { margin-top: 9px !important; }
+}
+
+
+/* ChatGPT-inspired conversation-first visual hierarchy; keep Chat Sangam accent identity. */
+:root {
+  --bg: #0b0b0d;
+  --panel: #171719;
+  --panel2: #202023;
+  --line: rgba(255,255,255,.09);
+  --text: #f5f5f5;
+  --muted: #b4b4b8;
+  --dim: #85858b;
+}
+html, body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.topbar { background: rgba(11,11,13,.92); backdrop-filter: blur(16px); }
+.topbar h1 { font-family: inherit; font-weight: 600; letter-spacing: -.2px; }
+.model-strip { background: rgba(17,17,19,.78); }
+.hero-glow { opacity: .45; }
+.hero-mark { box-shadow: 0 5px 24px rgba(244,63,140,.16); }
+.welcome h2 { font-family: inherit; font-weight: 650; letter-spacing: -1.8px; }
+.welcome h2 span {
+  background: linear-gradient(90deg,#f5d5e5,#d8c6ff);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.prompt-card {
+  background: #151517;
+  border-color: rgba(255,255,255,.08);
+  box-shadow: none;
+  transition: background .16s ease, border-color .16s ease;
+}
+.prompt-card:hover { transform: none; background: #1d1d20; border-color: rgba(244,63,140,.25); }
+.composer {
+  background: #19191c;
+  border-color: rgba(255,255,255,.13);
+  box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  backdrop-filter: blur(18px);
+}
+.composer:focus-within {
+  border-color: rgba(244,63,140,.38);
+  box-shadow: 0 8px 28px rgba(0,0,0,.22);
+}
+.composer textarea { font-family: inherit; }
+.attach-button { background: transparent; border-color: transparent; }
+.attach-button:hover, .attach-button.active { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.08); transform:none; }
+.send-button { box-shadow: none; }
+.message-row.user .message-bubble {
+  background: #252528;
+  border-color: rgba(255,255,255,.04);
+}
+.message-row.assistant .assistant-answer-bubble {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+@media (max-width: 700px) {
+  .topbar { padding-top: max(7px, env(safe-area-inset-top, 0px)) !important; }
+  .topbar-left { align-items: center !important; }
+  .eyebrow { color: #a4a4aa !important; letter-spacing: .7px !important; }
+  .model-strip { min-height: 38px !important; height: 38px !important; }
+  .model-orb { width: 23px !important; height: 23px !important; border-radius: 8px !important; }
+  .selected-model strong { font-size: 10px !important; font-weight: 600 !important; }
+  .selected-model .live-label { font-size: 9px !important; }
+  .messages { padding-top: 12px !important; }
+  .welcome { margin: 5vh auto 0 !important; max-width: 440px !important; }
+  .hero-mark, .hero-kicker, .welcome > p, .trust-row { display: none !important; }
+  .welcome h2 {
+    margin: 0 0 22px !important;
+    font-size: clamp(27px, 7.5vw, 34px) !important;
+    line-height: 1.15 !important;
+    letter-spacing: -1.25px !important;
+    font-weight: 600 !important;
+  }
+  .welcome h2 span {
+    background: none !important;
+    color: #f5f5f5 !important;
+  }
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 9px !important;
+    margin-top: 0 !important;
+  }
+  .prompt-card {
+    min-height: 58px !important;
+    display: grid !important;
+    grid-template-columns: 28px minmax(0,1fr) 12px !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 11px !important;
+    border-radius: 16px !important;
+    background: rgba(255,255,255,.035) !important;
+    text-align: left !important;
+  }
+  .prompt-card:hover { background: rgba(255,255,255,.07) !important; }
+  .prompt-icon {
+    width: 28px !important; height: 28px !important;
+    background: rgba(244,63,140,.10) !important;
+    color: #e9a4cc !important;
+    border-radius: 9px !important;
+  }
+  .prompt-card > span:nth-child(2) { padding-right: 0 !important; gap: 0 !important; }
+  .prompt-card strong { font-size: 12px !important; font-weight: 550 !important; }
+  .prompt-card small { display: none !important; }
+  .prompt-card > b { position: static !important; color: #77777d !important; font-size: 14px !important; }
+  .composer-dock {
+    padding: 10px 10px max(18px, env(safe-area-inset-bottom, 0px)) !important;
+    background: linear-gradient(to bottom, transparent, rgba(11,11,13,.92) 22%, #0b0b0d 55%) !important;
+  }
+  .composer {
+    padding: 8px 9px !important;
+    border-radius: 25px !important;
+    background: #202023 !important;
+    border-color: rgba(255,255,255,.10) !important;
+  }
+  .composer-top { padding: 0 5px 5px !important; }
+  .composer-model { font-size: 9px !important; color: #aaaab0 !important; }
+  .composer textarea { padding: 8px 3px !important; }
+  .attach-button { background: transparent !important; color: #d5d5da !important; }
+  .send-button { border-radius: 50% !important; }
+  .composer-note { color: #6e6e74 !important; }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .welcome { margin-top: 2vh !important; }
+  .welcome h2 { margin-bottom: 16px !important; }
+  .prompt-card { min-height: 54px !important; }
+}
+
+
+/* Mobile conversation spacing: reserve enough room for the fixed composer without leaving a large dead zone. */
+@media (max-width: 700px) {
+  .messages {
+    padding-bottom: 145px !important;
+    scroll-padding-bottom: 145px;
+  }
+  .conversation > .message-row:last-child {
+    margin-bottom: 16px;
+  }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .messages {
+    padding-bottom: 132px !important;
+    scroll-padding-bottom: 132px;
+  }
+}
