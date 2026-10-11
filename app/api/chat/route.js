@@ -966,7 +966,7 @@ async function generateRoutedProviderAnswer(modelId, messages, attachments, quer
   const message = response.choices?.[0]?.message;
   const answer = (typeof message?.content === "string" ? message.content : String(message?.content ?? "")).trim();
   if (!answer) {
-    const error = new Error("Groq returned an empty response. Trying another configured provider.");
+    const error = new Error("Groq returned an empty response.");
     error.status = 503;
     throw error;
   }
