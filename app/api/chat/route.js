@@ -118,12 +118,12 @@ function latestUserMessage(messages) {
 }
 
 function isDirectClockQuestion(query) {
-  const text = String(query || "").toLowerCase().replace(/\\s+/g, " ").trim();
+  const text = String(query || "").toLowerCase().replace(/\s+/g, " ").trim();
   if (!text) return false;
   const directPatterns = [
-    /\\b(what(?:'s| is) the )?(today'?s |current |exact )?(date|time)\\b/,
-    /\\b(today|aaj|abhi)\\b.*\\b(date|time|tareekh|tarikh|tariikh|din|baje)\\b/,
-    /\\b(date|time|tareekh|tarikh|tariikh)\\b.*\\b(today|aaj|abhi)\\b/,
+    /\b(what(?:'s| is) the )?(today'?s |current |exact )?(date|time)\b/,
+    /\b(today|aaj|abhi)\b.*\b(date|time|tareekh|tarikh|tariikh|din|baje)\b/,
+    /\b(date|time|tareekh|tarikh|tariikh)\b.*\b(today|aaj|abhi)\b/,
     /(आज|अभी).*(तारीख|दिनांक|दिन|समय|कितने बजे|बजे)/,
   ];
   return directPatterns.some((pattern) => pattern.test(text));
