@@ -106,11 +106,41 @@ function normalizeMathDelimiters(content) {
     .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$");
 }
 
+function repairMalformedPipeBlocks(markdown) {
+  // GFM renders only valid Markdown tables. Models sometimes emit pipe-separated
+  // pseudo-tables without a valid separator row, which otherwise leak raw pipes
+  // into the UI. Preserve valid tables; turn malformed pipe blocks into readable
+  // lines instead of displaying broken table syntax.
+  const lines = String(markdown || "").split("\n");
+  const output = [];
+  const isPipeLine = (line) => (line.match(/\|/g) || []).length >= 2;
+  const isTableSeparator = (line) => /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+  let i = 0;
+  while (i < lines.length) {
+    if (!isPipeLine(lines[i])) {
+      output.push(lines[i++]);
+      continue;
+    }
+    const start = i;
+    while (i < lines.length && isPipeLine(lines[i])) i++;
+    const block = lines.slice(start, i);
+    if (block.some(isTableSeparator)) {
+      output.push(...block);
+      continue;
+    }
+    for (const line of block) {
+      const cells = line.split("|").map((cell) => cell.trim()).filter(Boolean);
+      output.push(cells.length > 1 ? cells.join(" — ") : line);
+    }
+  }
+  return output.join("\n");
+}
+
 function prepareCitationMarkdown(content, sources) {
   if (!content) return "";
 
   const available = new Set((sources || []).map((source) => String(source.id)));
-  const cleaned = normalizeMathDelimiters(content)
+  const cleaned = repairMalformedPipeBlocks(normalizeMathDelimiters(content))
     // Normalize Groq/browser-search citation wrappers to [N].
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
     .replace(/\[(?:browser\.search|web\.search)\s*[†:]?[^\]]*\]/gi, "")
