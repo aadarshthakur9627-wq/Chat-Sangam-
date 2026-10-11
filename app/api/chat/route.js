@@ -542,7 +542,8 @@ function sanitizeFileText(text) {
   return String(text ?? "")
     .replace(/\u0000/g, "")
     .replace(/\r\n/g, "\n")
-    .replace(/[\uD800-\uDFFF]/g, "")
+    // Remove only unpaired UTF-16 surrogates; preserve valid pairs such as emoji.
+    .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "")
     .slice(0, 120000)
     .trim();
 }
