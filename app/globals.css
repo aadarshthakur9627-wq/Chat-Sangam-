@@ -1453,3 +1453,121 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 /* Align compose/overflow pill with the top-right corner of the header and accent the starter prompts. */
 @media (max-width:700px){.topbar{position:relative!important;min-height:84px!important;padding-top:10px!important;padding-bottom:10px!important}.topbar-right{position:absolute!important;top:10px!important;right:10px!important;bottom:auto!important;left:auto!important;z-index:30!important;margin:0!important;width:108px!important;max-width:108px!important;height:52px!important;min-height:52px!important;padding:2px!important;display:flex!important;justify-content:space-between!important;align-items:center!important;transform:none!important}.topbar-left{padding-right:116px!important;min-height:54px!important}.top-action.new-chat-icon-chip,.top-action.more-icon-chip{width:50px!important;min-width:50px!important;max-width:50px!important;height:48px!important;min-height:48px!important;flex:0 0 50px!important}.more-menu-wrap{width:50px!important;min-width:50px!important;flex:0 0 50px!important}.top-more-menu{top:calc(100% + 8px)!important;right:0!important}}
 .prompt-card{background:linear-gradient(135deg,color-mix(in srgb,var(--pink) 8%,#151419),rgba(255,255,255,.035))!important;border-color:color-mix(in srgb,var(--pink) 26%,rgba(255,255,255,.1))!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important}.prompt-card .prompt-icon{background:color-mix(in srgb,var(--pink) 24%,#17151d)!important;color:var(--pink)!important;box-shadow:0 5px 16px color-mix(in srgb,var(--pink) 12%,transparent)!important}.prompt-card:hover{background:linear-gradient(135deg,color-mix(in srgb,var(--pink) 15%,#151419),rgba(255,255,255,.045))!important;border-color:color-mix(in srgb,var(--pink) 48%,transparent)!important}
+
+
+/* Chat Sangam conversation UI: reference-inspired, calm dark canvas and floating reply composer. */
+@media (max-width:700px) {
+  .app-shell, .workspace { background:#171717 !important; }
+  .workspace { min-height:100dvh !important; }
+  .topbar {
+    background:#171717 !important;
+    border-bottom:0 !important;
+    min-height:76px !important;
+    padding:10px 12px 8px 14px !important;
+  }
+  .topbar-left { padding-right:118px !important; gap:12px !important; }
+  .topbar .mobile-menu-button {
+    width:52px !important; height:52px !important; min-width:52px !important;
+    border-radius:50% !important; background:#29292c !important;
+    border:1px solid rgba(255,255,255,.04) !important;
+  }
+  .topbar .eyebrow { display:none !important; }
+  .topbar h1 {
+    max-width:calc(100vw - 230px) !important;
+    font-size:17px !important; font-weight:600 !important;
+    letter-spacing:-.35px !important;
+  }
+  .topbar-right {
+    top:10px !important; right:12px !important;
+    width:166px !important; max-width:166px !important;
+    height:52px !important; padding:3px !important;
+    background:#29292c !important; border:1px solid rgba(255,255,255,.055) !important;
+    border-radius:999px !important;
+  }
+  .top-action.new-chat-icon-chip,.top-action.more-icon-chip {
+    width:78px !important; min-width:78px !important; max-width:78px !important;
+    flex:0 0 78px !important; height:44px !important; min-height:44px !important;
+    border-radius:999px !important; background:transparent !important;
+  }
+  .top-action.new-chat-icon-chip svg { width:24px !important;height:24px !important; }
+  .top-action.more-icon-chip:before { content:"···" !important; font-size:28px !important; letter-spacing:2px !important; }
+  .more-menu-wrap { width:78px !important; min-width:78px !important; flex:0 0 78px !important; height:44px !important; }
+  .model-strip { display:none !important; }
+  .messages {
+    background:#171717 !important;
+    padding:16px 18px 180px !important;
+    scroll-padding-bottom:190px !important;
+  }
+  .welcome { margin:7vh auto 0 !important; }
+  .welcome h2 { font-size:34px !important; line-height:1.16 !important; letter-spacing:-1.4px !important; }
+  .welcome>p { font-size:14px !important; line-height:1.5 !important; color:#a4a4aa !important; }
+  .prompt-grid { gap:9px !important; margin-top:24px !important; }
+  .prompt-card {
+    min-height:72px !important; padding:12px !important; border-radius:20px !important;
+    background:color-mix(in srgb,var(--pink) 5%,#1d1d20) !important;
+    border:1px solid color-mix(in srgb,var(--pink) 20%,rgba(255,255,255,.07)) !important;
+  }
+  .prompt-card .prompt-icon { width:40px !important;height:40px !important;border-radius:13px !important; }
+  .prompt-card strong { font-size:13px !important; }
+  .prompt-card small { display:none !important; }
+  .prompt-card > b { font-size:17px !important; }
+  .trust-row { display:none !important; }
+  .conversation { gap:22px !important; }
+  .message-row { gap:10px !important; margin-bottom:25px !important; }
+  .message-avatar { display:none !important; }
+  .message-main { min-width:0 !important; }
+  .message-meta { gap:10px !important; margin-bottom:8px !important; }
+  .message-meta strong { font-size:13px !important; }
+  .message-meta span { font-size:10px !important; color:#8f8f96 !important; }
+  .message-row.user { justify-content:flex-end !important; }
+  .message-row.user .message-main { width:auto !important; max-width:88% !important; flex:0 1 auto !important; }
+  .message-row.user .message-meta { display:none !important; }
+  .message-row.user .message-bubble {
+    border:0 !important; background:#29292c !important;
+    border-radius:24px !important; padding:12px 17px !important;
+    font-size:16px !important; line-height:1.45 !important;
+  }
+  .message-row.assistant .assistant-answer-bubble {
+    padding:0 !important; background:transparent !important; border:0 !important;
+  }
+  .markdown-content { font-size:16px !important; line-height:1.7 !important; color:#f1f1f1 !important; }
+  .markdown-content p { margin:0 0 17px !important; }
+  .assistant-action-bar { justify-content:flex-start !important; gap:13px !important; margin-top:18px !important; }
+  .action-icon-button { width:32px !important;height:32px !important; color:#a0a0a7 !important; }
+  .composer-dock {
+    position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important;
+    padding:10px 16px max(14px,env(safe-area-inset-bottom,0px)) !important;
+    background:linear-gradient(to bottom,rgba(23,23,23,0),#171717 15%) !important;
+    border:0 !important; z-index:40 !important;
+  }
+  .composer {
+    display:flex !important; flex-direction:column !important;
+    gap:12px !important; padding:14px 14px 12px !important;
+    border:1px solid rgba(255,255,255,.045) !important;
+    border-radius:30px !important; background:#29292c !important;
+    box-shadow:0 10px 32px rgba(0,0,0,.12) !important;
+  }
+  .composer-top { order:0 !important; border:0 !important; padding:0 !important; min-height:0 !important; }
+  .composer-model { font-size:11px !important; color:#b5b5bc !important; }
+  .composer-hint { display:none !important; }
+  .composer textarea {
+    min-height:44px !important; max-height:150px !important; padding:0 !important;
+    font-size:16px !important; line-height:1.45 !important; color:#f6f6f7 !important;
+    background:transparent !important; border:0 !important; outline:0 !important;
+  }
+  .composer textarea::placeholder { color:#8f8f96 !important; }
+  .composer-bottom, .composer-controls { display:flex !important; align-items:center !important; }
+  .composer .attach-button {
+    width:48px !important;height:48px !important;min-width:48px !important;
+    border-radius:50% !important; border:1px solid rgba(255,255,255,.12) !important;
+    background:transparent !important; font-size:25px !important;
+  }
+  .composer .send-button {
+    width:52px !important;height:52px !important;min-width:52px !important;
+    border-radius:50% !important; flex:0 0 52px !important;
+  }
+  .composer-note { font-size:10px !important; text-align:center !important; color:#77777e !important; margin-top:8px !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .prompt-card,.top-action.new-chat-icon-chip,.top-action.more-icon-chip,.send-button { transition:none !important; }
+}
