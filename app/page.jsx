@@ -129,7 +129,7 @@ function repairMalformedPipeBlocks(markdown) {
       continue;
     }
     for (const line of block) {
-      const cells = line.split("|").map((cell) => cell.trim()).filter(Boolean);
+      const cells = line.split("|").map((cell) => cell.trim()).filter((cell) => Boolean(cell) && !/^:?-{3,}:?$/.test(cell));
       output.push(cells.length > 1 ? cells.join(" — ") : line);
     }
   }
