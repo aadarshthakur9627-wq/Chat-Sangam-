@@ -443,6 +443,9 @@ export default function Home() {
       const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
     }).slice(-3);
+    const requestModel = imageAttachments.length
+      ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
+      : effectiveModel;
 
     updateChat(chatId, (chat) => ({
       ...chat,
@@ -451,9 +454,9 @@ export default function Home() {
         role: "assistant",
         content: "",
         vision: imageAttachments.length > 0,
-        modelId: effectiveModel.id,
-        modelName: effectiveModel.name,
-        modelProvider: effectiveModel.provider,
+        modelId: requestModel.id,
+        modelName: requestModel.name,
+        modelProvider: requestModel.provider,
       }],
     }));
 
