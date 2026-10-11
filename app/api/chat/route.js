@@ -338,6 +338,19 @@ async function synthesizeWebAnswer(query, results, model = GROQ_MODEL, draftAnsw
       " available, so I won't invent extra headlines or reuse one article as evidence for different stories. Please retry Web Search later or narrow the request.";
   }
 
+  // If the model repeats one URL for multiple news items, do not display the
+  // draft as verified. Repeated URLs in prose are a direct signal that stories
+  // may have been padded from a single live-updates page.
+  if (isNewsRoundup && answer) {
+    const urls = [...answer.matchAll(/https?:\/\/[^\s)\]}>]+/gi)]
+      .map((match) => match[0].replace(/[.,;:!?]+$/, "").replace(/#.*$/, ""));
+    const counts = new Map();
+    for (const url of urls) counts.set(url, (counts.get(url) || 0) + 1);
+    if ([...counts.values()].some((count) => count >= 2)) {
+      return "Verification check: the draft reused the same source URL for multiple news items. To avoid presenting repeated or unsupported headlines as verified, I can't confirm this roundup from the generated answer. Please retry Web Search or ask for one specific topic.";
+    }
+  }
+
   // Reuse the browser-search draft to avoid a second Groq completion on free/rate-limited tiers.
   if (!answer) return "";
   if (!distinctResults.length) {
