@@ -1703,3 +1703,48 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .more-menu-wrap { display:inline-flex!important; align-items:center!important; justify-content:center!important; width:54px!important; min-width:54px!important; max-width:54px!important; height:40px!important; flex:0 0 54px!important; position:static!important; }
   .topbar h1 { max-width:calc(100vw - 230px)!important; overflow:hidden!important; text-overflow:ellipsis!important; white-space:nowrap!important; font-size:16px!important; }
 }
+
+
+/* Mobile table fix: keep compact 3-column knowledge tables inside the message width. */
+.table-scroll {
+  display:block;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:auto;
+  box-sizing:border-box;
+  -webkit-overflow-scrolling:touch;
+}
+.table-scroll table { max-width:100%; }
+@media (max-width:700px) {
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) table,
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) table {
+    width:100%!important;
+    min-width:0!important;
+    table-layout:fixed!important;
+  }
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) th:first-child,
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) td:first-child,
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) th:first-child,
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) td:first-child {
+    width:34px!important;
+  }
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) th:nth-child(2),
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) td:nth-child(2),
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) th:nth-child(2),
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) td:nth-child(2) {
+    width:31%!important;
+  }
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) th,
+  .markdown-content .table-scroll:has(th:nth-child(3):last-child) td,
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) th,
+  .markdown-content .table-scroll:has(td:nth-child(3):last-child) td {
+    min-width:0!important;
+    max-width:none!important;
+    padding:8px 7px!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+    font-size:12px!important;
+  }
+}
