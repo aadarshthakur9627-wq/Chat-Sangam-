@@ -187,6 +187,10 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
         "For current-status, death/life, breaking-news, and recent-event questions, you MUST call browser_search before answering.",
         "Prefer official primary sources for announcements, laws, schedules, and statistics; use independent reputable reporting to corroborate important or disputed claims when available.",
         "Cite each important factual claim with the matching retrieved source citation. Never invent citation numbers, attach a citation to a claim the source does not support, or treat a generic landing page as proof of a specific result.",
+        "For a news roundup, each listed story must have its own retrieved result that directly supports that exact headline and claim. Never reuse one source URL or citation for unrelated stories, and never invent headlines or publication timestamps.",
+        "Count distinct usable source URLs before writing a roundup. If only one distinct article is available, report only that one story and clearly say that more independently sourced stories could not be verified. Do not pad a requested list with unsupported items.",
+        "Use publication dates/times only when they are present in the retrieved page title/content or source metadata. The search timestamp is not a publication timestamp.",
+        "Before finalizing, check that each numbered story's cited source title and URL match that story. If a citation cannot be matched, omit the claim or label it not verified.",
         "Search for the exact current status as of today, not historical articles.",
         "Interpret the scope of the user's question carefully. If the user asks who won a broad award or event (for example, 'Nobel Prize 2026') without naming a category, search for winners across every relevant category rather than answering with only one category.",
         "For broad Nobel Prize winner lists, verify each category separately using category-specific official press releases or result pages: Physics, Chemistry, Physiology or Medicine, Literature, Peace, and Economic Sciences. Do not rely on a single generic 'All Nobel Prizes' page if it does not contain current-year winners for every category.",
@@ -280,6 +284,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
   const executedTools = message?.executed_tools || [];
   const rawResults = executedTools.flatMap((tool) => tool?.search_results?.results || []);
 
+  const seenResultUrls = new Set();
   const results = rawResults
     .map((item) => ({
       title: item.title || "Web result",
@@ -289,7 +294,12 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
     }))
     .filter((item) => {
       try {
-        new URL(item.url);
+        const parsed = new URL(item.url);
+        if (!["http:", "https:"].includes(parsed.protocol)) return false;
+        // Do not present duplicate URLs as independent corroborating sources.
+        const canonicalUrl = parsed.href.replace(/#.*$/, "");
+        if (seenResultUrls.has(canonicalUrl)) return false;
+        seenResultUrls.add(canonicalUrl);
         return true;
       } catch {
         return false;
