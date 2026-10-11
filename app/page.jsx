@@ -103,9 +103,12 @@ function getCitedSources(content, sources) {
 
 function normalizeMathDelimiters(content) {
   return String(content || "")
-    // Support both $-delimited Markdown math and the \(...\), \[...\] delimiters emitted by some models.
+    // Convert LaTeX bracket delimiters to Markdown math delimiters.
     .replace(/\\\[([\s\S]+?)\\\]/g, (_, expression) => "$$\n" + expression.trim() + "\n$$")
-    .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$");
+    .replace(/\\\(([^]*?)\\\)/g, (_, expression) => "$" + expression + "$")
+    // Some models wrap a one-line inline equation in $$...$$. remark-math
+    // expects single dollars for inline math; preserve multiline display math.
+    .replace(/\$\$([^\n]*?)\$\$/g, (_, expression) => "$" + expression.trim() + "$");
 }
 
 function prepareCitationMarkdown(content, sources) {
