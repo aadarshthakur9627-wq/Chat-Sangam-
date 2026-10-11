@@ -22,6 +22,9 @@ export const dynamic = "force-dynamic";
 const GROQ_MODEL = "openai/gpt-oss-20b";
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
+const ANTIGRAVITY_MODEL_ID = "antigravity-agent";
+const ANTIGRAVITY_AGENT_ID = "antigravity-preview-09-2026";
+const ANTIGRAVITY_BASE_MODEL = "gemini-3.5-flash-lite";
 
 const GROQ_MODEL_CATALOG = {
   "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
@@ -558,6 +561,122 @@ function geminiErrorMessage(status, payload) {
   return detail ? "Gemini API error: " + detail.slice(0, 240) : "Gemini request failed. Please try again.";
 }
 
+function antigravityErrorMessage(status, payload) {
+  const detail = payload?.error?.message || "";
+  if (status === 400) return "Antigravity rejected this request. Try a shorter prompt and retry.";
+  if (status === 401 || status === 403) return "Antigravity API access was denied. Check GEMINI_API_KEY and confirm the Antigravity agent is enabled for this Google AI Studio project.";
+  if (status === 404) return "The Antigravity agent endpoint is unavailable for this project. Confirm Interactions API / Antigravity access is enabled in Google AI Studio.";
+  if (status === 429) return "Antigravity rate limit reached. Wait for the quota to refresh, or switch to Gemini/Groq.";
+  if (status >= 500) return "Google Antigravity is temporarily unavailable. Please try again later.";
+  return detail ? "Antigravity API error: " + detail.slice(0, 240) : "Antigravity request failed. Please try again.";
+}
+
+async function generateAntigravityAnswer(messages, attachments, query, useSearch, useResearch) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const error = new Error("Google Antigravity requires GEMINI_API_KEY. Add the key in Vercel Environment Variables and enable it for this deployment's environment.");
+    error.status = 503;
+    throw error;
+  }
+
+  const builtMessages = attachFileContext(messages, attachments)
+    .filter((message) => message && (message.role === "user" || message.role === "assistant"))
+    .slice(-24);
+  const conversation = builtMessages.map((message) => {
+    const role = message.role === "assistant" ? "Assistant" : "User";
+    return role + ": " + String(message.content || "").slice(0, 18000);
+  }).join("\n\n");
+
+  const systemText = CHAT_SANGAM_SYSTEM_PROMPT
+    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying engine is Google's Antigravity managed agent selected by the user.")
+    + "\n\n" + getRuntimeDateInstruction()
+    + "\n\nANTIGRAVITY AGENT MODE: You are operating through Google's managed Antigravity agent in a remote sandbox. Answer the latest user request directly, in the user's language. Use tools only when they materially help. Never claim you ran code, browsed, or verified something unless you actually did so."
+    + ((useSearch || useResearch || shouldAutoSearch(query))
+      ? "\n\nWEB ACCESS: Use Google Search and URL context for current/time-sensitive facts. Cite the actual URLs of sources you consulted, distinguish verified facts from uncertainty, and do not invent headlines, sources, dates, or citations."
+      : "\n\nWEB ACCESS: You may use Google Search when the question clearly needs current verification; otherwise answer directly without unnecessary browsing.")
+    + (useResearch
+      ? "\n\nRESEARCH MODE: Conduct focused multi-source research, prioritize official/primary sources, cross-check important claims, and provide a concise synthesis with source links."
+      : "");
+
+  const requestBody = {
+    agent: ANTIGRAVITY_AGENT_ID,
+    input: systemText + "\n\nConversation history:\n" + conversation + "\n\nAnswer the latest user message. Do not repeat the entire conversation.",
+    environment: "remote",
+    agent_config: {
+      type: "antigravity",
+      model: ANTIGRAVITY_BASE_MODEL,
+      max_total_tokens: 8192,
+    },
+  };
+
+  let response;
+  try {
+    response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify(requestBody),
+      cache: "no-store",
+      signal: AbortSignal.timeout(55000),
+    });
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") {
+      throw new Error("Antigravity took too long to respond. Try a shorter task or switch to Gemini/Groq.");
+    }
+    throw new Error("Could not connect to Google Antigravity. Check the connection and retry.");
+  }
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(antigravityErrorMessage(response.status, payload));
+    error.status = response.status;
+    throw error;
+  }
+
+  // The Interactions API returns final text in steps[].content[] where the
+  // step type is "model_output" and content parts use type "text". Keep
+  // output_text support for SDK-shaped responses and older response variants.
+  const stepText = Array.isArray(payload?.steps)
+    ? payload.steps
+      .filter((step) => step?.type === "model_output")
+      .flatMap((step) => Array.isArray(step.content) ? step.content : [])
+      .filter((part) => part?.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("\n")
+    : "";
+  const legacyText = Array.isArray(payload?.output)
+    ? payload.output
+      .filter((item) => item?.type === "message")
+      .flatMap((item) => Array.isArray(item.content) ? item.content : [])
+      .filter((item) => (item?.type === "output_text" || item?.type === "text") && typeof item.text === "string")
+      .map((item) => item.text)
+      .join("\n")
+    : "";
+  const answer = (typeof payload?.output_text === "string" ? payload.output_text : stepText || legacyText).trim();
+
+  if (!answer) {
+    if (payload?.status === "incomplete") {
+      throw new Error("Antigravity reached its token budget before producing a final answer. Try a smaller task.");
+    }
+    if (payload?.status === "in_progress") {
+      throw new Error("Antigravity is still working on this task. Please retry in a moment.");
+    }
+    if (payload?.status === "failed" || payload?.status === "cancelled") {
+      throw new Error("Antigravity task did not complete successfully. Please retry or switch models.");
+    }
+    console.error("Antigravity returned no recognized text:", {
+      status: payload?.status,
+      responseKeys: Object.keys(payload || {}),
+      stepTypes: Array.isArray(payload?.steps) ? payload.steps.map((step) => step?.type) : [],
+    });
+    throw new Error("Antigravity finished without a readable text response. Please retry or switch to another model.");
+  }
+
+  return { answer };
+}
+
 async function generateGeminiAnswer(messages, attachments, query, useSearch) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -781,6 +900,96 @@ async function compareModelCompletion(model, messages, safeReasoning) {
   }
 }
 
+
+const AUTO_FREE_MODEL_ID = "auto-free";
+
+function isProviderConfigured(modelId) {
+  if (modelId === GEMINI_MODEL || modelId === ANTIGRAVITY_MODEL_ID) {
+    return Boolean(process.env.GEMINI_API_KEY?.trim());
+  }
+  return Boolean(process.env.GROQ_API_KEY?.trim());
+}
+
+function shouldRetryWithAnotherProvider(error) {
+  const status = Number(error?.status);
+  return !status || [401, 403, 404, 408, 429].includes(status) || status >= 500;
+}
+
+async function generateRoutedProviderAnswer(modelId, messages, attachments, query, webSearch, deepResearchEnabled, safeReasoning) {
+  if (modelId === ANTIGRAVITY_MODEL_ID) {
+    return generateAntigravityAnswer(messages, attachments, query, webSearch, deepResearchEnabled);
+  }
+
+  if (modelId === GEMINI_MODEL) {
+    const useGeminiSearch = Boolean(webSearch || deepResearchEnabled || (shouldAutoSearch(query) && !isDirectClockQuestion(query)));
+    const result = await generateGeminiAnswer(messages, attachments, query, useGeminiSearch);
+    return { answer: result.answer + formatSources(result.sources) };
+  }
+
+  const model = resolveGroqModel(modelId);
+  if (deepResearchEnabled) {
+    const research = await deepResearch(query, model);
+    if (!research.results.length) {
+      const error = new Error("Deep Research could not find usable sources. Please try a more specific question.");
+      error.status = 503;
+      throw error;
+    }
+    const answer = normalizeDeepResearchAnswer(await synthesizeDeepResearchAnswer(query, research))
+      || "I couldn't generate a deep research answer. Please try again.";
+    return { answer: answer + formatSources(research.results) };
+  }
+
+  if (webSearch || (shouldAutoSearch(query) && !isDirectClockQuestion(query))) {
+    const search = await browserSearch(query, true, model);
+    if (!search.results.length && !search.answer) {
+      const error = new Error("Web search returned neither a usable answer nor source links. Please try again in a moment.");
+      error.status = 503;
+      throw error;
+    }
+    const answer = normalizeSearchAnswer(await synthesizeWebAnswer(query, search.results, model, search.answer))
+      || "I couldn't generate a web-search answer. Please try again.";
+    return { answer: answer + formatSources(search.results) };
+  }
+
+  const response = await createGroqCompletion({
+    model,
+    messages: buildMessages(messages, attachments, model),
+    temperature: 0.6,
+    top_p: 0.95,
+    reasoning_effort: safeReasoning,
+    include_reasoning: false,
+    max_completion_tokens: 3072,
+    stream: false,
+  });
+  const message = response.choices?.[0]?.message;
+  const answer = typeof message?.content === "string" ? message.content : String(message?.content ?? "No response.");
+  const results = (message?.executed_tools || [])
+    .flatMap((tool) => tool?.search_results?.results || [])
+    .map((item) => ({
+      title: item.title || "Web result",
+      url: item.url || "",
+      content: item.content || "",
+      score: typeof item.score === "number" ? item.score : null,
+    }))
+    .filter((item) => {
+      try { new URL(item.url); return true; } catch { return false; }
+    })
+    .slice(0, 6);
+
+  return { answer: normalizeSearchAnswer(answer) + formatSources(results) };
+}
+
+function routedModelOrder(requestedModelId) {
+  const freeOrder = [GROQ_MODEL, GEMINI_MODEL, ANTIGRAVITY_MODEL_ID];
+  if (requestedModelId === AUTO_FREE_MODEL_ID) return freeOrder;
+  const primary = requestedModelId === ANTIGRAVITY_MODEL_ID
+    ? ANTIGRAVITY_MODEL_ID
+    : requestedModelId === GEMINI_MODEL
+      ? GEMINI_MODEL
+      : resolveGroqModel(requestedModelId);
+  return [primary, ...freeOrder.filter((modelId) => modelId !== primary)];
+}
+
 export async function POST(request) {
   try {
     let body;
@@ -902,6 +1111,70 @@ export async function POST(request) {
         return Response.json(
           { error: groqErrorMessage(error) },
           { status: groqErrorStatus(error) >= 400 ? groqErrorStatus(error) : 503 }
+        );
+      }
+    }
+
+    if (latest && !imageAttachments.length) {
+      const isAutoFree = requestedModelId === AUTO_FREE_MODEL_ID;
+      const order = routedModelOrder(requestedModelId);
+      const candidates = order.filter((modelId) => isProviderConfigured(modelId));
+      if (!candidates.length) {
+        return Response.json(
+          { error: "No free AI provider is configured. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables." },
+          { status: 503 }
+        );
+      }
+
+      let lastError = null;
+      let lastFailedModelId = "";
+      const tried = [];
+      for (const modelId of candidates) {
+        tried.push(modelId);
+        try {
+          const result = await generateRoutedProviderAnswer(
+            modelId, messages, attachments, latest, webSearch, deepResearchEnabled, safeReasoning
+          );
+          const fallbackFrom = lastFailedModelId || (!isAutoFree && modelId !== order[0] ? order[0] : "");
+          return new Response(result.answer, {
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+              "Cache-Control": "no-cache, no-transform",
+              "X-Chat-Sangam-Model": modelId,
+              ...(fallbackFrom ? { "X-Chat-Sangam-Fallback-From": fallbackFrom } : {}),
+            },
+          });
+        } catch (error) {
+          lastError = error;
+          lastFailedModelId = modelId;
+          console.error("Provider routing attempt failed:", { modelId, message: error?.message, status: error?.status });
+          if (!shouldRetryWithAnotherProvider(error)) break;
+        }
+      }
+
+      const message = lastError?.message || "All configured free AI providers are temporarily unavailable. Please retry shortly.";
+      const status = Number(lastError?.status);
+      return Response.json(
+        { error: message },
+        { status: status >= 400 && status < 600 ? status : 503 }
+      );
+    }
+
+    if (requestedModelId === ANTIGRAVITY_MODEL_ID && latest && !imageAttachments.length) {
+      try {
+        const result = await generateAntigravityAnswer(messages, attachments, latest, webSearch, deepResearchEnabled);
+        return new Response(result.answer, {
+          headers: {
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache, no-transform",
+          },
+        });
+      } catch (error) {
+        console.error("Antigravity chat error:", error);
+        const status = Number(error?.status);
+        return Response.json(
+          { error: error?.message || "Antigravity request failed. Please try again." },
+          { status: status >= 400 && status < 600 ? status : 503 }
         );
       }
     }
