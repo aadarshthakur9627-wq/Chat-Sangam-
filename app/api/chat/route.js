@@ -331,7 +331,7 @@ async function synthesizeWebAnswer(query, results, model = GROQ_MODEL, draftAnsw
     } catch {}
   }
 
-  const isNewsRoundup = /\\b(news|headlines?|stories|roundup|latest updates)\\b|खबर|समाचार|ताज़ा समाचार|ताजा समाचार/i.test(query);
+  const isNewsRoundup = /\b(news|headlines?|stories|roundup|latest updates)\b|खबर|समाचार|ताज़ा समाचार|ताजा समाचार/i.test(query);
   if (isNewsRoundup && distinctResults.length < 2) {
     return "I couldn't verify a multi-story news roundup from the available search results. Only " +
       distinctResults.length + " distinct article source" + (distinctResults.length === 1 ? " was" : "s were") +
