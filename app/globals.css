@@ -533,3 +533,33 @@ button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
   .prompt-card { min-height: 86px !important; }
   .prompt-card small { font-size: 8px !important; }
 }
+
+
+/* Mobile viewport and control overflow fixes based on device screenshot. */
+@media (max-width: 700px) {
+  .app-shell { min-height: 100dvh !important; height: 100dvh !important; }
+  .workspace { height: 100dvh !important; min-height: 0 !important; }
+  /* New conversation remains available in the menu/sidebar; don't leave a clipped plus button. */
+  .topbar-right > .top-action { display: none !important; }
+  .topbar-right {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none !important;
+    padding-right: 2px !important;
+  }
+  .topbar-right::-webkit-scrollbar { display: none !important; }
+  .composer-dock {
+    bottom: 0 !important;
+    padding-bottom: max(22px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .messages { padding-bottom: 245px !important; }
+}
+@media (max-height: 760px) and (max-width: 700px) {
+  .welcome { margin-top: 0 !important; }
+  .hero-mark { width: 40px !important; height: 40px !important; margin-bottom: 8px !important; }
+  .welcome h2 { margin: 7px 0 8px !important; }
+  .prompt-grid { margin-top: 13px !important; }
+  .prompt-card { min-height: 78px !important; }
+  .trust-row { margin-top: 9px !important; }
+}
