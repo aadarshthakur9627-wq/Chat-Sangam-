@@ -1387,3 +1387,62 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 @media (prefers-reduced-motion: reduce) {
   .top-more-menu { animation: none !important; }
 }
+
+
+/* Accent-aware premium controls across the composer, prompt cards and overflow chips. */
+.app-shell { --user-accent: var(--user-accent, #f43f8c); }
+.top-more-menu .menu-control.active,
+.top-more-menu .menu-control.active > .menu-state {
+  background: color-mix(in srgb, var(--pink) 17%, #1b1b20) !important;
+  border-color: color-mix(in srgb, var(--pink) 42%, transparent) !important;
+  color: color-mix(in srgb, var(--pink) 45%, white) !important;
+}
+.top-more-menu .menu-control.active > .menu-control-icon {
+  background: color-mix(in srgb, var(--pink) 22%, #17171c) !important;
+  color: var(--pink) !important;
+}
+.new-chat-icon-chip svg {
+  display: block; width: 23px; height: 23px;
+  fill: none; stroke: currentColor; stroke-width: 2.1;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.send-button:not(.stop-button) {
+  background: var(--pink) !important;
+  color: #fff !important;
+  border: 1px solid color-mix(in srgb, var(--pink) 70%, white) !important;
+  box-shadow: 0 5px 22px color-mix(in srgb, var(--pink) 28%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.22) !important;
+  transition: background .22s ease, box-shadow .22s ease, transform .18s ease !important;
+}
+.send-button:not(.stop-button):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pink) 88%, white) !important;
+  box-shadow: 0 7px 26px color-mix(in srgb, var(--pink) 38%, transparent) !important;
+}
+.send-button:not(.stop-button):active:not(:disabled) { transform: scale(.94) !important; }
+.send-button:not(.stop-button):disabled {
+  background: color-mix(in srgb, var(--pink) 38%, #29292f) !important;
+  border-color: color-mix(in srgb, var(--pink) 24%, transparent) !important;
+  box-shadow: none !important;
+  opacity: .8 !important;
+}
+.prompt-card {
+  border-color: color-mix(in srgb, var(--pink) 12%, rgba(255,255,255,.09)) !important;
+  transition: border-color .2s ease, background .2s ease, transform .2s ease !important;
+}
+.prompt-card:hover {
+  border-color: color-mix(in srgb, var(--pink) 38%, transparent) !important;
+  background: color-mix(in srgb, var(--pink) 7%, rgba(255,255,255,.035)) !important;
+  transform: translateY(-1px);
+}
+.prompt-card .prompt-icon {
+  background: color-mix(in srgb, var(--pink) 15%, #19151d) !important;
+  color: var(--pink) !important;
+}
+@media (max-width: 700px) {
+  .top-action.new-chat-icon-chip::before { content: none !important; }
+  .top-action.new-chat-icon-chip svg { width: 24px !important; height: 24px !important; }
+  .top-more-menu .menu-control.active {
+    background: color-mix(in srgb, var(--pink) 13%, #1b1b20) !important;
+    border-color: color-mix(in srgb, var(--pink) 32%, transparent) !important;
+  }
+}
