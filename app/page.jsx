@@ -220,6 +220,8 @@ export default function Home() {
 
   useEffect(() => {
     try {
+      const savedAccent = localStorage.getItem("chat-sangam-accent");
+      if (savedAccent && ["#f43f8c", "#0a84ff", "#30d158", "#bf5af2", "#ff9f0a"].includes(savedAccent)) setAccentColour(savedAccent);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
@@ -234,6 +236,10 @@ export default function Home() {
       setLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem("chat-sangam-accent", accentColour); } catch {}
+  }, [accentColour]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -1129,7 +1135,7 @@ export default function Home() {
               </select>
             </label>
             <button className="top-action new-chat-icon-chip" onClick={startNewChat} disabled={loading} aria-label="New chat" title="New chat">＋ <span>New</span></button>
-            <div className="more-menu-wrap"><button className="top-action more-icon-chip" type="button" onClick={() => setMoreMenuOpen((value) => !value)} aria-label="More options" aria-expanded={moreMenuOpen} title="More options">···</button>{moreMenuOpen && <div className="top-more-menu" role="menu"><button type="button" role="menuitem" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false); setMobileMenuOpen(true); }}>Appearance & accent colour</button><button type="button" role="menuitem" onClick={() => { startNewChat(); setMoreMenuOpen(false); }}>New chat</button></div>}</div>
+            <div className="more-menu-wrap"><button className="top-action more-icon-chip" type="button" onClick={() => setMoreMenuOpen((value) => !value)} aria-label="More options" aria-expanded={moreMenuOpen} title="More options">···</button>{moreMenuOpen && <div className="top-more-menu" role="menu"><button type="button" role="menuitem" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false); if (window.matchMedia("(max-width: 700px)").matches) setMobileMenuOpen(true); }}>Appearance & accent colour</button><button type="button" role="menuitem" onClick={() => { startNewChat(); setMoreMenuOpen(false); }}>New chat</button></div>}</div>
           </div>
         </header>
 
