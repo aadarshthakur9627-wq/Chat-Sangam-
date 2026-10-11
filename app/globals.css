@@ -2001,3 +2001,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell .appearance-panel,
   .app-shell .message-row { animation:none!important; }
 }
+
+
+/* Portal menus render under document.body, so explicitly inherit the selected appearance tokens. */
+.model-menu-portal {
+  --pink:var(--user-accent,#f43f8c);
+  --accent-tint:color-mix(in srgb,var(--user-accent,#f43f8c) 12%,transparent);
+  --accent-tint-strong:color-mix(in srgb,var(--user-accent,#f43f8c) 22%,transparent);
+  --accent-line:color-mix(in srgb,var(--user-accent,#f43f8c) 44%,rgba(255,255,255,.12));
+  background-image:var(--user-gradient),linear-gradient(135deg,color-mix(in srgb,var(--user-accent,#f43f8c) 7%,#17171e),color-mix(in srgb,var(--user-accent,#f43f8c) 3%,#111116))!important;
+  background-color:#17171e!important;
+  border-color:color-mix(in srgb,var(--user-accent,#f43f8c) 35%,rgba(255,255,255,.12))!important;
+  box-shadow:0 22px 70px rgba(0,0,0,.55),0 0 34px color-mix(in srgb,var(--user-accent,#f43f8c) 10%,transparent),inset 0 1px 0 rgba(255,255,255,.04)!important;
+}
+.model-menu-portal .model-option.active {
+  background:linear-gradient(135deg,color-mix(in srgb,var(--user-accent,#f43f8c) 23%,#1b1b22),color-mix(in srgb,var(--user-accent,#f43f8c) 10%,#19191f))!important;
+  border-color:color-mix(in srgb,var(--user-accent,#f43f8c) 56%,transparent)!important;
+  box-shadow:inset 0 1px 0 color-mix(in srgb,var(--user-accent,#f43f8c) 13%,transparent),0 5px 20px color-mix(in srgb,var(--user-accent,#f43f8c) 9%,transparent)!important;
+}
+.model-menu-portal .model-option-icon {
+  background:color-mix(in srgb,var(--user-accent,#f43f8c) 17%,#19191f)!important;
+  color:var(--user-accent,#f43f8c)!important;
+}
+.model-menu-portal .model-check { color:var(--user-accent,#f43f8c)!important; }
+.model-menu-portal .compare-toggle.active {
+  background:linear-gradient(135deg,color-mix(in srgb,var(--user-accent,#f43f8c) 20%,#19191f),color-mix(in srgb,var(--user-accent,#f43f8c) 9%,#17171d))!important;
+  border-color:var(--accent-line)!important;
+}
+@media (prefers-reduced-motion:no-preference) {
+  .model-menu-portal { animation:cs-pop-in-v2 .34s cubic-bezier(.2,.85,.25,1) both!important; transform-origin:top right; }
+  .model-menu-portal .model-option { transition:background .24s ease,border-color .24s ease,transform .28s cubic-bezier(.2,.85,.25,1)!important; }
+  .model-menu-portal .model-option:active:not(:disabled) { transform:scale(.985)!important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .model-menu-portal { animation:none!important; }
+}
