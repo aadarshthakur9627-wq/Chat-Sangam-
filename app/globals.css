@@ -938,3 +938,173 @@ html, body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSyste
   .topbar-right > .top-action { display:inline-flex !important; }
   .topbar-right { gap:5px !important; }
 }
+
+
+/* Premium mobile drawer, refined interaction states, and responsive workspace polish */
+.app-shell { --user-accent: var(--user-accent, #f43f8c); }
+.sidebar {
+  width: clamp(270px, 25vw, 320px);
+  background: #0e0e12;
+  border-right: 1px solid rgba(255,255,255,.075);
+}
+.sidebar-head { gap: 12px; }
+.brand { min-width: 0; }
+.brand-mark { box-shadow: 0 6px 24px color-mix(in srgb, var(--pink) 22%, transparent); }
+.new-chat-button {
+  border: 1px solid color-mix(in srgb, var(--pink) 30%, transparent);
+  background: color-mix(in srgb, var(--pink) 10%, #111116);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.new-chat-button:hover {
+  border-color: color-mix(in srgb, var(--pink) 55%, transparent);
+  background: color-mix(in srgb, var(--pink) 15%, #111116);
+  transform: translateY(-1px);
+}
+.sidebar-search, .history-item, .appearance-panel {
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.history-item.selected {
+  background: color-mix(in srgb, var(--pink) 10%, #141218);
+  border-color: color-mix(in srgb, var(--pink) 24%, transparent);
+}
+.footer-links button { min-height: 36px; }
+.accent-swatch { transition: transform .18s ease, box-shadow .18s ease; }
+.accent-swatch:hover { transform: scale(1.08); }
+.top-action.new-chat-icon-chip, .top-action.more-icon-chip {
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: rgba(255,255,255,.055) !important;
+  color: #f5f5f7 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  transition: background .18s ease, border-color .18s ease, transform .18s ease;
+}
+.top-action.new-chat-icon-chip:hover, .top-action.more-icon-chip:hover {
+  background: rgba(255,255,255,.11) !important;
+  border-color: color-mix(in srgb, var(--pink) 42%, transparent) !important;
+}
+.top-action.new-chat-icon-chip:active, .top-action.more-icon-chip:active { transform: scale(.94); }
+.top-more-menu {
+  border-color: rgba(255,255,255,.12);
+  background: rgba(29,29,34,.98);
+  backdrop-filter: blur(24px);
+}
+.mobile-backdrop {
+  background: rgba(0,0,0,.62) !important;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.mobile-menu-button, .mobile-close {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+:where(button, input, textarea, select) { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline-color: color-mix(in srgb, var(--pink) 78%, white);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .sidebar {
+    position: fixed !important;
+    inset: 0 auto 0 0 !important;
+    width: min(86vw, 350px) !important;
+    max-width: 350px !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    z-index: 120 !important;
+    padding-top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    transform: translate3d(-105%,0,0) !important;
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease !important;
+    box-shadow: none;
+    overscroll-behavior: contain;
+  }
+  .sidebar.sidebar-open {
+    transform: translate3d(0,0,0) !important;
+    box-shadow: 22px 0 70px rgba(0,0,0,.45);
+  }
+  .mobile-backdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 110 !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    border: 0 !important;
+    padding: 0 !important;
+    animation: sangam-backdrop-in .2s ease both;
+  }
+  .sidebar-head { min-height: 64px; }
+  .mobile-close {
+    width: 42px !important; height: 42px !important;
+    min-width: 42px !important; min-height: 42px !important;
+    flex: 0 0 42px !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.075) !important;
+    border: 1px solid rgba(255,255,255,.07) !important;
+  }
+  .sidebar .new-chat-button { min-height: 54px !important; border-radius: 17px !important; }
+  .sidebar-search { min-height: 48px !important; border-radius: 15px !important; }
+  .chat-history { overscroll-behavior: contain; }
+  .sidebar-footer {
+    position: sticky;
+    bottom: 0;
+    padding-top: 12px;
+    background: linear-gradient(to bottom, rgba(14,14,18,.84), #0e0e12 18%);
+  }
+  .appearance-panel {
+    margin-bottom: 4px;
+    border-radius: 17px;
+    background: rgba(28,28,34,.98);
+  }
+  .accent-options { gap: 12px; }
+  .accent-swatch { width: 34px; height: 34px; }
+  .accent-swatch span { width: 22px; height: 22px; }
+  .topbar {
+    gap: 8px !important;
+    min-height: 60px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+  .topbar-left { min-width: 0 !important; flex: 1 1 auto !important; gap: 9px !important; }
+  .topbar-left > div { min-width: 0; }
+  .topbar h1 {
+    max-width: min(40vw, 180px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px !important;
+  }
+  .topbar .eyebrow { font-size: 8px !important; }
+  .topbar-right {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    gap: 6px !important;
+  }
+  .topbar-right > .web-search-toggle,
+  .topbar-right > .deep-research-toggle,
+  .topbar-right > .model-selector,
+  .topbar-right > .thinking-picker { display: none !important; }
+  .top-action.new-chat-icon-chip, .top-action.more-icon-chip {
+    width: 40px !important; min-width: 40px !important;
+    height: 40px !important; min-height: 40px !important;
+    flex-basis: 40px !important;
+  }
+  .more-menu-wrap { position: relative !important; }
+  .top-more-menu {
+    position: fixed !important;
+    top: calc(max(8px, env(safe-area-inset-top, 0px)) + 60px) !important;
+    right: 10px !important;
+    width: min(260px, calc(100vw - 20px)) !important;
+    min-width: 0 !important;
+    border-radius: 18px !important;
+    padding: 7px !important;
+    box-shadow: 0 20px 70px rgba(0,0,0,.55) !important;
+  }
+  .top-more-menu button { min-height: 46px; font-size: 13px !important; }
+  .model-strip { border-radius: 16px !important; }
+  .composer-dock { z-index: 20; }
+}
+@keyframes sangam-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar, .mobile-backdrop, .accent-swatch, .new-chat-button, .top-action.new-chat-icon-chip, .top-action.more-icon-chip {
+    transition: none !important; animation: none !important;
+  }
+}
