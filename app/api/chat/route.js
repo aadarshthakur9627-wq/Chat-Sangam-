@@ -964,7 +964,12 @@ async function generateRoutedProviderAnswer(modelId, messages, attachments, quer
     stream: false,
   });
   const message = response.choices?.[0]?.message;
-  const answer = typeof message?.content === "string" ? message.content : String(message?.content ?? "No response.");
+  const answer = (typeof message?.content === "string" ? message.content : String(message?.content ?? "")).trim();
+  if (!answer) {
+    const error = new Error("Groq returned an empty response.");
+    error.status = 503;
+    throw error;
+  }
   const results = (message?.executed_tools || [])
     .flatMap((tool) => tool?.search_results?.results || [])
     .map((item) => ({
