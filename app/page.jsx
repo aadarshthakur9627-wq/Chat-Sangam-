@@ -16,7 +16,8 @@ const GROQ_MODELS = [
   { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
 ];
 
-const ACTIVE_ENGINE = GROQ_MODELS[0];
+const AUTO_ENGINE = { id: "auto-free", name: "Auto (Free)", provider: "Chat Sangam Router", icon: "🔀", color: "violet", description: "Automatically select an available free model · fallback enabled", kind: "auto" };
+const ACTIVE_ENGINE = AUTO_ENGINE;
 
 const FUTURE_ENGINES = [
   { name: "OpenAI", icon: "◉" },
@@ -255,8 +256,10 @@ export default function Home() {
   const selectedModel = GROQ_MODELS.find((model) => model.id === selectedModelId) || ACTIVE_ENGINE;
   const visionActive = attachedImages.length > 0;
   const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
-  const selectedProviderKey = effectiveModel.provider === "Google Gemini" ? "gemini" : effectiveModel.provider === "Google Antigravity" ? "antigravity" : "groq";
-  const selectedProviderConfigured = providerStatus[selectedProviderKey];
+  const selectedProviderKey = effectiveModel.provider === "Google Gemini" ? "gemini" : effectiveModel.provider === "Google Antigravity" ? "antigravity" : effectiveModel.kind === "auto" ? "auto" : "groq";
+  const selectedProviderConfigured = effectiveModel.kind === "auto"
+    ? ([providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].some(Boolean) ? true : [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) ? false : null)
+    : providerStatus[selectedProviderKey];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
   const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
@@ -519,6 +522,23 @@ export default function Home() {
       }
       if (!response.body) throw new Error("AI response failed.");
 
+      const servedModelId = response.headers.get("x-chat-sangam-model");
+      const fallbackFromId = response.headers.get("x-chat-sangam-fallback-from");
+      const servedModel = [...GROQ_MODELS, AUTO_ENGINE].find((model) => model.id === servedModelId);
+      const fallbackFromModel = GROQ_MODELS.find((model) => model.id === fallbackFromId);
+      const fallbackNotice = fallbackFromId
+        ? "⚠️ **Fallback:** " + (fallbackFromModel?.name || fallbackFromId) + " was unavailable, so Chat Sangam answered using " + (servedModel?.name || servedModelId) + ".\n\n"
+        : "";
+      if (servedModel) {
+        updateChat(chatId, (chat) => ({
+          ...chat,
+          updatedAt: Date.now(),
+          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+            ? { ...msg, modelId: servedModel.id, modelName: servedModel.name, modelProvider: servedModel.provider, fallbackFrom: fallbackFromId || null }
+            : msg),
+        }));
+      }
+
       const contentType = response.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         const data = await response.json();
@@ -547,7 +567,7 @@ export default function Home() {
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
         }));
       }
 
@@ -556,7 +576,7 @@ export default function Home() {
       updateChat(chatId, (chat) => ({
         ...chat,
         updatedAt: Date.now(),
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
       }));
     } catch (error) {
       if (error?.name === "AbortError") return;
@@ -670,9 +690,13 @@ export default function Home() {
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
     if (selectedProviderConfigured === false) {
-      const providerName = effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq";
-      const variableName = effectiveModel.provider === "Google Antigravity" ? "GEMINI_API_KEY" : effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY";
-      alert(providerName + " is not configured for this deployment. Add " + variableName + " in Vercel Environment Variables or switch to a configured model.");
+      if (effectiveModel.kind === "auto") {
+        alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
+      } else {
+        const providerName = effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq";
+        const variableName = effectiveModel.provider === "Google Antigravity" ? "GEMINI_API_KEY" : effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY";
+        alert(providerName + " is not configured for this deployment. Add " + variableName + " in Vercel Environment Variables or switch to a configured model.");
+      }
       return;
     }
 
@@ -941,12 +965,12 @@ export default function Home() {
             </button>
             <div className="model-selector">
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
-                <span className="engine-dot" /> <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
+                <span className="engine-dot" /> <strong>{effectiveModel.kind === "auto" ? "Auto" : effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className="model-menu model-menu-portal" role="menu">
                   <div className="model-menu-head"><span>AI MODELS</span><small>Provider setup status</small></div>
-                  {GROQ_MODELS.map((item) => (
+                  {[AUTO_ENGINE, ...GROQ_MODELS].map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
                       onClick={() => {
                         if (item.kind === "vision" && !visionActive) return;
@@ -954,9 +978,9 @@ export default function Home() {
                         setModelMenuOpen(false);
                         if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
                       }}
-                      disabled={(item.kind === "vision" && !visionActive) || (item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
+                      disabled={(item.kind === "vision" && !visionActive) || (item.kind === "auto" ? [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) : item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
-                      <span className="model-option-copy"><strong>{item.name}</strong><small>{(item.provider === "Google Gemini" ? providerStatus.gemini : item.provider === "Google Antigravity" ? providerStatus.antigravity : providerStatus.groq) === false ? (item.provider === "Google Antigravity" ? "GEMINI_API_KEY or Antigravity access missing" : "API key missing in this deployment") : item.description}</small></span>
+                      <span className="model-option-copy"><strong>{item.name}</strong><small>{item.kind === "auto" ? ([providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].some(Boolean) ? item.description : [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) ? "Add GROQ_API_KEY or GEMINI_API_KEY to enable" : item.description) : (item.provider === "Google Gemini" ? providerStatus.gemini : item.provider === "Google Antigravity" ? providerStatus.antigravity : providerStatus.groq) === false ? (item.provider === "Google Antigravity" ? "GEMINI_API_KEY or Antigravity access missing" : "API key missing in this deployment") : item.description}</small></span>
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
@@ -1009,7 +1033,7 @@ export default function Home() {
         <div className="model-strip">
           <div className="selected-model">
             <span className={"model-orb " + effectiveModel.color}>{effectiveModel.icon}</span>
-            <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
+            <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.kind === "auto" ? "Auto routing · " : effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
             <i className={selectedProviderConfigured === false ? "provider-offline" : ""} />
             <span className={"live-label " + (selectedProviderConfigured === false ? "offline-label" : "")}><b /> {selectedProviderConfigured === null ? "Checking" : selectedProviderConfigured ? "Key set" : "Setup needed"}</span>
           </div>
@@ -1219,13 +1243,13 @@ export default function Home() {
         <div className="composer-dock">
           {selectedProviderConfigured === false && (
             <div className="provider-config-warning" role="status">
-              <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"} needs setup.</strong>
-              {" "}This deployment is missing {effectiveModel.provider === "Google Antigravity" || effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY or provider access" : "GROQ_API_KEY"}. Switch to a configured model or add the key in Vercel Environment Variables for this environment.
+              <strong>{effectiveModel.kind === "auto" ? "Free AI providers need setup." : effectiveModel.provider === "Google Gemini" ? "Gemini needs setup." : effectiveModel.provider === "Google Antigravity" ? "Antigravity needs setup." : "Groq needs setup."}</strong>
+              {" "}This deployment is missing {effectiveModel.kind === "auto" ? "GROQ_API_KEY or GEMINI_API_KEY" : effectiveModel.provider === "Google Antigravity" || effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY or provider access" : "GROQ_API_KEY"}. Switch to a configured model or add the key in Vercel Environment Variables for this environment.
             </div>
           )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-              <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
+               <span className="composer-model">{editingIndex !== null ? "✎ Editing message" : <>{effectiveModel.icon} {compareReady ? "Groq · Multi-model" : (effectiveModel.kind === "auto" ? "Auto routing · " : effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}{deepResearch ? <em> · Research Mode</em> : webSearch ? <em> · Web Search</em> : null}</>}</span>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
@@ -1285,7 +1309,7 @@ export default function Home() {
               <button className={"send-button " + (loading ? "stop-button" : "")} type={loading ? "button" : "submit"} onClick={loading ? stopGeneration : undefined} disabled={!loading && (selectedProviderConfigured === false || (!message.trim() && !attachedFiles.length && !attachedImages.length))} aria-label={loading ? "Stop generation" : "Send message"}>{loading ? "■" : "↑"}</button>
             </div>
           </form>
-          <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web research with source links." : webSearch ? (effectiveModel.provider === "Google Antigravity" ? "⌕ Live web search is ON · Antigravity agent can search and verify current information." : "⌕ Live web search is ON · Search current information with sources.") : effectiveModel.provider === "Google Antigravity" ? "🚀 Google Antigravity Agent · Agent tools and usage limits apply." : effectiveModel.provider === "Google Gemini" ? "✦ Powered by Google Gemini · Verify important information." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
+           <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web research with source links." : webSearch ? (effectiveModel.kind === "auto" ? "⌕ Auto routing will choose an available provider for web search." : effectiveModel.provider === "Google Antigravity" ? "⌕ Live web search is ON · Antigravity agent can search and verify current information." : "⌕ Live web search is ON · Search current information with sources.") : effectiveModel.kind === "auto" ? "🔀 Auto (Free) · Uses configured free providers and switches if one is unavailable." : effectiveModel.provider === "Google Antigravity" ? "🚀 Google Antigravity Agent · Agent tools and usage limits apply." : effectiveModel.provider === "Google Gemini" ? "✦ Powered by Google Gemini · Verify important information." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
     </main>
