@@ -404,6 +404,10 @@ async function synthesizeWebAnswer(query, results, model = GROQ_MODEL, draftAnsw
   // Reuse the browser-search draft to avoid a second Groq completion on free/rate-limited tiers.
   if (!answer) return "";
   if (!distinctResults.length) {
+    // General, non-time-sensitive questions (for example, "What can you do?")
+    // can still be answered from the model's knowledge. Reserve the strict
+    // source-verification warning for current/freshness questions and news.
+    if (!isNewsRoundup && !shouldAutoSearch(query)) return answer;
     return "The search returned no usable source links, so this answer could not be source-verified. I won't present it as verified information.";
   }
   return answer;
