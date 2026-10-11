@@ -315,11 +315,33 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
 
 
 async function synthesizeWebAnswer(query, results, model = GROQ_MODEL, draftAnswer = "") {
-  // Reuse the browser-search draft to avoid a second Groq completion on free/rate-limited tiers.
+  // Fail closed for news roundups when the search tool returns too few distinct
+  // article URLs. A fluent draft is not evidence that multiple stories were found.
   const answer = normalizeSearchAnswer(draftAnswer || "");
+  const distinctResults = [];
+  const seenUrls = new Set();
+  for (const result of Array.isArray(results) ? results : []) {
+    try {
+      const parsed = new URL(result.url);
+      if (!["http:", "https:"].includes(parsed.protocol)) continue;
+      const canonicalUrl = parsed.href.replace(/#.*$/, "");
+      if (seenUrls.has(canonicalUrl)) continue;
+      seenUrls.add(canonicalUrl);
+      distinctResults.push(result);
+    } catch {}
+  }
+
+  const isNewsRoundup = /\\b(news|headlines?|stories|roundup|latest updates)\\b|खबर|समाचार|ताज़ा समाचार|ताजा समाचार/i.test(query);
+  if (isNewsRoundup && distinctResults.length < 2) {
+    return "I couldn't verify a multi-story news roundup from the available search results. Only " +
+      distinctResults.length + " distinct article source" + (distinctResults.length === 1 ? " was" : "s were") +
+      " available, so I won't invent extra headlines or reuse one article as evidence for different stories. Please retry Web Search later or narrow the request.";
+  }
+
+  // Reuse the browser-search draft to avoid a second Groq completion on free/rate-limited tiers.
   if (!answer) return "";
-  if (!Array.isArray(results) || !results.length) {
-    return answer + "\n\n> Verification note: the search returned no usable source links, so this answer could not be source-verified.";
+  if (!distinctResults.length) {
+    return "The search returned no usable source links, so this answer could not be source-verified. I won't present it as verified information.";
   }
   return answer;
 }
