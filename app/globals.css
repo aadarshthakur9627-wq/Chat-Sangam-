@@ -408,3 +408,128 @@ button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Final mobile workspace refinement: compact controls, quieter hero, stronger composer. */
+@media (max-width: 700px) {
+  .topbar {
+    height: 94px !important;
+    flex-basis: 94px !important;
+    padding: 7px 10px 6px !important;
+    gap: 3px !important;
+    background: rgba(8, 7, 11, .96) !important;
+  }
+  .topbar-left {
+    min-height: 36px !important;
+    flex-basis: 36px !important;
+    gap: 8px !important;
+  }
+  .mobile-menu-button {
+    width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    border-radius: 12px !important;
+    background: #121019 !important;
+  }
+  .eyebrow { font-size: 7px !important; letter-spacing: 1.5px !important; }
+  .topbar h1 { font-size: 13px !important; line-height: 1.2 !important; }
+  .topbar-right {
+    min-height: 39px !important;
+    flex: 0 0 39px !important;
+    gap: 6px !important;
+    padding: 0 !important;
+    align-items: center !important;
+  }
+  .web-search-toggle, .deep-research-toggle, .engine-badge,
+  .thinking-picker, .top-action {
+    height: 34px !important;
+    min-height: 34px !important;
+    border-radius: 11px !important;
+    font-size: 10px !important;
+  }
+  .web-search-toggle, .deep-research-toggle { padding: 0 10px !important; }
+  .engine-badge { padding: 0 10px !important; gap: 6px !important; }
+  .engine-badge strong { font-size: 10px !important; }
+  .thinking-picker { padding: 0 9px !important; }
+  .thinking-picker select { font-size: 10px !important; }
+  .top-action { width: 36px !important; padding: 0 !important; }
+  .model-strip {
+    min-height: 43px !important;
+    height: 43px !important;
+    padding: 0 13px !important;
+    gap: 8px !important;
+    background: rgba(14, 12, 18, .78) !important;
+  }
+  .model-orb { width: 25px !important; height: 25px !important; }
+  .selected-model { gap: 8px !important; min-width: 0 !important; }
+  .selected-model strong { font-size: 10px !important; }
+  .live-label { white-space: nowrap !important; font-size: 9px !important; }
+  .messages { padding: 8px 12px 220px !important; }
+  .welcome { margin-top: 2vh !important; }
+  .hero-glow { width: 250px !important; height: 145px !important; top: -20px !important; }
+  .hero-mark {
+    width: 46px !important; height: 46px !important;
+    margin-bottom: 12px !important; border-radius: 15px !important;
+    font-size: 23px !important;
+  }
+  .hero-kicker { font-size: 8px !important; letter-spacing: 1.3px !important; }
+  .welcome h2 {
+    margin: 9px 0 10px !important;
+    font-size: clamp(32px, 8.3vw, 38px) !important;
+    line-height: 1.04 !important; letter-spacing: -1.8px !important;
+  }
+  .welcome > p {
+    max-width: 370px !important; padding: 0 8px !important;
+    font-size: 12px !important; line-height: 1.55 !important;
+  }
+  .prompt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important; margin-top: 17px !important;
+  }
+  .prompt-card {
+    min-height: 90px !important; padding: 10px !important;
+    gap: 7px !important; border-radius: 15px !important;
+    background: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012)) !important;
+  }
+  .prompt-icon { width: 29px !important; height: 29px !important; border-radius: 10px !important; }
+  .prompt-card strong { font-size: 12px !important; }
+  .prompt-card small { font-size: 9px !important; line-height: 1.35 !important; }
+  .prompt-card > b { right: 10px !important; bottom: 8px !important; }
+  .trust-row { margin-top: 12px !important; gap: 7px !important; font-size: 8px !important; }
+  .composer-dock {
+    bottom: 0 !important;
+    padding: 12px 10px max(9px, env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(to bottom, transparent 0%, rgba(7,6,10,.94) 20%, var(--bg) 48%) !important;
+  }
+  .composer {
+    padding: 8px 9px 9px !important;
+    border: 1px solid rgba(244, 63, 140, .22) !important;
+    border-radius: 19px !important;
+    background: rgba(15, 13, 20, .98) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,.28) !important;
+  }
+  .composer-top { padding: 0 3px 6px !important; }
+  .composer-model { font-size: 10px !important; }
+  .composer-input-row { gap: 8px !important; }
+  .attach-button {
+    width: 42px !important; height: 42px !important; min-height: 42px !important;
+    border-radius: 14px !important;
+  }
+  .composer textarea {
+    min-height: 42px !important; padding: 10px 4px !important;
+    font-size: 16px !important; line-height: 1.4 !important;
+  }
+  .send-button {
+    width: 42px !important; height: 42px !important; min-height: 42px !important;
+    flex-basis: 42px !important; border-radius: 14px !important;
+  }
+  .composer-note { margin-top: 6px !important; font-size: 8px !important; line-height: 1.35 !important; }
+}
+@media (max-width: 380px) {
+  .topbar { padding-left: 8px !important; padding-right: 8px !important; }
+  .topbar-right { gap: 4px !important; }
+  .web-search-toggle, .deep-research-toggle { padding: 0 8px !important; }
+  .welcome h2 { font-size: 31px !important; }
+  .prompt-card { min-height: 86px !important; }
+  .prompt-card small { font-size: 8px !important; }
+}
