@@ -188,6 +188,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [accentColour, setAccentColour] = useState("#f43f8c");
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
@@ -1005,7 +1008,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" style={{ "--user-accent": accentColour }}>
       <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
         <div className="sidebar-head">
           <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
@@ -1042,7 +1045,8 @@ export default function Home() {
 
         <div className="sidebar-footer">
           <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
-          <div className="footer-links"><span>⚙ Settings</span><span>◉ Account</span></div>
+          <div className="footer-links"><button type="button" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}>⚙ Settings</button><span>◉ Account</span></div>
+          {settingsOpen && <div className="appearance-panel"><strong>Appearance</strong><span className="appearance-label">Accent colour</span><div className="accent-options" role="group" aria-label="Accent colour">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} aria-pressed={accentColour === colour} title={label}><span /></button>)}</div></div>}
         </div>
       </aside>
 
@@ -1124,7 +1128,8 @@ export default function Home() {
                 <option value="high">High</option>
               </select>
             </label>
-            <button className="top-action" onClick={startNewChat} disabled={loading}>＋ <span>New</span></button>
+            <button className="top-action new-chat-icon-chip" onClick={startNewChat} disabled={loading} aria-label="New chat" title="New chat">＋ <span>New</span></button>
+            <div className="more-menu-wrap"><button className="top-action more-icon-chip" type="button" onClick={() => setMoreMenuOpen((value) => !value)} aria-label="More options" aria-expanded={moreMenuOpen} title="More options">···</button>{moreMenuOpen && <div className="top-more-menu" role="menu"><button type="button" role="menuitem" onClick={() => { setSettingsOpen(true); setMoreMenuOpen(false); setMobileMenuOpen(true); }}>Appearance & accent colour</button><button type="button" role="menuitem" onClick={() => { startNewChat(); setMoreMenuOpen(false); }}>New chat</button></div>}</div>
           </div>
         </header>
 
