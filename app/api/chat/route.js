@@ -550,7 +550,8 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
 
   const builtMessages = attachFileContext(messages, attachments);
   const systemText = CHAT_SANGAM_SYSTEM_PROMPT
-    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")\n    + "\\n\\n" + getRuntimeDateInstruction()
+    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")
+    + "\n\n" + getRuntimeDateInstruction()
     + "\n\nCURRENT ENGINE: Google Gemini using " + GEMINI_MODEL + "."
     + (useSearch
       ? "\n\nUse Google Search grounding for current or time-sensitive claims. Prefer official primary sources. Do not invent citations; state when evidence is insufficient."
@@ -708,7 +709,7 @@ function buildVisionMessages(messages, attachments, imageAttachments) {
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nVISION ENGINE: Groq API using " + GROQ_VISION_MODEL + ". You can understand images, screenshots, photos, charts and OCR. Describe uncertainty instead of inventing unreadable text. For a broad image-analysis request with no specific question, default to a concise answer: start with a one-line identification, then 3-6 key observations, then a short summary. Extract visible text only when useful. Do not produce a long exhaustive report unless the user asks for detail, OCR, transcription, or a full analysis.",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nVISION ENGINE: Groq API using " + GROQ_VISION_MODEL + ". You can understand images, screenshots, photos, charts and OCR. Describe uncertainty instead of inventing unreadable text. For a broad image-analysis request with no specific question, default to a concise answer: start with a one-line identification, then 3-6 key observations, then a short summary. Extract visible text only when useful. Do not produce a long exhaustive report unless the user asks for detail, OCR, transcription, or a full analysis.",
     },
     ...messagesWithFiles.map((message, index) => {
       const images = imagesByIndex.get(index);
@@ -730,7 +731,7 @@ function buildMessages(messages, attachments, model = GROQ_MODEL) {
   return [
     {
       role: "system",
-      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq API using " + resolveGroqModel(model) + ".",
+      content: CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq API using " + resolveGroqModel(model) + ".",
     },
     ...messagesWithFiles,
   ];
@@ -815,7 +816,7 @@ export async function POST(request) {
 
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {
-        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. If the user asks for current information, state the limitation instead of attempting a browser tool call.";
+        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. If the user asks for current information, state the limitation instead of attempting a browser tool call.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
           try {
             const response = await compareModelCompletion(
