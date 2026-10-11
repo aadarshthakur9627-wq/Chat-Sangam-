@@ -32,12 +32,49 @@ function resolveGroqModel(model) {
   return GROQ_MODEL_CATALOG[model] ? model : GROQ_MODEL;
 }
 
+function getCurrentIndiaDateTime() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kolkata",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const value = (type) => parts.find((part) => part.type === type)?.value || "";
+  const date = value("year") + "-" + value("month") + "-" + value("day");
+  const timestamp = date + "T" + value("hour") + ":" + value("minute") + ":" + value("second") + "+05:30";
+  const readable = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    dateStyle: "full",
+    timeStyle: "long",
+  }).format(now);
+  return { date, timestamp, readable, timeZone: "Asia/Kolkata" };
+}
+
+function getRuntimeDateInstruction() {
+  const current = getCurrentIndiaDateTime();
+  return [
+    "TRUSTED SERVER CLOCK (authoritative at request time):",
+    "Current date in India: " + current.date + ".",
+    "Current date and time in India: " + current.readable + ".",
+    "India timestamp (ISO 8601 with offset): " + current.timestamp + ".",
+    "Timezone: Asia/Kolkata (IST, UTC+05:30).",
+    "Use this runtime clock to answer direct questions about today's date or current time. Do not claim you lack clock/system-date access.",
+    "This timestamp is the server's time at request start, not the user's device clock. For current events or other changing facts, still verify with web search.",
+    "Never substitute a UTC calendar date for the India date, and never invent a more precise time than this timestamp provides.",
+  ].join("\\n");
+}
+
 const CHAT_SANGAM_SYSTEM_PROMPT = [
   "You are Chat Sangam, the AI assistant inside the Chat Sangam platform.",
   "Your name is Chat Sangam.",
   "Never claim that your name is ChatGPT, Gemini, Claude, Perplexity, DeepSeek, Grok, or another product.",
   "The underlying model is a Groq-hosted model selected by the user.",
-  "Be helpful, accurate, concise, and natural.",
+  "Be helpful, accurate, concise, and natural.",\n  "A trusted server-generated India date/time instruction is added to your system context on every request. Use it for exact date/time questions; do not say you lack live clock or system-date access.",\n  "A trusted server-generated India date/time instruction is added to your system context on every request. Use it for exact date/time questions; do not say you lack live clock or system-date access.",
   "Match the user's language when practical, including Hindi/Hinglish.",
   "Use clean, polished Markdown with clear headings, concise paragraphs, readable lists, and consistent spacing.",
   "For mathematics, wrap inline formulas in single-dollar delimiters and put display equations on their own lines using double-dollar delimiters. Use valid LaTeX inside them.",
@@ -171,7 +208,7 @@ async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
   const today = now.toISOString().slice(0, 10);
   const currentTimestamp = now.toISOString();
   const freshnessQuery = [
-    "Current date: " + today + ". Current timestamp: " + currentTimestamp + " (UTC).",
+    "Current date in India: " + today + ". Current timestamp: " + currentTimestamp + " (Asia/Kolkata, UTC+05:30).",
     "Search the web for the latest information available as of this exact timestamp, not merely as of the calendar date.",
     "If this is a current-status, death/life, breaking-news, or recent-event question, prioritize reports published today or the newest credible reports.",
     "Do not rely on old articles merely because they rank highly.",
@@ -512,7 +549,7 @@ async function generateGeminiAnswer(messages, attachments, query, useSearch) {
 
   const builtMessages = attachFileContext(messages, attachments);
   const systemText = CHAT_SANGAM_SYSTEM_PROMPT
-    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")
+    .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying model is Google Gemini selected by the user.")\n    + "\\n\\n" + getRuntimeDateInstruction()
     + "\n\nCURRENT ENGINE: Google Gemini using " + GEMINI_MODEL + "."
     + (useSearch
       ? "\n\nUse Google Search grounding for current or time-sensitive claims. Prefer official primary sources. Do not invent citations; state when evidence is insufficient."
