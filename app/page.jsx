@@ -461,7 +461,7 @@ export default function Home() {
     setImageInputKey((value) => value + 1);
   }
 
-  function openAttachMenu() { if (!loading && !fileLoading) setAttachMenuOpen((current) => !current); }
+  function openAttachMenu() { if (loading || fileLoading) return; setMoreMenuOpen(false); setModelMenuOpen(false); setAttachMenuOpen((current) => !current); }
 
   function handleImageOption() {
     if (loading || fileLoading) return;
@@ -1075,7 +1075,7 @@ export default function Home() {
               <span>◈</span> Research Mode <b>{deepResearch ? "ON" : "OFF"}</b>
             </button>
             <div className="model-selector">
-              <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
+              <button className="engine-badge model-selector-button" type="button" onClick={() => { setMoreMenuOpen(false); setAttachMenuOpen(false); setModelMenuOpen((value) => !value); }} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
                 <span className="engine-dot" /> <strong>{effectiveModel.kind === "auto" ? "Auto" : effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
@@ -1138,7 +1138,7 @@ export default function Home() {
               </select>
             </label>
             <button className="top-action new-chat-icon-chip" onClick={startNewChat} disabled={loading} aria-label="New chat" title="New chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L9 17l-4 1 1-4Z"/></svg><span>New</span></button>
-            <div className="more-menu-wrap"><button className="top-action more-icon-chip" type="button" onClick={() => setMoreMenuOpen((value) => !value)} aria-label="More options" aria-expanded={moreMenuOpen} aria-haspopup="menu" title="More options">···</button>{moreMenuOpen && <div className="top-more-menu" role="menu" aria-label="Quick controls"><button type="button" role="menuitem" className={webSearch ? "menu-control active" : "menu-control"} onClick={() => setWebSearch((value) => !value)}><span className="menu-control-icon">⌕</span><span>Web Search</span><span className="menu-state">{webSearch ? "On" : "Off"}</span></button><button type="button" role="menuitem" className={deepResearch ? "menu-control active" : "menu-control"} onClick={() => { setDeepResearch((value) => !value); setWebSearch(true); }}><span className="menu-control-icon">◈</span><span>Research Mode</span><span className="menu-state">{deepResearch ? "On" : "Off"}</span></button><button type="button" role="menuitem" className={selectedModelId === AUTO_ENGINE.id ? "menu-control active" : "menu-control"} onClick={() => { setSelectedModelId(AUTO_ENGINE.id); setCompareMode(false); setMoreMenuOpen(false); setModelMenuOpen(true); }}><span className="menu-control-icon">🔀</span><span>Auto mode</span><span className="menu-state">{selectedModelId === AUTO_ENGINE.id ? "Selected" : "Select"}</span></button></div>}</div>
+            <div className="more-menu-wrap"><button className="top-action more-icon-chip" type="button" onClick={() => { setAttachMenuOpen(false); setModelMenuOpen(false); setMoreMenuOpen((value) => !value); }} aria-label="More options" aria-expanded={moreMenuOpen} aria-haspopup="menu" title="More options">···</button>{moreMenuOpen && <div className="top-more-menu" role="menu" aria-label="Quick controls"><button type="button" role="menuitem" className={webSearch ? "menu-control active" : "menu-control"} onClick={() => setWebSearch((value) => !value)}><span className="menu-control-icon">⌕</span><span>Web Search</span><span className="menu-state">{webSearch ? "On" : "Off"}</span></button><button type="button" role="menuitem" className={deepResearch ? "menu-control active" : "menu-control"} onClick={() => { setDeepResearch((value) => !value); setWebSearch(true); }}><span className="menu-control-icon">◈</span><span>Research Mode</span><span className="menu-state">{deepResearch ? "On" : "Off"}</span></button><button type="button" role="menuitem" className={selectedModelId === AUTO_ENGINE.id ? "menu-control active" : "menu-control"} onClick={() => { setSelectedModelId(AUTO_ENGINE.id); setCompareMode(false); setMoreMenuOpen(false); setModelMenuOpen(true); }}><span className="menu-control-icon">🔀</span><span>Auto mode</span><span className="menu-state">{selectedModelId === AUTO_ENGINE.id ? "Selected" : "Select"}</span></button></div>}</div>
           </div>
         </header>
 
