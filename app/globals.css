@@ -1272,3 +1272,118 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     color: #ffc0e0 !important;
   }
 }
+
+
+/* Final mobile overflow menu correction: explicit grid columns prevent label/state collisions. */
+@media (max-width: 700px) {
+  .topbar { isolation: isolate !important; }
+  .topbar-right { isolation: isolate !important; }
+  .more-menu-wrap { position: static !important; }
+  .top-more-menu {
+    position: absolute !important;
+    z-index: 999 !important;
+    top: calc(100% + 10px) !important;
+    right: 8px !important;
+    left: auto !important;
+    width: min(310px, calc(100vw - 24px)) !important;
+    min-width: 0 !important;
+    max-width: calc(100vw - 24px) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 5px !important;
+    padding: 9px !important;
+    border-radius: 22px !important;
+    background: rgba(27,27,32,.97) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    box-shadow: 0 22px 60px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.045) !important;
+    backdrop-filter: blur(30px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(30px) saturate(150%) !important;
+    overflow: visible !important;
+    animation: sangam-menu-in .18s cubic-bezier(.2,.8,.2,1) both;
+    transform-origin: top right;
+  }
+  .top-more-menu .menu-control {
+    display: grid !important;
+    grid-template-columns: 34px minmax(0,1fr) auto !important;
+    align-items: center !important;
+    justify-content: initial !important;
+    column-gap: 11px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 56px !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 10px 11px !important;
+    border: 1px solid transparent !important;
+    border-radius: 15px !important;
+    background: transparent !important;
+    text-align: left !important;
+    white-space: normal !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+  }
+  .top-more-menu .menu-control > .menu-control-icon {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    border-radius: 11px !important;
+    background: rgba(255,255,255,.065) !important;
+    color: #f0a8d0 !important;
+    font-size: 18px !important;
+  }
+  .top-more-menu .menu-control > span:nth-child(2) {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: block !important;
+    width: auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    flex: initial !important;
+    color: #f6f6f8 !important;
+    font-size: 14px !important;
+    font-weight: 550 !important;
+  }
+  .top-more-menu .menu-control > .menu-state {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 46px !important;
+    height: 27px !important;
+    padding: 0 9px !important;
+    margin: 0 !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.07) !important;
+    color: #b9b9c2 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    flex: initial !important;
+  }
+  .top-more-menu .menu-control.active {
+    background: rgba(244,63,140,.09) !important;
+    border-color: rgba(244,63,140,.18) !important;
+  }
+  .top-more-menu .menu-control.active > .menu-control-icon {
+    background: rgba(244,63,140,.16) !important;
+  }
+  .top-more-menu .menu-control.active > .menu-state {
+    background: rgba(244,63,140,.17) !important;
+    color: #ffc0e0 !important;
+  }
+}
+@keyframes sangam-menu-in {
+  from { opacity: 0; transform: translateY(-5px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .top-more-menu { animation: none !important; }
+}
