@@ -581,22 +581,22 @@ async function generateAntigravityAnswer(messages, attachments, query, useSearch
   const conversation = builtMessages.map((message) => {
     const role = message.role === "assistant" ? "Assistant" : "User";
     return role + ": " + String(message.content || "").slice(0, 18000);
-  }).join("\\n\\n");
+  }).join("\n\n");
 
   const systemText = CHAT_SANGAM_SYSTEM_PROMPT
     .replace("The underlying model is a Groq-hosted model selected by the user.", "The underlying engine is Google's Antigravity managed agent selected by the user.")
-    + "\\n\\n" + getRuntimeDateInstruction()
-    + "\\n\\nANTIGRAVITY AGENT MODE: You are operating through Google's managed Antigravity agent in a remote sandbox. Answer the latest user request directly, in the user's language. Use tools only when they materially help. Never claim you ran code, browsed, or verified something unless you actually did so."
+    + "\n\n" + getRuntimeDateInstruction()
+    + "\n\nANTIGRAVITY AGENT MODE: You are operating through Google's managed Antigravity agent in a remote sandbox. Answer the latest user request directly, in the user's language. Use tools only when they materially help. Never claim you ran code, browsed, or verified something unless you actually did so."
     + ((useSearch || useResearch || shouldAutoSearch(query))
-      ? "\\n\\nWEB ACCESS: Use Google Search and URL context for current/time-sensitive facts. Cite the actual URLs of sources you consulted, distinguish verified facts from uncertainty, and do not invent headlines, sources, dates, or citations."
-      : "\\n\\nWEB ACCESS: You may use Google Search when the question clearly needs current verification; otherwise answer directly without unnecessary browsing.")
+      ? "\n\nWEB ACCESS: Use Google Search and URL context for current/time-sensitive facts. Cite the actual URLs of sources you consulted, distinguish verified facts from uncertainty, and do not invent headlines, sources, dates, or citations."
+      : "\n\nWEB ACCESS: You may use Google Search when the question clearly needs current verification; otherwise answer directly without unnecessary browsing.")
     + (useResearch
-      ? "\\n\\nRESEARCH MODE: Conduct focused multi-source research, prioritize official/primary sources, cross-check important claims, and provide a concise synthesis with source links."
+      ? "\n\nRESEARCH MODE: Conduct focused multi-source research, prioritize official/primary sources, cross-check important claims, and provide a concise synthesis with source links."
       : "");
 
   const requestBody = {
     agent: ANTIGRAVITY_AGENT_ID,
-    input: systemText + "\\n\\nConversation history:\\n" + conversation + "\\n\\nAnswer the latest user message. Do not repeat the entire conversation.",
+    input: systemText + "\n\nConversation history:\n" + conversation + "\n\nAnswer the latest user message. Do not repeat the entire conversation.",
     environment: "remote",
     agent_config: {
       type: "antigravity",
@@ -638,7 +638,7 @@ async function generateAntigravityAnswer(messages, attachments, query, useSearch
       .flatMap((item) => Array.isArray(item.content) ? item.content : [])
       .filter((item) => item?.type === "output_text" && typeof item.text === "string")
       .map((item) => item.text)
-      .join("\\n") : "").trim();
+      .join("\n") : "").trim();
 
   if (!answer) {
     if (payload?.status === "incomplete") {
