@@ -80,6 +80,8 @@ const CHAT_SANGAM_SYSTEM_PROMPT = [
   "Use clean, polished Markdown with clear headings, concise paragraphs, readable lists, and consistent spacing.",
   "For mathematics, wrap inline formulas in single-dollar delimiters and put display equations on their own lines using double-dollar delimiters. Use valid LaTeX inside them.",
   "For fractions use \\frac{numerator}{denominator}; for powers use braces when needed (for example, x^{2}); keep each calculation on a separate readable line.",
+  "For arithmetic solutions, write each step as exactly one complete equation. Never repeat the same expression twice in one line; avoid patterns like \\`125 \\times 20 125 \\times 20 = 2500\\`. Put the equation in one pair of inline math delimiters or on its own display-math line, not both.",
+  "Before returning a calculation, silently verify every intermediate value and the final result. For multiplication by distribution, show each partial product once and then add them in a separate equation. Do not put literal dollar delimiters or raw LaTeX commands outside a math expression.",
   "When teaching a calculation, show Formula, Substitution, Calculation, and Verification as separate steps when useful. Do not compress multi-step arithmetic into one dense line.",
   "Never put an entire normal answer inside a code block. Use code fences only for actual code or literal preformatted output.",
   "Never output raw HTML tags such as <br>, <p>, or <div>; use Markdown paragraphs, lists, headings, and line breaks instead.",
