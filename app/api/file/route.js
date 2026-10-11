@@ -57,6 +57,13 @@ export async function POST(request) {
 
     text = text.replace(/\u0000/g, "").replace(/\r\n/g, "\n").trim();
 
+    if (!text) {
+      return NextResponse.json(
+        { error: ext === "pdf" ? "No selectable text was found in this PDF. If it is a scanned document, use OCR to convert it to text first." : "This file is empty or contains no readable text." },
+        { status: 422 }
+      );
+    }
+
     const truncated = text.length > MAX_TEXT_CHARS;
     if (truncated) {
       text = text.slice(0, MAX_TEXT_CHARS);
