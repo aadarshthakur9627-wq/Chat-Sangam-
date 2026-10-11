@@ -442,7 +442,7 @@ export default function Home() {
     const imageAttachments = nextMessages.flatMap((msg, index) => {
       const cached = imageCacheRef.current.get(String(chatId) + ":" + index);
       return Array.isArray(cached) ? cached.map((image) => ({ messageIndex: index, name: image.name || "Image", dataUrl: image.dataUrl })) : [];
-    });
+    }).slice(-3);
 
     updateChat(chatId, (chat) => ({
       ...chat,
