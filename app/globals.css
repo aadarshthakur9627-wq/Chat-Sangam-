@@ -1748,3 +1748,65 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     font-size:12px!important;
   }
 }
+
+
+/* iPhone / OriginOS-inspired motion layer: restrained, spring-like and mobile-first. */
+@keyframes cs-message-arrive {
+  from { opacity:0; transform:translate3d(0,9px,0) scale(.992); }
+  to { opacity:1; transform:translate3d(0,0,0) scale(1); }
+}
+@keyframes cs-menu-arrive {
+  from { opacity:0; transform:translate3d(0,7px,0) scale(.975); }
+  to { opacity:1; transform:translate3d(0,0,0) scale(1); }
+}
+@keyframes cs-soft-glow {
+  0%,100% { box-shadow:0 0 0 color-mix(in srgb,var(--pink) 0%,transparent); }
+  50% { box-shadow:0 0 18px color-mix(in srgb,var(--pink) 13%,transparent); }
+}
+@keyframes cs-thinking-dot {
+  0%,60%,100% { opacity:.34; transform:translateY(0) scale(.88); }
+  30% { opacity:1; transform:translateY(-3px) scale(1); }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .message-row { animation:cs-message-arrive .34s cubic-bezier(.2,.75,.25,1) both; }
+  .message-row.user .message-bubble { transition:background-color .22s ease,transform .22s cubic-bezier(.2,.8,.2,1); }
+  .message-row.user .message-bubble:active { transform:scale(.985); }
+  .topbar .mobile-menu-button,
+  .top-action,
+  .prompt-card,
+  .composer-model-button,
+  .reasoning-chip,
+  .gradient-chip,
+  .attach-button,
+  .send-button,
+  .action-icon-button {
+    transition:transform .22s cubic-bezier(.2,.8,.2,1),background-color .22s ease,border-color .22s ease,box-shadow .22s ease,color .22s ease;
+  }
+  .topbar .mobile-menu-button:active,
+  .top-action:active,
+  .prompt-card:active,
+  .reasoning-chip:active,
+  .gradient-chip:active,
+  .attach-button:active,
+  .action-icon-button:active { transform:scale(.95); }
+  .send-button:active { transform:scale(.93); }
+  .prompt-card:hover { transform:translateY(-2px); }
+  .composer:focus-within { border-color:color-mix(in srgb,var(--pink) 38%,rgba(255,255,255,.08))!important; box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 7%,transparent),0 12px 34px rgba(0,0,0,.16)!important; }
+  .model-menu,
+  .attach-menu,
+  .more-menu,
+  .mobile-sidebar,
+  .sidebar,
+  .appearance-panel { animation:cs-menu-arrive .2s cubic-bezier(.2,.75,.25,1) both; }
+  .composer-model-button { transition:transform .22s cubic-bezier(.2,.8,.2,1),background .22s ease,border-color .22s ease,box-shadow .22s ease; }
+  .composer-model-button:active { transform:scale(.97); }
+  .send-button:not(:disabled):not(.stop-button) { animation:cs-soft-glow 3.6s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
