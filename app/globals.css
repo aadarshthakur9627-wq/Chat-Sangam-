@@ -1660,3 +1660,46 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .reasoning-chip { min-height:40px!important; }
   .attach-menu { border-radius:20px!important; }
 }
+
+
+/* Header control alignment: medium-size straight circular/pill buttons, one shared top baseline. */
+@media (max-width:700px) {
+  .topbar {
+    display:flex!important; align-items:center!important; justify-content:space-between!important;
+    position:relative!important; min-height:76px!important; height:76px!important;
+    padding:10px 14px!important; gap:10px!important;
+  }
+  .topbar-left {
+    display:flex!important; align-items:center!important; gap:12px!important;
+    flex:1 1 auto!important; min-width:0!important; min-height:52px!important;
+    padding:0 126px 0 0!important;
+  }
+  .topbar .mobile-menu-button {
+    width:50px!important; min-width:50px!important; max-width:50px!important;
+    height:50px!important; min-height:50px!important; flex:0 0 50px!important;
+    border-radius:50%!important; display:inline-flex!important; align-items:center!important; justify-content:center!important;
+    background:#29292c!important; border:1px solid rgba(255,255,255,.06)!important;
+  }
+  .topbar-right {
+    position:absolute!important; top:50%!important; right:14px!important; left:auto!important;
+    bottom:auto!important; transform:translateY(-50%)!important;
+    width:118px!important; min-width:118px!important; max-width:118px!important;
+    height:48px!important; min-height:48px!important; padding:3px!important;
+    display:flex!important; align-items:center!important; justify-content:space-between!important;
+    gap:2px!important; margin:0!important; overflow:visible!important;
+    border-radius:999px!important; background:#29292c!important;
+    border:1px solid rgba(255,255,255,.075)!important;
+  }
+  .top-action.new-chat-icon-chip,.top-action.more-icon-chip {
+    display:inline-flex!important; align-items:center!important; justify-content:center!important;
+    width:54px!important; min-width:54px!important; max-width:54px!important;
+    height:40px!important; min-height:40px!important; flex:0 0 54px!important;
+    padding:0!important; margin:0!important; border:0!important;
+    border-radius:999px!important; background:transparent!important;
+  }
+  .top-action.new-chat-icon-chip svg { width:21px!important; height:21px!important; }
+  .top-action.new-chat-icon-chip:before { content:none!important; display:none!important; }
+  .top-action.more-icon-chip:before { content:"···"!important; font-size:25px!important; line-height:1!important; letter-spacing:1px!important; }
+  .more-menu-wrap { display:inline-flex!important; align-items:center!important; justify-content:center!important; width:54px!important; min-width:54px!important; max-width:54px!important; height:40px!important; flex:0 0 54px!important; position:static!important; }
+  .topbar h1 { max-width:calc(100vw - 230px)!important; overflow:hidden!important; text-overflow:ellipsis!important; white-space:nowrap!important; font-size:16px!important; }
+}
