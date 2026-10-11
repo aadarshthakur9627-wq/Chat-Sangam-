@@ -1872,3 +1872,132 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .sidebar.sidebar-open .sidebar-footer,
   .typing-cursor { animation:none!important; }
 }
+
+
+/* Appearance system v2: carry the chosen accent into every card, chip, tab and menu. */
+.app-shell {
+  --pink: var(--user-accent, #f43f8c);
+  --accent-tint: color-mix(in srgb,var(--user-accent,#f43f8c) 12%,transparent);
+  --accent-tint-strong: color-mix(in srgb,var(--user-accent,#f43f8c) 22%,transparent);
+  --accent-line: color-mix(in srgb,var(--user-accent,#f43f8c) 42%,rgba(255,255,255,.10));
+  --accent-text: color-mix(in srgb,var(--user-accent,#f43f8c) 65%,white);
+}
+.app-shell .workspace { background-image:radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--user-accent) 9%,transparent),transparent 42%); }
+.app-shell .new-chat-button,
+.app-shell .composer-model-button,
+.app-shell .gradient-chip.selected,
+.app-shell .reasoning-chip.selected,
+.app-shell .menu-control.active,
+.app-shell .web-search-toggle.active,
+.app-shell .deep-research-toggle.active,
+.app-shell .history-item.selected {
+  background-image:var(--user-gradient),linear-gradient(135deg,var(--accent-tint-strong),color-mix(in srgb,var(--user-accent) 6%,transparent))!important;
+  border-color:var(--accent-line)!important;
+}
+.app-shell .prompt-card,
+.app-shell .comparison-card,
+.app-shell .comparison-card-head,
+.app-shell .source-card,
+.app-shell .attachment-chip,
+.app-shell .reasoning-chip,
+.app-shell .gradient-chip,
+.app-shell .menu-control,
+.app-shell .model-option.active,
+.app-shell .compare-toggle.active {
+  border-color:color-mix(in srgb,var(--user-accent) 26%,rgba(255,255,255,.09))!important;
+}
+.app-shell .prompt-card,
+.app-shell .source-card,
+.app-shell .attachment-chip,
+.app-shell .comparison-card {
+  background:linear-gradient(135deg,color-mix(in srgb,var(--user-accent) 8%,#17171c),rgba(255,255,255,.025))!important;
+}
+.app-shell .prompt-card:hover,
+.app-shell .source-card:hover,
+.app-shell .menu-control:hover,
+.app-shell .model-option:hover:not(:disabled),
+.app-shell .compare-pick:hover,
+.app-shell .assistant-more-menu button:hover {
+  background-color:color-mix(in srgb,var(--user-accent) 13%,#1b1b20)!important;
+  border-color:color-mix(in srgb,var(--user-accent) 48%,transparent)!important;
+}
+.app-shell .prompt-icon,
+.app-shell .model-option-icon,
+.app-shell .attach-menu-icon,
+.app-shell .menu-control-icon,
+.app-shell .composer-model-button em {
+  background-color:color-mix(in srgb,var(--user-accent) 18%,#19191e)!important;
+  color:var(--user-accent)!important;
+}
+.app-shell .send-button:not(.stop-button) {
+  background:linear-gradient(135deg,var(--user-accent),color-mix(in srgb,var(--user-accent) 70%,#8b5cf6))!important;
+  box-shadow:0 8px 25px color-mix(in srgb,var(--user-accent) 20%,transparent)!important;
+}
+.app-shell .send-button:not(:disabled):not(.stop-button) { animation:cs-send-breathe 2.8s ease-in-out infinite!important; }
+@keyframes cs-send-breathe {
+  0%,100% { transform:translateY(0) scale(1); box-shadow:0 7px 22px color-mix(in srgb,var(--user-accent) 18%,transparent); }
+  50% { transform:translateY(-1px) scale(1.035); box-shadow:0 8px 30px color-mix(in srgb,var(--user-accent) 34%,transparent); }
+}
+@keyframes cs-pop-in-v2 {
+  0% { opacity:0; transform:translate3d(0,10px,0) scale(.965); }
+  70% { opacity:1; transform:translate3d(0,-1px,0) scale(1.005); }
+  100% { opacity:1; transform:translate3d(0,0,0) scale(1); }
+}
+@keyframes cs-card-stagger-v2 {
+  from { opacity:0; transform:translate3d(0,9px,0); }
+  to { opacity:1; transform:translate3d(0,0,0); }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .app-shell .top-more-menu,
+  .app-shell .model-menu,
+  .app-shell .attach-menu,
+  .app-shell .assistant-more-menu,
+  .app-shell .message-context-menu,
+  .app-shell .appearance-panel {
+    animation:cs-pop-in-v2 .28s cubic-bezier(.2,.85,.25,1) both!important;
+    transform-origin:top center;
+  }
+  .app-shell .prompt-card,
+  .app-shell .reasoning-chip,
+  .app-shell .gradient-chip,
+  .app-shell .menu-control,
+  .app-shell .model-option,
+  .app-shell .source-card,
+  .app-shell .composer-model-button,
+  .app-shell .top-action,
+  .app-shell .attach-button,
+  .app-shell .send-button {
+    transition:background-color .24s ease,border-color .24s ease,color .24s ease,box-shadow .24s ease,transform .28s cubic-bezier(.2,.85,.25,1)!important;
+  }
+  .app-shell .prompt-card:active,
+  .app-shell .reasoning-chip:active,
+  .app-shell .gradient-chip:active,
+  .app-shell .menu-control:active,
+  .app-shell .model-option:active,
+  .app-shell .source-card:active { transform:scale(.975)!important; }
+  .app-shell .message-row { animation:cs-card-stagger-v2 .34s cubic-bezier(.2,.75,.25,1) both; }
+  .app-shell .sidebar.sidebar-open { animation:cs-pop-in-v2 .32s cubic-bezier(.2,.85,.25,1) both; }
+}
+@media (max-width:700px) {
+  .app-shell .top-more-menu {
+    background:color-mix(in srgb,var(--user-accent) 7%,rgba(27,27,33,.94))!important;
+    border-color:color-mix(in srgb,var(--user-accent) 26%,rgba(255,255,255,.12))!important;
+    backdrop-filter:blur(26px) saturate(150%)!important;
+    -webkit-backdrop-filter:blur(26px) saturate(150%)!important;
+  }
+  .app-shell .attach-menu,
+  .app-shell .model-menu {
+    background:color-mix(in srgb,var(--user-accent) 5%,rgba(27,27,33,.96))!important;
+    border-color:color-mix(in srgb,var(--user-accent) 24%,rgba(255,255,255,.12))!important;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .app-shell .send-button:not(:disabled):not(.stop-button) { animation:none!important; }
+  .app-shell .top-more-menu,
+  .app-shell .model-menu,
+  .app-shell .attach-menu,
+  .app-shell .assistant-more-menu,
+  .app-shell .message-context-menu,
+  .app-shell .appearance-panel,
+  .app-shell .message-row { animation:none!important; }
+}
