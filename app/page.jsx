@@ -864,12 +864,67 @@ export default function Home() {
 
   async function copyText(text, index = null) {
     try {
-      await navigator.clipboard?.writeText(text);
+      let plainText = text;
+      let htmlText = null;
+
+      // For assistant-copy actions, copy the rendered answer instead of raw
+      // Markdown so headings, equations and tables stay readable in other apps.
+      if (index !== null) {
+        const rendered = document.getElementById("message-selectable-" + index);
+        if (rendered) {
+          const clone = rendered.cloneNode(true);
+          clone.querySelectorAll(".assistant-action-bar, .source-panel, .typing-cursor, .code-toolbar, .assistant-more-menu").forEach((node) => node.remove());
+
+          // KaTeX includes hidden MathML plus visible typeset math. Keep the
+          // visible version for clipboard output to avoid duplicated equations.
+          clone.querySelectorAll(".katex-mathml").forEach((node) => node.remove());
+          clone.querySelectorAll(".katex-html[aria-hidden='true']").forEach((node) => node.removeAttribute("aria-hidden"));
+
+          // Convert rendered tables to predictable, readable rows for plain text.
+          clone.querySelectorAll("table").forEach((table) => {
+            const lines = Array.from(table.querySelectorAll("tr")).map((row) =>
+              Array.from(row.querySelectorAll("th, td")).map((cell) => cell.innerText.trim().replace(/\\s+/g, " ")).join("  |  ")
+            );
+            const replacement = document.createElement("pre");
+            replacement.textContent = lines.join("\n");
+            table.closest(".table-scroll")?.replaceWith(replacement) || table.replaceWith(replacement);
+          });
+
+          plainText = (clone.innerText || clone.textContent || text)
+            .replace(/\\u00a0/g, " ")
+            .replace(/[ \\t]+\\n/g, "\n")
+            .replace(/\\n{3,}/g, "\n\n")
+            .trim();
+          htmlText = clone.innerHTML;
+        }
+      }
+
+      // Rich clipboard lets Docs, Notes and messaging apps retain headings,
+      // links, code and typeset math; plain text remains a clean fallback.
+      if (htmlText && typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+        const htmlDocument = "<!doctype html><html><body>" + htmlText + "</body></html>";
+        await navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([htmlDocument], { type: "text/html" }),
+          "text/plain": new Blob([plainText], { type: "text/plain" }),
+        })]);
+      } else {
+        await navigator.clipboard?.writeText(plainText);
+      }
+
       if (index !== null) {
         setCopiedMessageIndex(index);
         setTimeout(() => setCopiedMessageIndex((current) => current === index ? null : current), 1200);
       }
-    } catch {}
+    } catch (error) {
+      // Clipboard rich-text support varies by browser; fall back to plain text.
+      try {
+        await navigator.clipboard?.writeText(index !== null ? (document.getElementById("message-selectable-" + index)?.innerText || text) : text);
+        if (index !== null) {
+          setCopiedMessageIndex(index);
+          setTimeout(() => setCopiedMessageIndex((current) => current === index ? null : current), 1200);
+        }
+      } catch {}
+    }
   }
 
   function toggleAssistantFeedback(index, value) {
