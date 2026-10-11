@@ -1810,3 +1810,65 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     transition-duration:.01ms!important;
   }
 }
+
+
+/* Refined spring motion pass: drawer, dimmed glass backdrop, menus and live response. */
+@keyframes cs-backdrop-in {
+  from { opacity:0; backdrop-filter:blur(0); }
+  to { opacity:1; backdrop-filter:blur(5px); }
+}
+@keyframes cs-live-cursor {
+  0%,100% { opacity:1; filter:drop-shadow(0 0 0 color-mix(in srgb,var(--pink) 0%,transparent)); }
+  50% { opacity:.45; filter:drop-shadow(0 0 5px color-mix(in srgb,var(--pink) 55%,transparent)); }
+}
+@keyframes cs-drawer-item-in {
+  from { opacity:0; transform:translateX(-8px); }
+  to { opacity:1; transform:translateX(0); }
+}
+@media (max-width:700px) and (prefers-reduced-motion:no-preference) {
+  .sidebar {
+    transition:transform .42s cubic-bezier(.22,1,.36,1),box-shadow .32s ease!important;
+    will-change:transform;
+    backface-visibility:hidden;
+  }
+  .sidebar.sidebar-open { box-shadow:22px 0 70px rgba(0,0,0,.42)!important; }
+  .mobile-backdrop {
+    background:rgba(4,4,8,.52)!important;
+    backdrop-filter:blur(5px) saturate(115%)!important;
+    -webkit-backdrop-filter:blur(5px) saturate(115%)!important;
+    animation:cs-backdrop-in .26s ease both;
+  }
+  .sidebar.sidebar-open .sidebar-head,
+  .sidebar.sidebar-open .new-chat-button,
+  .sidebar.sidebar-open .sidebar-search,
+  .sidebar.sidebar-open .history-header,
+  .sidebar.sidebar-open .chat-history,
+  .sidebar.sidebar-open .sidebar-footer {
+    animation:cs-drawer-item-in .28s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .sidebar.sidebar-open .new-chat-button { animation-delay:.025s; }
+  .sidebar.sidebar-open .sidebar-search { animation-delay:.045s; }
+  .sidebar.sidebar-open .history-header { animation-delay:.06s; }
+  .sidebar.sidebar-open .chat-history { animation-delay:.075s; }
+  .model-menu,
+  .attach-menu,
+  .assistant-more-menu,
+  .message-context-menu {
+    background:rgba(27,27,33,.88)!important;
+    border-color:rgba(255,255,255,.12)!important;
+    backdrop-filter:blur(26px) saturate(145%)!important;
+    -webkit-backdrop-filter:blur(26px) saturate(145%)!important;
+    box-shadow:0 22px 70px rgba(0,0,0,.46),inset 0 1px 0 rgba(255,255,255,.045)!important;
+  }
+  .typing-cursor { animation:cs-live-cursor .95s ease-in-out infinite!important; }
+  .message-row.assistant .assistant-answer-bubble { transition:border-color .24s ease,background-color .24s ease; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .sidebar.sidebar-open .sidebar-head,
+  .sidebar.sidebar-open .new-chat-button,
+  .sidebar.sidebar-open .sidebar-search,
+  .sidebar.sidebar-open .history-header,
+  .sidebar.sidebar-open .chat-history,
+  .sidebar.sidebar-open .sidebar-footer,
+  .typing-cursor { animation:none!important; }
+}
