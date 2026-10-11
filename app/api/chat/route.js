@@ -631,20 +631,43 @@ async function generateAntigravityAnswer(messages, attachments, query, useSearch
     throw error;
   }
 
-  const answer = typeof payload?.output_text === "string"
-    ? payload.output_text.trim()
-    : (Array.isArray(payload?.output) ? payload.output
+  // The Interactions API returns final text in steps[].content[] where the
+  // step type is "model_output" and content parts use type "text". Keep
+  // output_text support for SDK-shaped responses and older response variants.
+  const stepText = Array.isArray(payload?.steps)
+    ? payload.steps
+      .filter((step) => step?.type === "model_output")
+      .flatMap((step) => Array.isArray(step.content) ? step.content : [])
+      .filter((part) => part?.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("\n")
+    : "";
+  const legacyText = Array.isArray(payload?.output)
+    ? payload.output
       .filter((item) => item?.type === "message")
       .flatMap((item) => Array.isArray(item.content) ? item.content : [])
-      .filter((item) => item?.type === "output_text" && typeof item.text === "string")
+      .filter((item) => (item?.type === "output_text" || item?.type === "text") && typeof item.text === "string")
       .map((item) => item.text)
-      .join("\n") : "").trim();
+      .join("\n")
+    : "";
+  const answer = (typeof payload?.output_text === "string" ? payload.output_text : stepText || legacyText).trim();
 
   if (!answer) {
     if (payload?.status === "incomplete") {
       throw new Error("Antigravity reached its token budget before producing a final answer. Try a smaller task.");
     }
-    throw new Error("Antigravity returned no text. Please retry or switch to another model.");
+    if (payload?.status === "in_progress") {
+      throw new Error("Antigravity is still working on this task. Please retry in a moment.");
+    }
+    if (payload?.status === "failed" || payload?.status === "cancelled") {
+      throw new Error("Antigravity task did not complete successfully. Please retry or switch models.");
+    }
+    console.error("Antigravity returned no recognized text:", {
+      status: payload?.status,
+      responseKeys: Object.keys(payload || {}),
+      stepTypes: Array.isArray(payload?.steps) ? payload.steps.map((step) => step?.type) : [],
+    });
+    throw new Error("Antigravity finished without a readable text response. Please retry or switch to another model.");
   }
 
   return { answer };
