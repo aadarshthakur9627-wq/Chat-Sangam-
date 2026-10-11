@@ -12,6 +12,7 @@ const STORAGE_KEY = "chat-sangam-history-v2";
 const GROQ_MODELS = [
   { id: "openai/gpt-oss-20b", name: "GPT-OSS 20B", provider: "Groq API", icon: "⚡", color: "pink", description: "Fast · General", kind: "text" },
   { id: "gemini-3.5-flash-lite", name: "Gemini 3.5 Flash-Lite", provider: "Google Gemini", icon: "✦", color: "violet", description: "Free-tier friendly · Google Search grounding", kind: "text" },
+  { id: "antigravity-agent", name: "Antigravity Agent", provider: "Google Antigravity", icon: "🚀", color: "violet", description: "Agent · Web research · Code tools (Preview)", kind: "agent" },
   { id: "qwen/qwen3.8-27b", name: "Qwen 3.8 27B", provider: "Groq API", icon: "👁", color: "violet", description: "Vision · OCR · Multimodal", kind: "vision" },
 ];
 
@@ -148,7 +149,7 @@ export default function Home() {
   const [deepResearch, setDeepResearch] = useState(false);
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState(ACTIVE_ENGINE.id);
-  const [providerStatus, setProviderStatus] = useState({ groq: null, gemini: null });
+  const [providerStatus, setProviderStatus] = useState({ groq: null, gemini: null, antigravity: null });
   const [compareMode, setCompareMode] = useState(false);
   const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b"]);
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -205,6 +206,7 @@ export default function Home() {
         setProviderStatus({
           groq: Boolean(data.providers.groq?.configured),
           gemini: Boolean(data.providers.gemini?.configured),
+          antigravity: Boolean(data.providers.antigravity?.configured),
         });
       })
       .catch(() => {
@@ -253,7 +255,8 @@ export default function Home() {
   const selectedModel = GROQ_MODELS.find((model) => model.id === selectedModelId) || ACTIVE_ENGINE;
   const visionActive = attachedImages.length > 0;
   const effectiveModel = visionActive ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b") : selectedModel;
-  const selectedProviderConfigured = providerStatus[effectiveModel.provider === "Google Gemini" ? "gemini" : "groq"];
+  const selectedProviderKey = effectiveModel.provider === "Google Gemini" ? "gemini" : effectiveModel.provider === "Google Antigravity" ? "antigravity" : "groq";
+  const selectedProviderConfigured = providerStatus[selectedProviderKey];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
   const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
@@ -667,8 +670,8 @@ export default function Home() {
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
     if (selectedProviderConfigured === false) {
-      const providerName = effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq";
-      const variableName = effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY";
+      const providerName = effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq";
+      const variableName = effectiveModel.provider === "Google Antigravity" ? "GEMINI_API_KEY" : effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY";
       alert(providerName + " is not configured for this deployment. Add " + variableName + " in Vercel Environment Variables or switch to a configured model.");
       return;
     }
@@ -938,7 +941,7 @@ export default function Home() {
             </button>
             <div className="model-selector">
               <button className="engine-badge model-selector-button" type="button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu">
-                <span className="engine-dot" /> <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
+                <span className="engine-dot" /> <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className="model-menu model-menu-portal" role="menu">
@@ -951,9 +954,9 @@ export default function Home() {
                         setModelMenuOpen(false);
                         if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
                       }}
-                      disabled={(item.kind === "vision" && !visionActive) || (item.provider === "Google Gemini" ? providerStatus.gemini === false : providerStatus.groq === false)}>
+                      disabled={(item.kind === "vision" && !visionActive) || (item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
-                      <span className="model-option-copy"><strong>{item.name}</strong><small>{(item.provider === "Google Gemini" ? providerStatus.gemini : providerStatus.groq) === false ? "API key missing in this deployment" : item.description}</small></span>
+                      <span className="model-option-copy"><strong>{item.name}</strong><small>{(item.provider === "Google Gemini" ? providerStatus.gemini : item.provider === "Google Antigravity" ? providerStatus.antigravity : providerStatus.groq) === false ? (item.provider === "Google Antigravity" ? "GEMINI_API_KEY or Antigravity access missing" : "API key missing in this deployment") : item.description}</small></span>
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
@@ -1006,7 +1009,7 @@ export default function Home() {
         <div className="model-strip">
           <div className="selected-model">
             <span className={"model-orb " + effectiveModel.color}>{effectiveModel.icon}</span>
-            <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
+            <span><strong>{compareReady ? "Groq · Multi-model" : (effectiveModel.provider === "Google Gemini" ? "Gemini · " : effectiveModel.provider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + effectiveModel.name}</strong><small>{compareReady ? compareModels.map((model) => model.name).join(" + ") : effectiveModel.provider}</small></span>
             <i className={selectedProviderConfigured === false ? "provider-offline" : ""} />
             <span className={"live-label " + (selectedProviderConfigured === false ? "offline-label" : "")}><b /> {selectedProviderConfigured === null ? "Checking" : selectedProviderConfigured ? "Key set" : "Setup needed"}</span>
           </div>
@@ -1049,7 +1052,7 @@ export default function Home() {
                 >
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
-                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : (msg.modelProvider === "Google Gemini" ? "Gemini · " : "Groq · ") + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : (msg.modelProvider === "Google Gemini" ? "Gemini · " : msg.modelProvider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
                     <div className={"message-bubble " + (msg.role === "assistant" ? "assistant-answer-bubble" : "")}>
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
@@ -1216,8 +1219,8 @@ export default function Home() {
         <div className="composer-dock">
           {selectedProviderConfigured === false && (
             <div className="provider-config-warning" role="status">
-              <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : "Groq"} needs setup.</strong>
-              {" "}This deployment is missing {effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY" : "GROQ_API_KEY"}. Switch to a configured model or add the key in Vercel Environment Variables for this environment.
+              <strong>{effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"} needs setup.</strong>
+              {" "}This deployment is missing {effectiveModel.provider === "Google Antigravity" || effectiveModel.provider === "Google Gemini" ? "GEMINI_API_KEY or provider access" : "GROQ_API_KEY"}. Switch to a configured model or add the key in Vercel Environment Variables for this environment.
             </div>
           )}
           <form className="composer" onSubmit={sendMessage}>
