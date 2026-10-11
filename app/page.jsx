@@ -1079,7 +1079,7 @@ export default function Home() {
                 <span className="engine-dot" /> <strong>{effectiveModel.kind === "auto" ? "Auto" : effectiveModel.provider === "Google Gemini" ? "Gemini" : effectiveModel.provider === "Google Antigravity" ? "Antigravity" : "Groq"}</strong><span>{effectiveModel.name}</span><b className="model-chevron">⌄</b>
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
-                <div className="model-menu model-menu-portal" role="menu">
+                <div className="model-menu model-menu-portal" role="menu" style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35,#8b5cf625 55%,#0a84ff18)" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)" }}>
                   <div className="model-menu-head"><span>AI MODELS</span><small>Provider setup status</small></div>
                   {[AUTO_ENGINE, ...GROQ_MODELS].map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
