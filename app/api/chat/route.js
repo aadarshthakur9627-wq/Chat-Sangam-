@@ -1123,6 +1123,7 @@ export async function POST(request) {
       }
 
       let lastError = null;
+      let lastFailedModelId = "";
       const tried = [];
       for (const modelId of candidates) {
         tried.push(modelId);
@@ -1130,7 +1131,7 @@ export async function POST(request) {
           const result = await generateRoutedProviderAnswer(
             modelId, messages, attachments, latest, webSearch, deepResearchEnabled, safeReasoning
           );
-          const fallbackFrom = !isAutoFree && modelId !== order[0] ? order[0] : "";
+          const fallbackFrom = lastFailedModelId || (!isAutoFree && modelId !== order[0] ? order[0] : "");
           return new Response(result.answer, {
             headers: {
               "Content-Type": "text/plain; charset=utf-8",
@@ -1141,6 +1142,7 @@ export async function POST(request) {
           });
         } catch (error) {
           lastError = error;
+          lastFailedModelId = modelId;
           console.error("Provider routing attempt failed:", { modelId, message: error?.message, status: error?.status });
           if (!shouldRetryWithAnotherProvider(error)) break;
         }
