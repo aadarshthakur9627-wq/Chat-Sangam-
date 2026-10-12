@@ -2036,3 +2036,117 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 @media (prefers-reduced-motion:reduce) {
   .model-menu-portal { animation:none!important; }
 }
+
+
+/* Chat Sangam appearance polish v3: message action popovers, source cards and compact chips. */
+.app-shell .assistant-more-menu,
+.app-shell .message-context-menu {
+  --menu-accent:var(--user-accent,#f43f8c);
+  background:
+    var(--user-gradient),
+    linear-gradient(145deg,
+      color-mix(in srgb,var(--menu-accent) 12%,rgba(25,24,31,.97)),
+      color-mix(in srgb,var(--menu-accent) 5%,rgba(17,17,23,.98)))!important;
+  border:1px solid color-mix(in srgb,var(--menu-accent) 30%,rgba(255,255,255,.13))!important;
+  border-radius:20px!important;
+  box-shadow:0 24px 65px rgba(0,0,0,.48),
+    0 0 30px color-mix(in srgb,var(--menu-accent) 10%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.07)!important;
+  -webkit-backdrop-filter:blur(24px) saturate(145%)!important;
+  backdrop-filter:blur(24px) saturate(145%)!important;
+  overflow:hidden;
+}
+.app-shell .assistant-more-time {
+  color:color-mix(in srgb,var(--user-accent) 58%,#b7b1bd)!important;
+  letter-spacing:1.25px!important;
+  padding:8px 10px 10px!important;
+}
+.app-shell .assistant-more-menu button,
+.app-shell .message-context-menu button {
+  border:1px solid transparent!important;
+  border-radius:13px!important;
+  background:color-mix(in srgb,var(--user-accent) 4%,rgba(255,255,255,.018))!important;
+  color:#eeeaf1!important;
+  transition:background .22s ease,border-color .22s ease,transform .24s cubic-bezier(.2,.85,.25,1),box-shadow .22s ease!important;
+}
+.app-shell .assistant-more-menu button:hover,
+.app-shell .message-context-menu button:hover {
+  background:color-mix(in srgb,var(--user-accent) 15%,rgba(255,255,255,.045))!important;
+  border-color:color-mix(in srgb,var(--user-accent) 36%,transparent)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045)!important;
+}
+.app-shell .assistant-more-menu button svg,
+.app-shell .message-context-menu button>span:first-child {
+  color:var(--user-accent)!important;
+}
+.app-shell .assistant-more-menu button+button { margin-top:4px!important; }
+.app-shell .message-context-menu button { min-height:46px; }
+.app-shell .message-context-menu button>span:first-child {
+  display:grid;place-items:center;width:27px;height:27px;flex:0 0 27px;
+  border-radius:9px;background:color-mix(in srgb,var(--user-accent) 14%,rgba(255,255,255,.035));
+}
+.app-shell .source-panel { border-top-color:color-mix(in srgb,var(--user-accent) 16%,rgba(255,255,255,.06))!important; }
+.app-shell .source-heading>span { color:var(--user-accent)!important; }
+.app-shell .source-card {
+  position:relative;
+  border-radius:14px!important;
+  background:linear-gradient(125deg,color-mix(in srgb,var(--user-accent) 11%,#17171c),color-mix(in srgb,var(--user-accent) 4%,rgba(255,255,255,.025)))!important;
+  border-color:color-mix(in srgb,var(--user-accent) 29%,rgba(255,255,255,.09))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045);
+  transition:transform .26s cubic-bezier(.2,.85,.25,1),background .24s ease,border-color .24s ease,box-shadow .24s ease!important;
+}
+.app-shell .source-card:hover {
+  transform:translateY(-2px)!important;
+  background:linear-gradient(125deg,color-mix(in srgb,var(--user-accent) 17%,#1b1a20),color-mix(in srgb,var(--user-accent) 7%,rgba(255,255,255,.035)))!important;
+  border-color:color-mix(in srgb,var(--user-accent) 48%,rgba(255,255,255,.1))!important;
+  box-shadow:0 8px 24px color-mix(in srgb,var(--user-accent) 9%,transparent),inset 0 1px 0 rgba(255,255,255,.06)!important;
+}
+.app-shell .source-icon,
+.app-shell .source-card-icon { color:var(--user-accent)!important; }
+.app-shell .attachment-chip {
+  border-radius:12px!important;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--user-accent) 12%,#17171c),color-mix(in srgb,var(--user-accent) 4%,#17171c))!important;
+  border-color:color-mix(in srgb,var(--user-accent) 28%,rgba(255,255,255,.1))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+}
+.app-shell .reasoning-chip,
+.app-shell .gradient-chip,
+.app-shell .menu-control {
+  border-radius:999px!important;
+  border-color:color-mix(in srgb,var(--user-accent) 18%,rgba(255,255,255,.1))!important;
+  transition:background .22s ease,border-color .22s ease,color .22s ease,box-shadow .22s ease,transform .24s cubic-bezier(.2,.85,.25,1)!important;
+}
+.app-shell .reasoning-chip.selected,
+.app-shell .gradient-chip.selected {
+  color:#fff!important;
+  background:linear-gradient(125deg,color-mix(in srgb,var(--user-accent) 25%,#202027),color-mix(in srgb,var(--user-accent) 12%,#17171d))!important;
+  border-color:color-mix(in srgb,var(--user-accent) 54%,transparent)!important;
+  box-shadow:0 3px 14px color-mix(in srgb,var(--user-accent) 10%,transparent),inset 0 1px 0 rgba(255,255,255,.07)!important;
+}
+.app-shell .menu-control.active {
+  background:linear-gradient(125deg,color-mix(in srgb,var(--user-accent) 22%,#202027),color-mix(in srgb,var(--user-accent) 9%,#17171d))!important;
+  color:#fff!important;
+}
+.app-shell .menu-control.active .menu-control-icon,
+.app-shell .menu-control.active .menu-state { color:var(--user-accent)!important; }
+@media (prefers-reduced-motion:no-preference) {
+  .app-shell .assistant-more-menu,
+  .app-shell .message-context-menu { animation:cs-pop-in-v2 .27s cubic-bezier(.2,.85,.25,1) both!important; transform-origin:top right; }
+  .app-shell .assistant-more-menu button,
+  .app-shell .message-context-menu button { animation:cs-card-stagger-v2 .24s ease both; }
+  .app-shell .assistant-more-menu button:nth-of-type(2),
+  .app-shell .message-context-menu button:nth-of-type(2) { animation-delay:25ms; }
+  .app-shell .assistant-more-menu button:nth-of-type(3),
+  .app-shell .message-context-menu button:nth-of-type(3) { animation-delay:45ms; }
+  .app-shell .reasoning-chip:active,
+  .app-shell .gradient-chip:active,
+  .app-shell .menu-control:active { transform:scale(.96)!important; }
+  .app-shell .attachment-chip { transition:background .22s ease,border-color .22s ease,transform .24s cubic-bezier(.2,.85,.25,1)!important; }
+  .app-shell .attachment-chip:active { transform:scale(.985); }
+}
+@media (prefers-reduced-motion:reduce) {
+  .app-shell .assistant-more-menu,
+  .app-shell .message-context-menu,
+  .app-shell .assistant-more-menu button,
+  .app-shell .message-context-menu button { animation:none!important; }
+}
