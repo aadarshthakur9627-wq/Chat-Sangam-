@@ -216,6 +216,7 @@ export default function Home() {
   const [copiedMessageIndex, setCopiedMessageIndex] = useState(null);
   const [messageContextMenu, setMessageContextMenu] = useState(null);
   const [assistantMenuIndex, setAssistantMenuIndex] = useState(null);
+  const [openSourcesIndex, setOpenSourcesIndex] = useState(null);
   const [feedbackByIndex, setFeedbackByIndex] = useState({});
   const abortControllerRef = useRef(null);
   const lastRequestRef = useRef({ fingerprint: "", at: 0 });
@@ -223,6 +224,26 @@ export default function Home() {
   const longPressTimerRef = useRef(null);
   const longPressStartRef = useRef(null);
   const longPressTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    function closeFloatingPanels(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const insideKnownPanel = target.closest(
+        ".assistant-more-wrap, .source-panel, .assistant-sources-button, .composer-model-button, .model-menu, .attach-menu-wrap, .attach-menu, .sidebar, .sidebar-toggle, .settings-panel, .settings-button, .more-menu"
+      );
+      if (insideKnownPanel) return;
+      setAssistantMenuIndex(null);
+      setOpenSourcesIndex(null);
+      setModelMenuOpen(false);
+      setAttachMenuOpen(false);
+      setMoreMenuOpen(false);
+      setSettingsOpen(false);
+      setMobileMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", closeFloatingPanels);
+    return () => document.removeEventListener("pointerdown", closeFloatingPanels);
+  }, []);
 
   useEffect(() => {
     try {
@@ -1245,9 +1266,9 @@ export default function Home() {
                                            </div>
                                          )}
                                        </div>
-                                       {usedSources.length > 0 && <button type="button" className="assistant-sources-button" onClick={() => document.getElementById("sources-panel-" + index)?.scrollIntoView({ behavior: "smooth", block: "nearest" })} data-tooltip="View sources" aria-label="View sources"><ActionIcon type="web" size={15} /><span>Sources</span></button>}
+                                       {usedSources.length > 0 && <button type="button" className="assistant-sources-button" onClick={() => setOpenSourcesIndex((current) => current === index ? null : index)} data-tooltip="View sources" aria-label="View sources" aria-expanded={openSourcesIndex === index}><ActionIcon type="web" size={15} /><span>Sources</span></button>}
                                      </div>
-                                    {usedSources.length > 0 && (
+                                    {usedSources.length > 0 && openSourcesIndex === index && (
                                       <div className="source-panel" id={"sources-panel-" + index}>
                                         <div className="source-heading"><span>⌕</span> Sources <small>{usedSources.length} used</small></div>
                                         <div className="source-grid">
