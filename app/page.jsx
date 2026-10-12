@@ -201,6 +201,12 @@ export default function Home() {
   const [customGradientEnd, setCustomGradientEnd] = useState("#8b5cf6");
   const [backgroundTemplate, setBackgroundTemplate] = useState("default");
   const [customBackground, setCustomBackground] = useState("#08070b");
+  const [chatTextColour, setChatTextColour] = useState("#f4f4f7");
+  const [userMessageTextColour, setUserMessageTextColour] = useState("#ffffff");
+  const [assistantMessageTextColour, setAssistantMessageTextColour] = useState("#f4f4f7");
+  const [userBubbleColour, setUserBubbleColour] = useState("#252528");
+  const [assistantBubbleColour, setAssistantBubbleColour] = useState("#111018");
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
@@ -285,6 +291,18 @@ export default function Home() {
       if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
       const savedBackground = localStorage.getItem("chat-sangam-custom-background");
       if (savedBackground && /^#[0-9a-f]{6}$/i.test(savedBackground)) setCustomBackground(savedBackground);
+      const savedChatText = localStorage.getItem("chat-sangam-chat-text");
+      if (savedChatText && /^#[0-9a-f]{6}$/i.test(savedChatText)) setChatTextColour(savedChatText);
+      const savedUserText = localStorage.getItem("chat-sangam-user-text");
+      if (savedUserText && /^#[0-9a-f]{6}$/i.test(savedUserText)) setUserMessageTextColour(savedUserText);
+      const savedAssistantText = localStorage.getItem("chat-sangam-assistant-text");
+      if (savedAssistantText && /^#[0-9a-f]{6}$/i.test(savedAssistantText)) setAssistantMessageTextColour(savedAssistantText);
+      const savedUserBubble = localStorage.getItem("chat-sangam-user-bubble");
+      if (savedUserBubble && /^#[0-9a-f]{6}$/i.test(savedUserBubble)) setUserBubbleColour(savedUserBubble);
+      const savedAssistantBubble = localStorage.getItem("chat-sangam-assistant-bubble");
+      if (savedAssistantBubble && /^#[0-9a-f]{6}$/i.test(savedAssistantBubble)) setAssistantBubbleColour(savedAssistantBubble);
+      const savedBgImage = localStorage.getItem("chat-sangam-background-image");
+      if (savedBgImage && /^https?:\/\//i.test(savedBgImage)) setBackgroundImageUrl(savedBgImage);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
@@ -308,8 +326,14 @@ export default function Home() {
       localStorage.setItem("chat-sangam-gradient-end", customGradientEnd);
       localStorage.setItem("chat-sangam-background-template", backgroundTemplate);
       localStorage.setItem("chat-sangam-custom-background", customBackground);
+      localStorage.setItem("chat-sangam-chat-text", chatTextColour);
+      localStorage.setItem("chat-sangam-user-text", userMessageTextColour);
+      localStorage.setItem("chat-sangam-assistant-text", assistantMessageTextColour);
+      localStorage.setItem("chat-sangam-user-bubble", userBubbleColour);
+      localStorage.setItem("chat-sangam-assistant-bubble", assistantBubbleColour);
+      localStorage.setItem("chat-sangam-background-image", backgroundImageUrl);
     } catch {}
-  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground]);
+  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground, chatTextColour, userMessageTextColour, assistantMessageTextColour, userBubbleColour, assistantBubbleColour, backgroundImageUrl]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -1084,7 +1108,7 @@ export default function Home() {
   }
 
   return (
-    <main className={"app-shell theme-" + appearanceMode + " background-" + backgroundTemplate} style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35," + customGradientEnd + "55,#0a84ff18)" : accentGradient === "custom" ? "linear-gradient(135deg," + accentColour + "," + customGradientEnd + ")" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)", "--custom-background": customBackground, "--gradient-start": accentColour, "--gradient-end": customGradientEnd }}>
+    <main className={"app-shell theme-" + appearanceMode + " background-" + backgroundTemplate} style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35," + customGradientEnd + "55,#0a84ff18)" : accentGradient === "custom" ? "linear-gradient(135deg," + accentColour + "," + customGradientEnd + ")" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)", "--custom-background": customBackground, "--gradient-start": accentColour, "--gradient-end": customGradientEnd, "--chat-text": chatTextColour, "--user-message-text": userMessageTextColour, "--assistant-message-text": assistantMessageTextColour, "--user-bubble": userBubbleColour, "--assistant-bubble": assistantBubbleColour, "--background-image-url": backgroundImageUrl ? "url(\"" + backgroundImageUrl.replace(/\"/g, "") + "\")" : "none" }}>
       <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
         <div className="sidebar-head">
           <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
@@ -1138,6 +1162,19 @@ export default function Home() {
               {[["default","Classic"],["midnight","Midnight"],["ocean","Ocean"],["forest","Forest"],["sunset","Sunset"],["minimal","Minimal"]].map(([value,label]) => <button type="button" key={value} className={"background-template " + (backgroundTemplate === value ? "selected" : "")} onClick={() => setBackgroundTemplate(value)} aria-pressed={backgroundTemplate === value}><span className={"background-preview preview-" + value} /><span>{label}</span></button>)}
             </div>
             <label className="custom-background-picker">Custom background colour <input type="color" value={customBackground} onChange={(event) => { setCustomBackground(event.target.value); setBackgroundTemplate("custom"); }} /></label>
+            <label className="custom-background-picker">Background image URL <input className="background-url-input" type="url" placeholder="https://example.com/wallpaper.jpg" value={backgroundImageUrl} onChange={(event) => setBackgroundImageUrl(event.target.value)} /></label>
+            <span className="appearance-label">Chat text colour</span>
+            <div className="colour-picker-row">
+              <label>All chat text <input type="color" value={chatTextColour} onChange={(event) => setChatTextColour(event.target.value)} /></label>
+              <label>Assistant text <input type="color" value={assistantMessageTextColour} onChange={(event) => setAssistantMessageTextColour(event.target.value)} /></label>
+              <label>Your message text <input type="color" value={userMessageTextColour} onChange={(event) => setUserMessageTextColour(event.target.value)} /></label>
+            </div>
+            <span className="appearance-label">Message bubble colours</span>
+            <div className="colour-picker-row">
+              <label>Your bubble <input type="color" value={userBubbleColour} onChange={(event) => setUserBubbleColour(event.target.value)} /></label>
+              <label>Assistant bubble <input type="color" value={assistantBubbleColour} onChange={(event) => setAssistantBubbleColour(event.target.value)} /></label>
+            </div>
+            <button type="button" className="gradient-chip reset-appearance" onClick={() => { setAppearanceMode("system"); setAccentColour("#f43f8c"); setAccentGradient("linear"); setCustomGradientEnd("#8b5cf6"); setBackgroundTemplate("default"); setCustomBackground("#08070b"); setChatTextColour("#f4f4f7"); setUserMessageTextColour("#ffffff"); setAssistantMessageTextColour("#f4f4f7"); setUserBubbleColour("#252528"); setAssistantBubbleColour("#111018"); setBackgroundImageUrl(""); }}>Reset appearance</button>
           </div>}
         </div>
       </aside>
