@@ -914,7 +914,20 @@ function isProviderConfigured(modelId) {
 
 function shouldRetryWithAnotherProvider(error) {
   const status = Number(error?.status);
-  return !status || [401, 403, 404, 408, 429].includes(status) || status >= 500;
+  const errorCode = String(error?.error?.code || error?.code || "").toLowerCase();
+  const errorText = String(error?.error?.message || error?.message || "").toLowerCase();
+
+  // GPT-OSS can occasionally return a tool call when this request did not
+  // enable tools (Groq reports this as tool_use_failed / "tool choice is none").
+  // This is a provider-generation failure, not a bad user request: Auto mode
+  // should move to the next configured free provider instead of stopping at 400.
+  const toolRoutingFailure =
+    errorCode === "tool_use_failed" ||
+    errorText.includes("tool choice is none") ||
+    errorText.includes("model called a tool") ||
+    errorText.includes("failed_generation");
+
+  return toolRoutingFailure || !status || [401, 403, 404, 408, 429].includes(status) || status >= 500;
 }
 
 async function generateRoutedProviderAnswer(modelId, messages, attachments, query, webSearch, deepResearchEnabled, safeReasoning) {
