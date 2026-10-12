@@ -99,7 +99,11 @@ function getCitedSources(content, sources) {
     const id = Number(match[1]);
     if (id > 0) citedIds.add(String(id));
   }
-  return sources.filter((source) => citedIds.has(String(source.id)));
+
+  const matchedSources = sources.filter((source) => citedIds.has(String(source.id)));
+  // Some providers return structured source metadata but omit inline [N] markers.
+  // Keep the source panel available in that case instead of hiding valid source links.
+  return matchedSources.length ? matchedSources : sources.filter((source) => /^https?:\/\//i.test(String(source.url || "")));
 }
 
 function normalizeMathDelimiters(content) {
