@@ -2283,3 +2283,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
  .background-preview{height:31px}
  .colour-picker-row{gap:8px}
 }
+
+
+/* Market-ready appearance presets and custom palette builder */
+.appearance-intro{display:block;margin:-8px 0 5px;color:var(--muted);font-size:11px;line-height:1.5}
+.appearance-preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.appearance-preset-card{position:relative;display:flex;flex-direction:column;gap:7px;min-width:0;padding:7px;border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.025);color:var(--text);text-align:left;cursor:pointer;touch-action:manipulation;transition:border-color .18s,transform .18s,box-shadow .18s}
+.appearance-preset-card:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--user-accent,#f43f8c) 65%,transparent)}
+.appearance-preset-card.selected{border-color:var(--user-accent,#f43f8c);box-shadow:0 0 0 1px color-mix(in srgb,var(--user-accent,#f43f8c) 45%,transparent),0 5px 18px rgba(0,0,0,.14)}
+.appearance-preset-card:focus-visible,.save-preset-button:focus-visible,.delete-saved-preset:focus-visible{outline:2px solid var(--user-accent,#f43f8c);outline-offset:2px}
+.preset-preview{position:relative;display:flex;align-items:flex-end;gap:5px;overflow:hidden;height:52px;padding:8px;border:1px solid rgba(255,255,255,.11);border-radius:8px}
+.preset-preview:before{content:"";position:absolute;left:8px;top:8px;width:38%;height:4px;border-radius:99px;background:rgba(255,255,255,.68)}
+.preset-preview i{display:block;width:15px;height:15px;border:1px solid rgba(255,255,255,.18);border-radius:50%}
+.preset-preview b{display:block;width:34px;height:12px;margin-left:auto;border-radius:5px;border:1px solid rgba(255,255,255,.14)}
+.preset-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;font-weight:650}
+.preset-colours{display:flex;gap:4px}
+.preset-colours i{display:block;width:13px;height:4px;border-radius:99px}
+.saved-preset-wrap{position:relative;min-width:0}
+.saved-preset-wrap .appearance-preset-card{width:100%;height:100%}
+.delete-saved-preset{position:absolute;top:4px;right:4px;display:grid;place-items:center;width:22px;height:22px;border:1px solid rgba(255,255,255,.2);border-radius:50%;background:rgba(8,8,12,.78);color:#fff;font-size:16px;line-height:1}
+.save-preset-row{display:flex;gap:7px}
+.save-preset-row input{flex:1;min-width:0;width:0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--text);font-size:11px;outline:none}
+.save-preset-row input:focus{border-color:var(--user-accent,#f43f8c);box-shadow:0 0 0 2px color-mix(in srgb,var(--user-accent,#f43f8c) 18%,transparent)}
+.save-preset-button{padding:0 13px;border:1px solid color-mix(in srgb,var(--user-accent,#f43f8c) 55%,transparent);border-radius:10px;background:linear-gradient(135deg,var(--user-accent,#f43f8c),var(--gradient-end,#8b5cf6));color:#fff;font-size:11px;font-weight:700}
+.save-preset-button:disabled{opacity:.4;cursor:not-allowed}
+.appearance-hint{display:block;margin-top:7px;color:var(--dim);font-size:10px;line-height:1.45}
+.app-shell.background-preset .workspace{background-image:var(--user-gradient),var(--background-image-url,none),var(--canvas-gradient,linear-gradient(135deg,#160b25 0%,#0b1020 52%,#090812 100%))!important}
+.app-shell.background-preset .sidebar{background:color-mix(in srgb,var(--custom-background,#090812) 86%,#000)!important}
+.app-shell.background-preset .topbar{background:color-mix(in srgb,var(--custom-background,#090812) 78%,transparent)}
+@media(max-width:640px){
+ .appearance-preset-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .preset-preview{height:46px}
+ .appearance-preset-card{padding:6px}
+ .preset-name{font-size:10px}
+ .save-preset-row input{font-size:12px}
+}

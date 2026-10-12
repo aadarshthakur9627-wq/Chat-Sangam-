@@ -26,6 +26,28 @@ const FUTURE_ENGINES = [
   { name: "DeepSeek", icon: "◆" },
 ];
 
+
+const APPEARANCE_PRESETS = [
+  { id: "sangam-signature", name: "Sangam Signature", accent: "#f43f8c", end: "#8b5cf6", bg: "#090812", gradient: "linear-gradient(135deg,#160b25 0%,#0b1020 52%,#090812 100%)", text: "#f7f3ff", assistantText: "#f7f3ff", userText: "#ffffff", userBubble: "#6d28d9", assistantBubble: "#171321" },
+  { id: "midnight-blue", name: "Midnight Blue", accent: "#3b82f6", end: "#06b6d4", bg: "#06111f", gradient: "linear-gradient(135deg,#06111f 0%,#0b1e3b 52%,#071923 100%)", text: "#eaf4ff", assistantText: "#eaf4ff", userText: "#ffffff", userBubble: "#1d4ed8", assistantBubble: "#0d1b2b" },
+  { id: "cyber-neon", name: "Cyber Neon", accent: "#22d3ee", end: "#a3e635", bg: "#071014", gradient: "linear-gradient(135deg,#071014 0%,#0b2228 52%,#101b12 100%)", text: "#e5fdff", assistantText: "#e5fdff", userText: "#071014", userBubble: "#22d3ee", assistantBubble: "#102329" },
+  { id: "aurora", name: "Aurora", accent: "#34d399", end: "#818cf8", bg: "#071512", gradient: "linear-gradient(135deg,#071512 0%,#102b2a 52%,#171536 100%)", text: "#eafff7", assistantText: "#eafff7", userText: "#071512", userBubble: "#047857", assistantBubble: "#102320" },
+  { id: "royal-purple", name: "Royal Purple", accent: "#a78bfa", end: "#ec4899", bg: "#10091d", gradient: "linear-gradient(135deg,#10091d 0%,#21103c 52%,#160d26 100%)", text: "#f5edff", assistantText: "#f5edff", userText: "#ffffff", userBubble: "#7c3aed", assistantBubble: "#21152e" },
+  { id: "sunset-glow", name: "Sunset Glow", accent: "#fb7185", end: "#f59e0b", bg: "#1b0c13", gradient: "linear-gradient(135deg,#1b0c13 0%,#321323 52%,#26130c 100%)", text: "#fff1f2", assistantText: "#fff1f2", userText: "#ffffff", userBubble: "#be123c", assistantBubble: "#2a1720" },
+  { id: "ocean-breeze", name: "Ocean Breeze", accent: "#38bdf8", end: "#2dd4bf", bg: "#07151d", gradient: "linear-gradient(135deg,#07151d 0%,#0a2b3a 52%,#082b2b 100%)", text: "#e6faff", assistantText: "#e6faff", userText: "#06202b", userBubble: "#67e8f9", assistantBubble: "#102832" },
+  { id: "emerald", name: "Emerald", accent: "#34d399", end: "#a3e635", bg: "#071710", gradient: "linear-gradient(135deg,#071710 0%,#0b3020 52%,#142b1b 100%)", text: "#e9fff2", assistantText: "#e9fff2", userText: "#062015", userBubble: "#6ee7b7", assistantBubble: "#10271b" },
+  { id: "ruby", name: "Ruby", accent: "#fb7185", end: "#f43f5e", bg: "#1a080e", gradient: "linear-gradient(135deg,#1a080e 0%,#35101d 52%,#210b17 100%)", text: "#fff0f3", assistantText: "#fff0f3", userText: "#ffffff", userBubble: "#be123c", assistantBubble: "#2b121b" },
+  { id: "amber", name: "Amber", accent: "#fbbf24", end: "#f97316", bg: "#171006", gradient: "linear-gradient(135deg,#171006 0%,#30200b 52%,#21120a 100%)", text: "#fff8e6", assistantText: "#fff8e6", userText: "#211006", userBubble: "#fbbf24", assistantBubble: "#292012" },
+  { id: "mono-graphite", name: "Graphite", accent: "#d4d4d8", end: "#71717a", bg: "#101012", gradient: "linear-gradient(135deg,#101012 0%,#202024 52%,#141419 100%)", text: "#f4f4f5", assistantText: "#f4f4f5", userText: "#18181b", userBubble: "#e4e4e7", assistantBubble: "#242428" },
+  { id: "arctic", name: "Arctic", accent: "#93c5fd", end: "#c4b5fd", bg: "#0b1220", gradient: "linear-gradient(135deg,#0b1220 0%,#17243c 52%,#201a35 100%)", text: "#f0f7ff", assistantText: "#f0f7ff", userText: "#111827", userBubble: "#bfdbfe", assistantBubble: "#182338" },
+  { id: "matrix", name: "Matrix", accent: "#4ade80", end: "#16a34a", bg: "#04120a", gradient: "linear-gradient(135deg,#04120a 0%,#082516 52%,#06180e 100%)", text: "#eaffef", assistantText: "#eaffef", userText: "#03150a", userBubble: "#86efac", assistantBubble: "#0b2415" },
+  { id: "berry", name: "Berry Pop", accent: "#e879f9", end: "#818cf8", bg: "#160b1c", gradient: "linear-gradient(135deg,#160b1c 0%,#2c1236 52%,#171b38 100%)", text: "#fff0ff", assistantText: "#fff0ff", userText: "#ffffff", userBubble: "#a21caf", assistantBubble: "#27172f" },
+  { id: "copper", name: "Copper", accent: "#fdba74", end: "#c084fc", bg: "#1a100d", gradient: "linear-gradient(135deg,#1a100d 0%,#332017 52%,#24142d 100%)", text: "#fff4e9", assistantText: "#fff4e9", userText: "#21120a", userBubble: "#fed7aa", assistantBubble: "#2b201b" },
+  { id: "deep-teal", name: "Deep Teal", accent: "#2dd4bf", end: "#0ea5e9", bg: "#061516", gradient: "linear-gradient(135deg,#061516 0%,#0b3031 52%,#0b2033 100%)", text: "#e6fffb", assistantText: "#e6fffb", userText: "#042321", userBubble: "#5eead4", assistantBubble: "#102829" },
+  { id: "lavender", name: "Lavender Night", accent: "#c4b5fd", end: "#f0abfc", bg: "#120e1d", gradient: "linear-gradient(135deg,#120e1d 0%,#251b3d 52%,#2a1735 100%)", text: "#f8f3ff", assistantText: "#f8f3ff", userText: "#20132b", userBubble: "#e9d5ff", assistantBubble: "#241b31" },
+  { id: "citrus", name: "Citrus", accent: "#bef264", end: "#facc15", bg: "#101407", gradient: "linear-gradient(135deg,#101407 0%,#26300d 52%,#2a2108 100%)", text: "#f7ffe8", assistantText: "#f7ffe8", userText: "#1b2207", userBubble: "#d9f99d", assistantBubble: "#242b13" },
+];
+
 const PROMPTS = [
   { icon: "✦", title: "Learn", text: "Teach me a difficult topic from basics with examples." },
   { icon: "⌁", title: "Plan", text: "Create a practical step-by-step plan for my goal." },
@@ -199,6 +221,9 @@ export default function Home() {
   const [accentGradient, setAccentGradient] = useState("linear");
   const [appearanceMode, setAppearanceMode] = useState("system");
   const [customGradientEnd, setCustomGradientEnd] = useState("#8b5cf6");
+  const [canvasGradient, setCanvasGradient] = useState("linear-gradient(135deg,#160b25 0%,#0b1020 52%,#090812 100%)");
+  const [customPresets, setCustomPresets] = useState([]);
+  const [customPresetName, setCustomPresetName] = useState("");
   const [backgroundTemplate, setBackgroundTemplate] = useState("default");
   const [customBackground, setCustomBackground] = useState("#08070b");
   const [chatTextColour, setChatTextColour] = useState("#f4f4f7");
@@ -285,10 +310,17 @@ export default function Home() {
       if (savedGradient && ["linear", "soft", "aurora", "custom"].includes(savedGradient)) setAccentGradient(savedGradient);
       const savedMode = localStorage.getItem("chat-sangam-appearance");
       if (savedMode && ["dark", "light", "system"].includes(savedMode)) setAppearanceMode(savedMode);
+      const savedCustomPresets = localStorage.getItem("chat-sangam-custom-presets");
+      if (savedCustomPresets) {
+        const parsedPresets = JSON.parse(savedCustomPresets);
+        if (Array.isArray(parsedPresets)) setCustomPresets(parsedPresets.filter((preset) => preset && typeof preset.name === "string" && /^#[0-9a-f]{6}$/i.test(preset.accent || "") && /^#[0-9a-f]{6}$/i.test(preset.background || "")));
+      }
+      const savedCanvasGradient = localStorage.getItem("chat-sangam-canvas-gradient");
+      if (savedCanvasGradient && savedCanvasGradient.startsWith("linear-gradient(135deg,") && savedCanvasGradient.length < 180 && /^linear-gradient\(135deg,#[0-9a-f]{6} 0%,#[0-9a-f]{6} 52%,#[0-9a-f]{6} 100%\)$/i.test(savedCanvasGradient)) setCanvasGradient(savedCanvasGradient);
       const savedGradientEnd = localStorage.getItem("chat-sangam-gradient-end");
       if (savedGradientEnd && /^#[0-9a-f]{6}$/i.test(savedGradientEnd)) setCustomGradientEnd(savedGradientEnd);
       const savedTemplate = localStorage.getItem("chat-sangam-background-template");
-      if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
+      if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal", "custom", "preset"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
       const savedBackground = localStorage.getItem("chat-sangam-custom-background");
       if (savedBackground && /^#[0-9a-f]{6}$/i.test(savedBackground)) setCustomBackground(savedBackground);
       const savedChatText = localStorage.getItem("chat-sangam-chat-text");
@@ -324,6 +356,8 @@ export default function Home() {
       localStorage.setItem("chat-sangam-gradient", accentGradient);
       localStorage.setItem("chat-sangam-appearance", appearanceMode);
       localStorage.setItem("chat-sangam-gradient-end", customGradientEnd);
+      localStorage.setItem("chat-sangam-canvas-gradient", canvasGradient);
+      localStorage.setItem("chat-sangam-custom-presets", JSON.stringify(customPresets));
       localStorage.setItem("chat-sangam-background-template", backgroundTemplate);
       localStorage.setItem("chat-sangam-custom-background", customBackground);
       localStorage.setItem("chat-sangam-chat-text", chatTextColour);
@@ -333,7 +367,44 @@ export default function Home() {
       localStorage.setItem("chat-sangam-assistant-bubble", assistantBubbleColour);
       localStorage.setItem("chat-sangam-background-image", backgroundImageUrl);
     } catch {}
-  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground, chatTextColour, userMessageTextColour, assistantMessageTextColour, userBubbleColour, assistantBubbleColour, backgroundImageUrl]);
+  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, canvasGradient, customPresets, backgroundTemplate, customBackground, chatTextColour, userMessageTextColour, assistantMessageTextColour, userBubbleColour, assistantBubbleColour, backgroundImageUrl]);
+
+
+  function applyAppearancePreset(preset) {
+    setAppearanceMode("dark");
+    setAccentColour(preset.accent);
+    setCustomGradientEnd(preset.end);
+    setAccentGradient("custom");
+    setBackgroundTemplate("preset");
+    setCustomBackground(preset.bg || preset.background);
+    setCanvasGradient(preset.gradient || "linear-gradient(135deg," + (preset.bg || preset.background) + " 0%," + preset.accent + " 52%," + preset.end + " 100%)");
+    setChatTextColour(preset.text);
+    setAssistantMessageTextColour(preset.assistantText);
+    setUserMessageTextColour(preset.userText);
+    setUserBubbleColour(preset.userBubble);
+    setAssistantBubbleColour(preset.assistantBubble);
+  }
+
+  function saveCustomAppearancePreset() {
+    const name = customPresetName.trim();
+    if (!name) return;
+    const preset = {
+      id: "custom-" + Date.now(),
+      name: name.slice(0, 28),
+      accent: accentColour,
+      end: customGradientEnd,
+      bg: customBackground,
+      background: customBackground,
+      gradient: "linear-gradient(135deg," + customBackground + " 0%," + accentColour + " 52%," + customGradientEnd + " 100%)",
+      text: chatTextColour,
+      assistantText: assistantMessageTextColour,
+      userText: userMessageTextColour,
+      userBubble: userBubbleColour,
+      assistantBubble: assistantBubbleColour,
+    };
+    setCustomPresets((current) => [preset, ...current.filter((item) => item.name.toLowerCase() !== name.toLowerCase())].slice(0, 20));
+    setCustomPresetName("");
+  }
 
   useEffect(() => {
     if (!loaded) return;
@@ -1108,7 +1179,7 @@ export default function Home() {
   }
 
   return (
-    <main className={"app-shell theme-" + appearanceMode + " background-" + backgroundTemplate} style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35," + customGradientEnd + "55,#0a84ff18)" : accentGradient === "custom" ? "linear-gradient(135deg," + accentColour + "," + customGradientEnd + ")" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)", "--custom-background": customBackground, "--gradient-start": accentColour, "--gradient-end": customGradientEnd, "--chat-text": chatTextColour, "--user-message-text": userMessageTextColour, "--assistant-message-text": assistantMessageTextColour, "--user-bubble": userBubbleColour, "--assistant-bubble": assistantBubbleColour, "--background-image-url": backgroundImageUrl ? "url(\"" + backgroundImageUrl.replace(/\"/g, "") + "\")" : "none" }}>
+    <main className={"app-shell theme-" + appearanceMode + " background-" + backgroundTemplate} style={{ "--canvas-gradient": canvasGradient, "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35," + customGradientEnd + "55,#0a84ff18)" : accentGradient === "custom" ? "linear-gradient(135deg," + accentColour + "," + customGradientEnd + ")" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)", "--custom-background": customBackground, "--gradient-start": accentColour, "--gradient-end": customGradientEnd, "--chat-text": chatTextColour, "--user-message-text": userMessageTextColour, "--assistant-message-text": assistantMessageTextColour, "--user-bubble": userBubbleColour, "--assistant-bubble": assistantBubbleColour, "--background-image-url": backgroundImageUrl ? "url(\"" + backgroundImageUrl.replace(/\"/g, "") + "\")" : "none" }}>
       <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
         <div className="sidebar-head">
           <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
@@ -1148,6 +1219,31 @@ export default function Home() {
           <div className="footer-links"><button type="button" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}>⚙ Settings</button><span>◉ Account</span></div>
           {settingsOpen && <div className="appearance-panel">
             <strong>Appearance</strong>
+            <span className="appearance-intro">Make it yours — choose a palette or build your own.</span>
+            <span className="appearance-label">Curated palettes · 18 styles</span>
+            <div className="appearance-preset-grid" role="group" aria-label="Appearance presets">
+              {APPEARANCE_PRESETS.map((preset) => <button type="button" key={preset.id} className={"appearance-preset-card " + (accentColour === preset.accent && customGradientEnd === preset.end && backgroundTemplate === "preset" && canvasGradient === preset.gradient ? "selected" : "")} onClick={() => applyAppearancePreset(preset)} aria-pressed={accentColour === preset.accent && customGradientEnd === preset.end && backgroundTemplate === "preset" && canvasGradient === preset.gradient} title={"Apply " + preset.name}>
+                <span className="preset-preview" style={{ background: preset.gradient }}><i style={{ background: preset.accent }} /><i style={{ background: preset.end }} /><b style={{ background: preset.userBubble }} /></span>
+                <span className="preset-name">{preset.name}</span>
+                <span className="preset-colours"><i style={{ background: preset.accent }} /><i style={{ background: preset.end }} /><i style={{ background: preset.userBubble }} /></span>
+              </button>)}
+            </div>
+            {customPresets.length > 0 && <>
+              <span className="appearance-label">Your saved presets</span>
+              <div className="appearance-preset-grid" role="group" aria-label="Your saved presets">
+                {customPresets.map((preset) => <div className="saved-preset-wrap" key={preset.id}>
+                  <button type="button" className={"appearance-preset-card " + (accentColour === preset.accent && customBackground === (preset.bg || preset.background) ? "selected" : "")} onClick={() => applyAppearancePreset(preset)} aria-label={"Apply saved preset " + preset.name}>
+                    <span className="preset-preview" style={{ background: preset.gradient }}><i style={{ background: preset.accent }} /><i style={{ background: preset.end }} /><b style={{ background: preset.userBubble }} /></span>
+                    <span className="preset-name">{preset.name}</span>
+                    <span className="preset-colours"><i style={{ background: preset.accent }} /><i style={{ background: preset.end }} /><i style={{ background: preset.userBubble }} /></span>
+                  </button>
+                  <button type="button" className="delete-saved-preset" onClick={() => setCustomPresets((current) => current.filter((item) => item.id !== preset.id))} aria-label={"Delete " + preset.name} title="Delete saved preset">×</button>
+                </div>)}
+              </div>
+            </>}
+            <span className="appearance-label">Save your own preset</span>
+            <div className="save-preset-row"><input type="text" maxLength={28} value={customPresetName} onChange={(event) => setCustomPresetName(event.target.value)} placeholder="Name your colour theme" aria-label="Custom preset name" /><button type="button" className="save-preset-button" onClick={saveCustomAppearancePreset} disabled={!customPresetName.trim()}>Save</button></div>
+            <span className="appearance-hint">Saves your current colours, message bubbles and gradient on this device.</span>
             <span className="appearance-label">Theme</span>
             <div className="gradient-options theme-options" role="group" aria-label="Theme">
               {[["dark","Dark"],["light","Light"],["system","System (Default)"]].map(([value,label]) => <button type="button" key={value} className={"gradient-chip " + (appearanceMode === value ? "selected" : "")} onClick={() => setAppearanceMode(value)} aria-pressed={appearanceMode === value}>{label}</button>)}
@@ -1174,7 +1270,7 @@ export default function Home() {
               <label>Your bubble <input type="color" value={userBubbleColour} onChange={(event) => setUserBubbleColour(event.target.value)} /></label>
               <label>Assistant bubble <input type="color" value={assistantBubbleColour} onChange={(event) => setAssistantBubbleColour(event.target.value)} /></label>
             </div>
-            <button type="button" className="gradient-chip reset-appearance" onClick={() => { setAppearanceMode("system"); setAccentColour("#f43f8c"); setAccentGradient("linear"); setCustomGradientEnd("#8b5cf6"); setBackgroundTemplate("default"); setCustomBackground("#08070b"); setChatTextColour("#f4f4f7"); setUserMessageTextColour("#ffffff"); setAssistantMessageTextColour("#f4f4f7"); setUserBubbleColour("#252528"); setAssistantBubbleColour("#111018"); setBackgroundImageUrl(""); }}>Reset appearance</button>
+            <button type="button" className="gradient-chip reset-appearance" onClick={() => { setAppearanceMode("system"); setAccentColour("#f43f8c"); setAccentGradient("linear"); setCustomGradientEnd("#8b5cf6"); setCanvasGradient("linear-gradient(135deg,#160b25 0%,#0b1020 52%,#090812 100%)"); setBackgroundTemplate("default"); setCustomBackground("#08070b"); setChatTextColour("#f4f4f7"); setUserMessageTextColour("#ffffff"); setAssistantMessageTextColour("#f4f4f7"); setUserBubbleColour("#252528"); setAssistantBubbleColour("#111018"); setBackgroundImageUrl(""); }}>Reset appearance</button>
           </div>}
         </div>
       </aside>
