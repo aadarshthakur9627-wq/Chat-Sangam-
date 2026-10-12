@@ -2150,3 +2150,38 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell .assistant-more-menu button,
   .app-shell .message-context-menu button { animation:none!important; }
 }
+
+
+/* User message bubble: explicit accent-aware surface (overrides legacy mobile fixed gray). */
+.app-shell .message-row.user .message-bubble {
+  background:
+    var(--user-gradient),
+    linear-gradient(135deg,
+      color-mix(in srgb,var(--user-accent,#f43f8c) 22%,#242329),
+      color-mix(in srgb,var(--user-accent,#f43f8c) 13%,#1c1b21))!important;
+  border:1px solid color-mix(in srgb,var(--user-accent,#f43f8c) 34%,rgba(255,255,255,.09))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.055),
+    0 5px 22px color-mix(in srgb,var(--user-accent,#f43f8c) 7%,transparent)!important;
+  transition:background .28s ease,border-color .28s ease,box-shadow .28s ease,transform .28s cubic-bezier(.2,.85,.25,1)!important;
+}
+.app-shell .message-row.user .message-bubble:hover {
+  background:
+    var(--user-gradient),
+    linear-gradient(135deg,
+      color-mix(in srgb,var(--user-accent,#f43f8c) 28%,#242329),
+      color-mix(in srgb,var(--user-accent,#f43f8c) 17%,#1c1b21))!important;
+  border-color:color-mix(in srgb,var(--user-accent,#f43f8c) 48%,rgba(255,255,255,.1))!important;
+}
+@keyframes cs-user-bubble-arrive-v3 {
+  0% { opacity:0; transform:translate3d(0,12px,0) scale(.965); filter:blur(2px); }
+  72% { opacity:1; transform:translate3d(0,-1px,0) scale(1.008); filter:blur(0); }
+  100% { opacity:1; transform:translate3d(0,0,0) scale(1); filter:blur(0); }
+}
+@media (prefers-reduced-motion:no-preference) {
+  .app-shell .message-row.user .message-bubble {
+    animation:cs-user-bubble-arrive-v3 .38s cubic-bezier(.2,.85,.25,1) both;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .app-shell .message-row.user .message-bubble { animation:none!important; }
+}
