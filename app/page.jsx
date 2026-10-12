@@ -197,6 +197,10 @@ export default function Home() {
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [accentColour, setAccentColour] = useState("#f43f8c");
   const [accentGradient, setAccentGradient] = useState("linear");
+  const [appearanceMode, setAppearanceMode] = useState("system");
+  const [customGradientEnd, setCustomGradientEnd] = useState("#8b5cf6");
+  const [backgroundTemplate, setBackgroundTemplate] = useState("default");
+  const [customBackground, setCustomBackground] = useState("#08070b");
   const [search, setSearch] = useState("");
   const [webSearch, setWebSearch] = useState(false);
   const [deepResearch, setDeepResearch] = useState(false);
@@ -237,7 +241,7 @@ export default function Home() {
       const insideModelMenu = target.closest(".composer-model-button, .model-menu");
       const insideAttachMenu = target.closest(".attach-menu-wrap, .attach-menu");
       const insideSidebar = target.closest(".sidebar, .sidebar-toggle");
-      const insideSettings = target.closest(".settings-panel, .settings-button");
+      const insideSettings = target.closest(".settings-panel, .settings-button, .appearance-panel");
       const insideMoreMenu = target.closest(".more-menu");
 
       if (!insideAssistantMenu) setAssistantMenuIndex(null);
@@ -272,7 +276,15 @@ export default function Home() {
       const savedAccent = localStorage.getItem("chat-sangam-accent");
       if (savedAccent && ["#f43f8c", "#0a84ff", "#30d158", "#bf5af2", "#ff9f0a"].includes(savedAccent)) setAccentColour(savedAccent);
       const savedGradient = localStorage.getItem("chat-sangam-gradient");
-      if (savedGradient && ["linear", "soft", "aurora"].includes(savedGradient)) setAccentGradient(savedGradient);
+      if (savedGradient && ["linear", "soft", "aurora", "custom"].includes(savedGradient)) setAccentGradient(savedGradient);
+      const savedMode = localStorage.getItem("chat-sangam-appearance");
+      if (savedMode && ["dark", "light", "system"].includes(savedMode)) setAppearanceMode(savedMode);
+      const savedGradientEnd = localStorage.getItem("chat-sangam-gradient-end");
+      if (savedGradientEnd && /^#[0-9a-f]{6}$/i.test(savedGradientEnd)) setCustomGradientEnd(savedGradientEnd);
+      const savedTemplate = localStorage.getItem("chat-sangam-background-template");
+      if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
+      const savedBackground = localStorage.getItem("chat-sangam-custom-background");
+      if (savedBackground && /^#[0-9a-f]{6}$/i.test(savedBackground)) setCustomBackground(savedBackground);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
       const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
@@ -289,8 +301,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem("chat-sangam-accent", accentColour); localStorage.setItem("chat-sangam-gradient", accentGradient); } catch {}
-  }, [accentColour, accentGradient]);
+    try {
+      localStorage.setItem("chat-sangam-accent", accentColour);
+      localStorage.setItem("chat-sangam-gradient", accentGradient);
+      localStorage.setItem("chat-sangam-appearance", appearanceMode);
+      localStorage.setItem("chat-sangam-gradient-end", customGradientEnd);
+      localStorage.setItem("chat-sangam-background-template", backgroundTemplate);
+      localStorage.setItem("chat-sangam-custom-background", customBackground);
+    } catch {}
+  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -1065,7 +1084,7 @@ export default function Home() {
   }
 
   return (
-    <main className="app-shell" style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35,#8b5cf625 55%,#0a84ff18)" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)" }}>
+    <main className={"app-shell theme-" + appearanceMode + " background-" + backgroundTemplate} style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35," + customGradientEnd + "55,#0a84ff18)" : accentGradient === "custom" ? "linear-gradient(135deg," + accentColour + "," + customGradientEnd + ")" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)", "--custom-background": customBackground, "--gradient-start": accentColour, "--gradient-end": customGradientEnd }}>
       <aside className={"sidebar " + (mobileMenuOpen ? "sidebar-open" : "")}>
         <div className="sidebar-head">
           <button className="brand" onClick={startNewChat} aria-label="Chat Sangam home">
@@ -1103,7 +1122,23 @@ export default function Home() {
         <div className="sidebar-footer">
           <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
           <div className="footer-links"><button type="button" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}>⚙ Settings</button><span>◉ Account</span></div>
-          {settingsOpen && <div className="appearance-panel"><strong>Appearance</strong><span className="appearance-label">Accent colour</span><div className="accent-options" role="group" aria-label="Accent colour">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} aria-pressed={accentColour === colour} title={label}><span /></button>)}</div><span className="appearance-label">Gradient style</span><div className="gradient-options" role="group" aria-label="Gradient style">{[["linear","Linear"],["soft","Soft"],["aurora","Aurora"]].map(([value,label]) => <button type="button" key={value} className={"gradient-chip " + (accentGradient === value ? "selected" : "")} onClick={() => setAccentGradient(value)} aria-pressed={accentGradient === value}>{label}</button>)}</div></div>}
+          {settingsOpen && <div className="appearance-panel">
+            <strong>Appearance</strong>
+            <span className="appearance-label">Theme</span>
+            <div className="gradient-options theme-options" role="group" aria-label="Theme">
+              {[["dark","Dark"],["light","Light"],["system","System (Default)"]].map(([value,label]) => <button type="button" key={value} className={"gradient-chip " + (appearanceMode === value ? "selected" : "")} onClick={() => setAppearanceMode(value)} aria-pressed={appearanceMode === value}>{label}</button>)}
+            </div>
+            <span className="appearance-label">Accent colour</span>
+            <div className="accent-options" role="group" aria-label="Accent colour">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} aria-pressed={accentColour === colour} title={label}><span /></button>)}</div>
+            <span className="appearance-label">Gradient style</span>
+            <div className="gradient-options" role="group" aria-label="Gradient style">{[["linear","Linear"],["soft","Soft"],["aurora","Aurora"],["custom","Custom"]].map(([value,label]) => <button type="button" key={value} className={"gradient-chip " + (accentGradient === value ? "selected" : "")} onClick={() => setAccentGradient(value)} aria-pressed={accentGradient === value}>{label}</button>)}</div>
+            <div className="colour-picker-row"><label>Gradient colour 1 <input type="color" value={accentColour} onChange={(event) => { setAccentColour(event.target.value); setAccentGradient("custom"); }} /></label><label>Gradient colour 2 <input type="color" value={customGradientEnd} onChange={(event) => { setCustomGradientEnd(event.target.value); setAccentGradient("custom"); }} /></label></div>
+            <span className="appearance-label">Chat background</span>
+            <div className="background-templates" role="group" aria-label="Background templates">
+              {[["default","Classic"],["midnight","Midnight"],["ocean","Ocean"],["forest","Forest"],["sunset","Sunset"],["minimal","Minimal"]].map(([value,label]) => <button type="button" key={value} className={"background-template " + (backgroundTemplate === value ? "selected" : "")} onClick={() => setBackgroundTemplate(value)} aria-pressed={backgroundTemplate === value}><span className={"background-preview preview-" + value} /><span>{label}</span></button>)}
+            </div>
+            <label className="custom-background-picker">Custom background colour <input type="color" value={customBackground} onChange={(event) => { setCustomBackground(event.target.value); setBackgroundTemplate("custom"); }} /></label>
+          </div>}
         </div>
       </aside>
 
