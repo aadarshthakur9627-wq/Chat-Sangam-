@@ -229,10 +229,27 @@ export default function Home() {
     function closeFloatingPanels(event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      const insideKnownPanel = target.closest(
-        ".assistant-more-wrap, .source-panel, .assistant-sources-button, .composer-model-button, .model-menu, .attach-menu-wrap, .attach-menu, .sidebar, .sidebar-toggle, .settings-panel, .settings-button, .more-menu"
-      );
-      if (insideKnownPanel) return;
+
+      // Clicking one trigger closes the other popovers, while taps inside the
+      // currently open panel are allowed to interact with its own controls.
+      const insideAssistantMenu = target.closest(".assistant-more-wrap, .assistant-more-menu");
+      const insideSources = target.closest(".assistant-sources-button, .source-panel");
+      const insideModelMenu = target.closest(".composer-model-button, .model-menu");
+      const insideAttachMenu = target.closest(".attach-menu-wrap, .attach-menu");
+      const insideSidebar = target.closest(".sidebar, .sidebar-toggle");
+      const insideSettings = target.closest(".settings-panel, .settings-button");
+      const insideMoreMenu = target.closest(".more-menu");
+
+      if (!insideAssistantMenu) setAssistantMenuIndex(null);
+      if (!insideSources) setOpenSourcesIndex(null);
+      if (!insideModelMenu) setModelMenuOpen(false);
+      if (!insideAttachMenu) setAttachMenuOpen(false);
+      if (!insideMoreMenu) setMoreMenuOpen(false);
+      if (!insideSettings) setSettingsOpen(false);
+      if (!insideSidebar) setMobileMenuOpen(false);
+    }
+    function closeFloatingPanelsOnEscape(event) {
+      if (event.key !== "Escape") return;
       setAssistantMenuIndex(null);
       setOpenSourcesIndex(null);
       setModelMenuOpen(false);
@@ -240,9 +257,14 @@ export default function Home() {
       setMoreMenuOpen(false);
       setSettingsOpen(false);
       setMobileMenuOpen(false);
+      setMessageContextMenu(null);
     }
     document.addEventListener("pointerdown", closeFloatingPanels);
-    return () => document.removeEventListener("pointerdown", closeFloatingPanels);
+    document.addEventListener("keydown", closeFloatingPanelsOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeFloatingPanels);
+      document.removeEventListener("keydown", closeFloatingPanelsOnEscape);
+    };
   }, []);
 
   useEffect(() => {
