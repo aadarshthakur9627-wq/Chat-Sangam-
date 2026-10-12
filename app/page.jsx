@@ -93,7 +93,8 @@ function getCitedSources(content, sources) {
   const cleaned = content
     .replace(/(?:\[(\d+)\u2020[^\]]*\]|【(\d+)\u2020[^】]*】|〖(\d+)\u2020[^〗]*〗)/g, (_, a, b, c) => "[" + (a || b || c) + "]")
     .replace(/\[(\d+)\]\s*\[L\d+(?:[-–—]L?\d+)?\](?:\s*\[L\d+(?:[-–—]L?\d+)?\])*/gi, "[$1]")
-    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]");
+    .replace(/\[(\d+)\]\s*L\d+(?:[-–—]L?\d+)?/gi, "[$1]")
+    .replace(/\[(\d+)\](?:\s*\[\1\])+/g, "[$1]");
   for (const match of cleaned.matchAll(/\[(\d+)\]/g)) {
     const id = Number(match[1]);
     if (id > 0) citedIds.add(String(id));
