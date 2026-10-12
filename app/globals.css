@@ -2242,3 +2242,44 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell.theme-system .appearance-panel,.app-shell.theme-system .model-menu,.app-shell.theme-system .more-menu,.app-shell.theme-system .assistant-more-menu,.app-shell.theme-system .attach-menu{background:rgba(255,255,255,.98);color:#171923;border-color:rgba(20,24,35,.14)}
   .app-shell.theme-system .assistant-more-menu button,.app-shell.theme-system .gradient-chip,.app-shell.theme-system .background-template{color:#343746}
 }
+
+
+/* Functional per-user chat canvas and text colour customization */
+.app-shell{background:var(--bg,#08070b)!important;color:var(--chat-text,#f4f4f7)}
+.app-shell .sidebar{background:var(--panel,#111018)!important;color:var(--text,#f4f4f7)}
+.app-shell .workspace{background-color:var(--custom-background,#08070b)!important;background-image:var(--user-gradient),var(--background-image-url,none),var(--template-background,linear-gradient(145deg,#08070b,#111018))!important;background-position:center,center,center!important;background-size:cover,cover,cover!important;background-repeat:no-repeat!important}
+.app-shell.background-midnight .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,#172554 0,transparent 48%),linear-gradient(145deg,#020617,#0f172a 70%,#111827)!important}
+.app-shell.background-ocean .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,rgba(8,145,178,.28),transparent 52%),linear-gradient(145deg,#082f49,#083344 65%,#0f172a)!important}
+.app-shell.background-forest .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,rgba(22,101,52,.28),transparent 50%),linear-gradient(145deg,#052e16,#10251b 65%,#111827)!important}
+.app-shell.background-sunset .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,rgba(190,24,93,.25),transparent 48%),linear-gradient(145deg,#431407,#312e81 90%)!important}
+.app-shell.background-minimal .workspace{background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(145deg,#171717,#262626)!important}
+.app-shell.background-custom .workspace{background-image:var(--user-gradient),var(--background-image-url,none),var(--custom-background,#08070b)!important}
+.app-shell .messages{color:var(--chat-text,#f4f4f7)}
+.app-shell .message-row.assistant .assistant-answer-bubble{color:var(--assistant-message-text,#f4f4f7)!important;background:color-mix(in srgb,var(--assistant-bubble,#111018) 75%,transparent)!important}
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content p,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content li,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content blockquote,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h1,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h2,
+.app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h3{color:var(--assistant-message-text,#f4f4f7)!important}
+.app-shell .message-row.user .message-bubble{background:var(--user-bubble,#252528)!important;color:var(--user-message-text,#fff)!important}
+.app-shell .message-row.user .message-bubble *{color:var(--user-message-text,#fff)!important}
+.app-shell .topbar{background:color-mix(in srgb,var(--template-background,#111018) 82%,transparent)}
+.background-url-input{width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);font-size:11px;outline:none}
+.background-url-input:focus{border-color:var(--user-accent,#f43f8c);box-shadow:0 0 0 2px color-mix(in srgb,var(--user-accent,#f43f8c) 18%,transparent)}
+.reset-appearance{width:100%;margin-top:14px}
+.app-shell.theme-light .workspace{background-color:#f4f5f8!important}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content p,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content li,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h1,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h2,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h3{color:var(--assistant-message-text,#171923)!important}
+@media(max-width:640px){
+ .appearance-panel{max-height:calc(100dvh - 190px);padding:14px}
+ .background-templates{gap:7px}
+ .background-template{padding:4px;font-size:10px}
+ .background-preview{height:31px}
+ .colour-picker-row{gap:8px}
+}
