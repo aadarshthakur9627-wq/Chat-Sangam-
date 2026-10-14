@@ -27,6 +27,9 @@ export default function AuthGate() {
       setUser(nextUser);
       setAuthLoading(false);
       window.dispatchEvent(new CustomEvent("chat-sangam-auth-changed", { detail: { user: nextUser } }));
+    }).catch(() => {
+      setUser(null);
+      setAuthLoading(false);
     });
 
     const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
