@@ -41,15 +41,20 @@ export async function GET() {
     const ids = (conversations || []).map((chat) => chat.id);
     let messages = [];
     if (ids.length) {
-      const result = await supabase
-        .from("messages")
-        .select("external_id, conversation_id, role, content, metadata, created_at")
-        .in("conversation_id", ids)
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true })
-        .limit(3000);
-      if (result.error) throw result.error;
-      messages = result.data || [];
+      // Supabase projects commonly cap one Data API response at 1,000 rows.
+      // Page through the bounded history window so users don't lose older messages.
+      for (let offset = 0; offset < 3600; offset += 1000) {
+        const result = await supabase
+          .from("messages")
+          .select("external_id, conversation_id, role, content, metadata, created_at")
+          .in("conversation_id", ids)
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + 999);
+        if (result.error) throw result.error;
+        messages.push(...(result.data || []));
+        if (!result.data || result.data.length < 1000) break;
+      }
     }
 
     const byConversation = new Map();
