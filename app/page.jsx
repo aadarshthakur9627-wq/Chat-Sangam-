@@ -185,6 +185,27 @@ function prepareCitationMarkdown(content, sources) {
   });
 }
 
+function sanitizeCloudChats(chats) {
+  return (Array.isArray(chats) ? chats : []).slice(0, 30).map((chat) => ({
+    id: String(chat?.id || ""),
+    title: String(chat?.title || "New conversation").slice(0, 200),
+    createdAt: Number(chat?.createdAt) || Date.now(),
+    updatedAt: Number(chat?.updatedAt) || Date.now(),
+    messages: (Array.isArray(chat?.messages) ? chat.messages : []).slice(-120).map((message) => ({
+      id: typeof message?.id === "string" ? message.id : undefined,
+      role: message?.role,
+      content: typeof message?.content === "string" ? message.content.slice(0, 120000) : "",
+      createdAt: Number(message?.createdAt) || Number(chat?.updatedAt) || Date.now(),
+      modelId: message?.modelId,
+      modelName: message?.modelName,
+      modelProvider: message?.modelProvider,
+      fallbackFrom: message?.fallbackFrom,
+      vision: Boolean(message?.vision),
+      sources: Array.isArray(message?.sources) ? message.sources.slice(0, 8) : [],
+    })),
+  })).filter((chat) => chat.id);
+}
+
 export default function Home() {
   const [reasoningEffort, setReasoningEffort] = useState("medium");
   const [chats, setChats] = useState([]);
@@ -192,6 +213,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [cloudSyncReady, setCloudSyncReady] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -218,6 +240,11 @@ export default function Home() {
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedImages, setAttachedImages] = useState([]);
   const imageCacheRef = useRef(new Map());
+  const chatsRef = useRef(chats);
+
+  useEffect(() => {
+    chatsRef.current = chats;
+  }, [chats]);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -343,6 +370,100 @@ export default function Home() {
       console.error("History save error:", error);
     }
   }, [chats, loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    let cancelled = false;
+
+    async function syncCloudHistory(expectedUserId = null) {
+      setCloudSyncReady(false);
+      try {
+        const response = await fetch("/api/history", { cache: "no-store" });
+        if (response.status === 401) {
+          setCloudSyncReady(false);
+          return;
+        }
+        if (!response.ok) throw new Error("Cloud history is temporarily unavailable.");
+        const data = await response.json();
+        if (cancelled || !data?.userId || (expectedUserId && data.userId !== expectedUserId)) return;
+
+        const userId = data.userId;
+        const previousUserId = localStorage.getItem("chat-sangam-history-user-id");
+        const switchedUser = Boolean(previousUserId && previousUserId !== userId);
+        const localChats = switchedUser ? [] : chatsRef.current;
+        const remoteChats = Array.isArray(data.chats) ? data.chats : [];
+
+        if (remoteChats.length) {
+          const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
+          for (const localChat of localChats) {
+            const remoteChat = mergedById.get(localChat.id);
+            if (!remoteChat || Number(localChat.updatedAt || 0) > Number(remoteChat.updatedAt || 0)) {
+              mergedById.set(localChat.id, localChat);
+            }
+          }
+          const merged = [...mergedById.values()].sort((a, b) => Number(b.updatedAt || 0) - Number(a.updatedAt || 0)).slice(0, 30);
+          setChats(merged);
+          setActiveChatId((current) => merged.some((chat) => chat.id === current) ? current : (merged[0]?.id || null));
+        } else if (localChats.length && !switchedUser) {
+          const saveResponse = await fetch("/api/history", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chats: sanitizeCloudChats(localChats) }),
+          });
+          if (!saveResponse.ok) throw new Error("Could not import local chats to your account.");
+        } else {
+          const freshChats = [createChat()];
+          setChats(freshChats);
+          setActiveChatId(freshChats[0].id);
+          const saveResponse = await fetch("/api/history", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chats: sanitizeCloudChats(freshChats) }),
+          });
+          if (!saveResponse.ok) throw new Error("Could not initialize cloud chat history.");
+        }
+
+        localStorage.setItem("chat-sangam-history-user-id", userId);
+        setCloudSyncReady(true);
+      } catch (error) {
+        console.error("Cloud history sync error:", error);
+      }
+    }
+
+    function onAuthChanged(event) {
+      if (!event.detail?.user) {
+        setCloudSyncReady(false);
+        return;
+      }
+      syncCloudHistory(event.detail.user.id);
+    }
+
+    window.addEventListener("chat-sangam-auth-changed", onAuthChanged);
+    syncCloudHistory();
+    return () => {
+      cancelled = true;
+      window.removeEventListener("chat-sangam-auth-changed", onAuthChanged);
+    };
+  }, [loaded]);
+
+  useEffect(() => {
+    if (!loaded || !cloudSyncReady || loading || !chats.length) return;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("/api/history", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chats: sanitizeCloudChats(chats) }),
+        });
+        if (!response.ok && response.status !== 401) {
+          console.error("Cloud history save failed:", response.status);
+        }
+      } catch (error) {
+        console.error("Cloud history save error:", error);
+      }
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [chats, loaded, cloudSyncReady, loading]);
 
   useEffect(() => {
     let cancelled = false;
