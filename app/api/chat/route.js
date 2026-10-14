@@ -1045,8 +1045,8 @@ export async function POST(request) {
       ? [...new Set(body.compareModels.map(resolveGroqModel))].filter((model) => GROQ_MODEL_CATALOG[model]?.kind === "text").slice(0, 3)
       : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
-    const webSearch = body.webSearch || false;
-    const deepResearchEnabled = body.deepResearch || false;
+    const webSearch = body.webSearch === true;
+    const deepResearchEnabled = body.deepResearch === true;
     const safeReasoning = ["low", "medium", "high"].includes(body.reasoningEffort)
       ? body.reasoningEffort
       : "medium";
