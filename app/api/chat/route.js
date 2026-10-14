@@ -1012,11 +1012,22 @@ function routedModelOrder(requestedModelId) {
   return [primary, ...freeOrder.filter((modelId) => modelId !== primary)];
 }
 
+const MAX_CHAT_REQUEST_BYTES = 5 * 1024 * 1024;
+
 export async function POST(request) {
   try {
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > MAX_CHAT_REQUEST_BYTES) {
+      return Response.json({ error: "This request is too large. Please shorten the conversation or attach smaller files/images." }, { status: 413 });
+    }
+
     let body;
     try {
-      body = await request.json();
+      const rawBody = await request.text();
+      if (new TextEncoder().encode(rawBody).byteLength > MAX_CHAT_REQUEST_BYTES) {
+        return Response.json({ error: "This request is too large. Please shorten the conversation or attach smaller files/images." }, { status: 413 });
+      }
+      body = JSON.parse(rawBody);
     } catch {
       return Response.json({ error: "Invalid request body. Please refresh the page and try again." }, { status: 400 });
     }
