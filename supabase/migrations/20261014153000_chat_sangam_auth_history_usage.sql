@@ -39,7 +39,7 @@ create unique index if not exists messages_user_external_id_key on public.messag
 create index if not exists messages_conversation_created_idx on public.messages(conversation_id, created_at asc);
 create index if not exists messages_user_created_idx on public.messages(user_id, created_at desc);
 
-create table if not exists public.usage_daily (
+create table if not exists private.usage_daily (
   user_id uuid not null references auth.users(id) on delete cascade,
   usage_date date not null default (timezone('utc', now())::date),
   chat_count integer not null default 0 check (chat_count >= 0),
@@ -49,7 +49,7 @@ create table if not exists public.usage_daily (
 alter table public.profiles enable row level security;
 alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
-alter table public.usage_daily enable row level security;
+
 
 revoke all on public.profiles from anon, authenticated;
 grant select on public.profiles to authenticated;
@@ -100,7 +100,8 @@ create policy "messages_delete_own" on public.messages for delete to authenticat
   )
 );
 
-revoke all on public.usage_daily from anon, authenticated;
+alter table private.usage_daily enable row level security;
+revoke all on private.usage_daily from public, anon, authenticated;
 
 create or replace function private.handle_new_chat_sangam_user()
 returns trigger language plpgsql security definer set search_path = ''
@@ -134,7 +135,7 @@ begin
   select p.plan into v_plan from public.profiles p where p.id = v_user_id;
   if v_plan = 'pro' then v_limit := 500; end if;
 
-  insert into public.usage_daily as u (user_id, usage_date, chat_count)
+  insert into private.usage_daily as u (user_id, usage_date, chat_count)
   values (v_user_id, v_day, 1)
   on conflict (user_id, usage_date) do update
     set chat_count = u.chat_count + 1
@@ -142,7 +143,7 @@ begin
   returning chat_count into v_used;
 
   if v_used is null then
-    select u.chat_count into v_used from public.usage_daily u
+    select u.chat_count into v_used from private.usage_daily u
     where u.user_id = v_user_id and u.usage_date = v_day;
     return query select false, coalesce(v_used, 0), v_limit;
   else
@@ -156,4 +157,4 @@ grant execute on function public.consume_chat_sangam_daily_credit() to authentic
 comment on table public.profiles is 'Chat Sangam user profiles; plan is server-controlled and not editable by clients.';
 comment on table public.conversations is 'Private Chat Sangam conversations, isolated by user_id RLS.';
 comment on table public.messages is 'Private Chat Sangam messages, isolated by owner and conversation RLS.';
-comment on table public.usage_daily is 'Server-managed daily chat usage counters; direct client access revoked.';
+comment on table private.usage_daily is 'Private server-managed daily Chat Sangam usage counters; inaccessible through the public Data API.';
