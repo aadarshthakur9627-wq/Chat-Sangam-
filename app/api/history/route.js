@@ -120,12 +120,14 @@ export async function PUT(request) {
     const messageRows = [];
     for (const chat of chats) {
       if (!databaseIds.has(chat?.id) || !Array.isArray(chat?.messages)) continue;
-      for (const message of chat.messages.slice(-120)) {
+      const recentMessages = chat.messages.slice(-120);
+      for (let messageIndex = 0; messageIndex < recentMessages.length; messageIndex += 1) {
+        const message = recentMessages[messageIndex];
         if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string") continue;
         messageRows.push({
           user_id: user.id,
           conversation_id: databaseIds.get(chat.id),
-          external_id: typeof message.id === "string" && message.id.length <= 120 ? message.id : crypto.randomUUID(),
+          external_id: typeof message.id === "string" && message.id.length <= 120 ? message.id : String(chat.id) + ":" + String(Math.max(0, chat.messages.length - recentMessages.length + messageIndex)),
           role: message.role,
           content: message.content.slice(0, 120000),
           metadata: safeMetadata(message),
