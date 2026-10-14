@@ -1,5 +1,6 @@
 import "katex/dist/katex.min.css";
 import "./globals.css";
+import AuthGate from "../components/AuthGate";
 
 export const metadata = {
   title: "Chat Sangam — One workspace. Many AIs.",
@@ -9,7 +10,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{children}<AuthGate /></body>
     </html>
   );
 }

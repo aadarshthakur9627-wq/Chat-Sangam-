@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { createServerSupabaseClient } from "../../../lib/supabase/server";
 
 let groqClient;
 
@@ -1016,6 +1017,12 @@ const MAX_CHAT_REQUEST_BYTES = 5 * 1024 * 1024;
 
 export async function POST(request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      return Response.json({ error: "Please sign in to use Chat Sangam." }, { status: 401 });
+    }
+
     const declaredLength = Number(request.headers.get("content-length") || 0);
     if (declaredLength > MAX_CHAT_REQUEST_BYTES) {
       return Response.json({ error: "This request is too large. Please shorten the conversation or attach smaller files/images." }, { status: 413 });
@@ -1071,6 +1078,19 @@ export async function POST(request) {
     }
 
     const latest = latestUserMessage(messages);
+
+    const { data: usageRows, error: usageError } = await supabase.rpc("consume_chat_sangam_daily_credit");
+    if (usageError) {
+      console.error("Chat usage limit error:", usageError);
+      return Response.json({ error: "Usage limits are temporarily unavailable. Please try again shortly." }, { status: 503 });
+    }
+    const usage = Array.isArray(usageRows) ? usageRows[0] : usageRows;
+    if (!usage?.allowed) {
+      return Response.json({
+        error: "You've reached today's Free plan limit of " + (usage?.daily_limit || 20) + " AI requests. Your quota resets at midnight UTC.",
+        usage: { used: usage?.used || 0, limit: usage?.daily_limit || 20 },
+      }, { status: 429 });
+    }
 
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {

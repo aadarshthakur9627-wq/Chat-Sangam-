@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createServerSupabaseClient } from "../../../lib/supabase/server";
 import { extractText, getDocumentProxy } from "unpdf";
 
 export const runtime = "nodejs";
@@ -12,6 +13,12 @@ const MAX_MULTIPART_REQUEST_BYTES = 11 * 1024 * 1024;
 
 export async function POST(request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      return NextResponse.json({ error: "Please sign in before uploading files." }, { status: 401 });
+    }
+
     const declaredLength = Number(request.headers.get("content-length") || 0);
     if (declaredLength > MAX_MULTIPART_REQUEST_BYTES) {
       return NextResponse.json(
