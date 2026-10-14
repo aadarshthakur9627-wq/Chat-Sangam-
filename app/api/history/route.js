@@ -131,7 +131,7 @@ export async function PUT(request) {
           role: message.role,
           content: message.content.slice(0, 120000),
           metadata: safeMetadata(message),
-          created_at: new Date(Number(message.createdAt) || Number(chat.updatedAt) || Date.now()).toISOString(),
+          created_at: new Date(Number(message.createdAt) || ((Number(chat.updatedAt) || Date.now()) - (chat.messages.length - recentMessages.length + messageIndex))).toISOString(),
         });
       }
     }
