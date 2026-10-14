@@ -216,6 +216,11 @@ export default function Home() {
   const [cloudSyncReady, setCloudSyncReady] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsCenterOpen, setSettingsCenterOpen] = useState(false);
+  const [settingsSection, setSettingsSection] = useState("account");
+  const [modelSearch, setModelSearch] = useState("");
+  const [modelCategory, setModelCategory] = useState("Popular");
+  const [hapticFeedback, setHapticFeedback] = useState(true);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [accentColour, setAccentColour] = useState("#f43f8c");
   const [accentGradient, setAccentGradient] = useState("linear");
@@ -1266,7 +1271,7 @@ export default function Home() {
 
         <div className="sidebar-footer">
           <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
-          <div className="footer-links"><button type="button" onClick={() => setSettingsOpen((value) => !value)} aria-expanded={settingsOpen}>⚙ Settings</button><span>◉ Account</span></div>
+          <div className="footer-links"><button type="button" onClick={() => { setSettingsCenterOpen(true); setSettingsSection("account"); setMobileMenuOpen(false); }} aria-expanded={settingsCenterOpen}>⚙ Settings</button><span>◉ Account</span></div>
           {settingsOpen && <div className="appearance-panel">
             <strong>Appearance</strong>
             <span className="appearance-label">Theme</span>
@@ -1321,8 +1326,12 @@ export default function Home() {
               </button>
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className="model-menu model-menu-portal" role="menu" style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35,#8b5cf625 55%,#0a84ff18)" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)" }}>
-                  <div className="model-menu-head"><span>AI MODELS</span><small>Provider setup status</small></div>
-                  {[AUTO_ENGINE, ...GROQ_MODELS].map((item) => (
+                  <div className="model-sheet-handle" />
+                  <div className="model-menu-head"><span>Choose a model</span><button type="button" className="model-refresh" onClick={() => { setProviderStatus({ groq: null, gemini: null, antigravity: null }); fetch("/api/status").then((response) => response.json()).then((data) => setProviderStatus({ groq: Boolean(data.groq), gemini: Boolean(data.gemini), antigravity: Boolean(data.antigravity) })).catch(() => {}); }} aria-label="Refresh provider status">↻</button></div>
+                  <label className="model-search"><span>⌕</span><input value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder="Search models" aria-label="Search AI models" /><button type="button" onClick={() => setModelSearch("")} aria-label="Clear model search">×</button></label>
+                  <div className="model-categories" role="tablist" aria-label="Model categories">{["Popular","Intelligence","Latest"].map((category) => <button key={category} type="button" role="tab" aria-selected={modelCategory === category} className={modelCategory === category ? "active" : ""} onClick={() => setModelCategory(category)}>{category}</button>)}</div>
+                  <div className="model-auto-label">or pick your own</div>
+                  {[AUTO_ENGINE, ...GROQ_MODELS].filter((item) => item.name.toLowerCase().includes(modelSearch.toLowerCase()) || item.provider.toLowerCase().includes(modelSearch.toLowerCase())).filter((item) => modelCategory !== "Latest" || item.id !== "auto-free").map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
                       onClick={() => {
                         if (item.kind === "vision" && !visionActive) return;
@@ -1366,6 +1375,7 @@ export default function Home() {
                       <span className="model-lock">SOON</span>
                     </button>
                   ))}
+                  {modelSearch && ![AUTO_ENGINE, ...GROQ_MODELS].some((item) => item.name.toLowerCase().includes(modelSearch.toLowerCase()) || item.provider.toLowerCase().includes(modelSearch.toLowerCase())) && <div className="model-empty">No models match your search.</div>}
                 </div>,
                 document.body
               )}
@@ -1666,6 +1676,29 @@ export default function Home() {
            <div className="composer-note">{loading ? "■ Generation in progress · Tap stop to end it." : deepResearch ? "◈ Research Mode is ON · Focused web research with source links." : webSearch ? (effectiveModel.kind === "auto" ? "⌕ Auto routing will choose an available provider for web search." : effectiveModel.provider === "Google Antigravity" ? "⌕ Live web search is ON · Antigravity agent can search and verify current information." : "⌕ Live web search is ON · Search current information with sources.") : effectiveModel.kind === "auto" ? "🔀 Auto (Free) · Uses configured free providers and switches if one is unavailable." : effectiveModel.provider === "Google Antigravity" ? "🚀 Google Antigravity Agent · Agent tools and usage limits apply." : effectiveModel.provider === "Google Gemini" ? "✦ Powered by Google Gemini · Verify important information." : "⚡ Powered by Groq · Chat Sangam may make mistakes. Verify important information."}</div>
         </div>
       </section>
+      {settingsCenterOpen && typeof document !== "undefined" && createPortal(
+        <div className="settings-overlay" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSettingsCenterOpen(false); }}>
+          <section className="settings-center" role="dialog" aria-modal="true" aria-labelledby="settings-center-title">
+            <header className="settings-center-head"><button type="button" className="settings-back" onClick={() => setSettingsCenterOpen(false)} aria-label="Close settings">‹</button><h2 id="settings-center-title">Settings</h2><button type="button" className="settings-close" onClick={() => setSettingsCenterOpen(false)} aria-label="Close settings">×</button></header>
+            <div className="settings-profile"><span className="settings-avatar">✦</span><span><strong>Chat Sangam</strong><small>Signed-in account · synced chat history</small></span><span className="settings-chevron">›</span></div>
+            <div className="settings-plan-card"><div className="settings-plan-title"><span>◇</span><strong>Free Plan</strong><span className="settings-plan-badge">ACTIVE</span></div><p>20 AI requests per day</p><div className="settings-plan-track"><span /></div><small>Daily limit resets at midnight UTC. Usage is enforced securely on the server.</small><button type="button" className="settings-upgrade" onClick={() => setSettingsSection("subscription")}>Explore plans <span>→</span></button></div>
+            <div className="settings-columns">
+              <nav className="settings-nav" aria-label="Settings sections">
+                {[["account","♙","Account"],["subscription","♛","Subscription"],["ai","◉","AI Preferences"],["memory","▤","Memory"],["appearance","◐","Appearance"]].map(([key,icon,label]) => <button key={key} type="button" className={settingsSection === key ? "active" : ""} onClick={() => setSettingsSection(key)}><span>{icon}</span>{label}<b>›</b></button>)}
+              </nav>
+              <div className="settings-section-content">
+                {settingsSection === "account" && <><h3>Account</h3><p className="settings-description">Manage your Chat Sangam account and private workspace.</p><div className="settings-info-row"><span>Cloud chat history</span><strong className="settings-green">Enabled</strong></div><div className="settings-info-row"><span>Privacy</span><strong>Private to your account</strong></div><div className="settings-info-row"><span>Current plan</span><strong>Free</strong></div><p className="settings-note">Email and password sign-in are managed securely by Supabase Authentication.</p></>}
+                {settingsSection === "subscription" && <><h3>Subscription</h3><p className="settings-description">Start free. Upgrade only when you need more capacity.</p><div className="settings-feature-card"><strong>Free</strong><h4>₹0 <small>/ month</small></h4><p>20 AI requests daily · available free providers · cloud history</p><span className="settings-current-plan">Current plan</span></div><div className="settings-feature-card settings-pro-card"><strong>Pro · Coming soon</strong><h4>More room to work</h4><p>Higher limits, priority features and advanced workflows. Payments are not enabled yet.</p></div></>}
+                {settingsSection === "ai" && <><h3>AI Preferences</h3><p className="settings-description">Choose how Chat Sangam responds.</p><div className="settings-info-row"><span>Default model</span><strong>{effectiveModel.name}</strong></div><button className="settings-action" type="button" onClick={() => { setSettingsCenterOpen(false); setModelMenuOpen(true); }}>Choose AI model <span>→</span></button><div className="settings-info-row"><span>Web search</span><button type="button" className={"settings-toggle " + (webSearch ? "on" : "")} onClick={() => setWebSearch((value) => !value)}>{webSearch ? "On" : "Off"}</button></div><div className="settings-info-row"><span>Deep research</span><button type="button" className={"settings-toggle " + (deepResearch ? "on" : "")} onClick={() => { setDeepResearch((value) => !value); setWebSearch(true); }}>{deepResearch ? "On" : "Off"}</button></div></>}
+                {settingsSection === "memory" && <><h3>Memory</h3><p className="settings-description">Your chat history is synced privately to your account. Personal cross-chat memory controls are not enabled yet.</p><div className="settings-feature-card"><strong>Chat history</strong><p>Recent conversations stay available across signed-in sessions. You can delete individual chats from the sidebar.</p></div><div className="settings-info-row"><span>Cross-chat memory</span><strong className="settings-muted">Coming soon</strong></div></>}
+                {settingsSection === "appearance" && <><h3>Appearance</h3><p className="settings-description">Personalize the look of your workspace.</p><span className="settings-label">Theme</span><div className="settings-choice-row">{[["dark","Dark"],["light","Light"],["system","System"]].map(([value,label]) => <button key={value} type="button" className={appearanceMode === value ? "selected" : ""} onClick={() => setAppearanceMode(value)}>{label}</button>)}</div><span className="settings-label">Accent colour</span><div className="accent-options settings-accents">{[["#f43f8c","Pink"],["#0a84ff","Blue"],["#30d158","Green"],["#bf5af2","Purple"],["#ff9f0a","Orange"]].map(([colour,label]) => <button key={colour} type="button" className={"accent-swatch " + (accentColour === colour ? "selected" : "")} style={{ "--swatch": colour }} onClick={() => setAccentColour(colour)} aria-label={label} title={label}><span /></button>)}</div><div className="settings-info-row"><span>Haptic feedback</span><button type="button" className={"settings-toggle " + (hapticFeedback ? "on" : "")} onClick={() => setHapticFeedback((value) => !value)}>{hapticFeedback ? "On" : "Off"}</button></div></>}
+              </div>
+            </div>
+            <footer className="settings-center-foot"><span>Chat Sangam · One workspace. Many AIs.</span><button type="button" onClick={() => setSettingsCenterOpen(false)}>Done</button></footer>
+          </section>
+        </div>,
+        document.body
+      )}
     </main>
   );
 }
