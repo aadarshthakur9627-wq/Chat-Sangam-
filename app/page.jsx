@@ -1271,7 +1271,7 @@ export default function Home() {
 
         <div className="sidebar-footer">
           <div className="footer-pill"><span className="status-dot" /> All systems ready</div>
-          <div className="footer-links"><button type="button" onClick={() => { setSettingsCenterOpen(true); setSettingsSection("account"); setMobileMenuOpen(false); }} aria-expanded={settingsCenterOpen}>⚙ Settings</button><span>◉ Account</span></div>
+          <div className="footer-links"><button type="button" onClick={() => { setSettingsCenterOpen(true); setSettingsSection("appearance"); setMobileMenuOpen(false); }} aria-expanded={settingsCenterOpen}>⚙ Settings</button><button type="button" onClick={() => { setSettingsCenterOpen(true); setSettingsSection("account"); setMobileMenuOpen(false); }} aria-expanded={settingsCenterOpen}>◉ Account</button></div>
           {settingsOpen && <div className="appearance-panel">
             <strong>Appearance</strong>
             <span className="appearance-label">Theme</span>
