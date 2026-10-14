@@ -8,8 +8,18 @@ const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_TEXT_CHARS = 120000;
 const MAX_PAGES = 200;
 
+const MAX_MULTIPART_REQUEST_BYTES = 11 * 1024 * 1024;
+
 export async function POST(request) {
   try {
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > MAX_MULTIPART_REQUEST_BYTES) {
+      return NextResponse.json(
+        { error: "Upload request is too large. Maximum file size is 10 MB." },
+        { status: 413 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 
