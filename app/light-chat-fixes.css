@@ -48,3 +48,117 @@
     border-radius: 14px !important;
   }
 }
+
+/* Light appearance: enforce readable contrast for every floating menu and the answer surface. */
+.theme-light .message-row.assistant .assistant-answer-bubble,
+.theme-system .message-row.assistant .assistant-answer-bubble {
+  background:#fff!important;
+  color:#24242a!important;
+  border:1px solid #e1e2e8!important;
+  padding:14px 16px!important;
+  border-radius:16px!important;
+  box-shadow:0 2px 12px rgba(20,20,30,.06)!important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content,
+.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content *,
+.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content * {
+  color:#24242a!important;
+}
+.theme-light .assistant-more-menu,
+.theme-light .message-context-menu,
+.theme-light .attach-menu,
+.theme-light .model-menu,
+.theme-light .top-more-menu,
+.theme-light .appearance-panel,
+.theme-system .assistant-more-menu,
+.theme-system .message-context-menu,
+.theme-system .attach-menu,
+.theme-system .model-menu,
+.theme-system .top-more-menu,
+.theme-system .appearance-panel {
+  background:#fff!important;
+  color:#24242a!important;
+  border:1px solid #dedfe6!important;
+  box-shadow:0 16px 44px rgba(20,20,30,.20)!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+.theme-light .assistant-more-menu button,
+.theme-light .message-context-menu button,
+.theme-light .attach-menu button,
+.theme-light .model-menu button,
+.theme-light .top-more-menu button,
+.theme-system .assistant-more-menu button,
+.theme-system .message-context-menu button,
+.theme-system .attach-menu button,
+.theme-system .model-menu button,
+.theme-system .top-more-menu button {
+  color:#292932!important;
+  background:#fff!important;
+  border-color:#e8e8ee!important;
+}
+.theme-light .assistant-more-menu button:hover,
+.theme-light .message-context-menu button:hover,
+.theme-light .attach-menu button:hover,
+.theme-light .model-menu button:hover,
+.theme-light .top-more-menu button:hover,
+.theme-system .assistant-more-menu button:hover,
+.theme-system .message-context-menu button:hover,
+.theme-system .attach-menu button:hover,
+.theme-system .model-menu button:hover,
+.theme-system .top-more-menu button:hover {
+  color:#17171b!important;
+  background:#f4f4f8!important;
+}
+.theme-light .assistant-more-time,
+.theme-light .appearance-label,
+.theme-light .menu-state,
+.theme-system .assistant-more-time,
+.theme-system .appearance-label,
+.theme-system .menu-state {
+  color:#62626e!important;
+}
+.theme-light .reasoning-quick-picks > span,
+.theme-light .reasoning-chip,
+.theme-light .gradient-chip,
+.theme-system .reasoning-quick-picks > span,
+.theme-system .reasoning-chip,
+.theme-system .gradient-chip {
+  color:#42424c!important;
+}
+.theme-light .reasoning-chip.selected,
+.theme-light .gradient-chip.selected,
+.theme-system .reasoning-chip.selected,
+.theme-system .gradient-chip.selected {
+  background:#57213f!important;
+  color:#fff!important;
+  border-color:#8b3b69!important;
+}
+.theme-light .message-row.assistant .assistant-action-bar,
+.theme-system .message-row.assistant .assistant-action-bar {
+  border-top-color:#e5e7eb!important;
+}
+.theme-light .message-row.assistant .action-icon-button,
+.theme-system .message-row.assistant .action-icon-button {
+  color:#656571!important;
+}
+@media (max-width:700px) {
+  .theme-light .message-row.assistant .assistant-answer-bubble,
+  .theme-system .message-row.assistant .assistant-answer-bubble {
+    padding:13px 14px!important;
+  }
+}
+@media (prefers-color-scheme:light) {
+  .theme-system .message-row.assistant .assistant-answer-bubble {
+    background:#fff!important;color:#24242a!important;border-color:#e1e2e8!important;
+  }
+  .theme-system .message-row.assistant .assistant-answer-bubble .markdown-content,
+  .theme-system .message-row.assistant .assistant-answer-bubble .markdown-content * { color:#24242a!important; }
+  .theme-system .assistant-more-menu,
+  .theme-system .message-context-menu,
+  .theme-system .attach-menu,
+  .theme-system .model-menu,
+  .theme-system .top-more-menu,
+  .theme-system .appearance-panel { background:#fff!important;color:#24242a!important;border-color:#dedfe6!important; }
+}
