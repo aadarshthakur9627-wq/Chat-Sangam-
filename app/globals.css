@@ -2422,3 +2422,83 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     font-size: 12px !important;
   }
 }
+
+
+/* Accessible horizontal table scroller: keep columns readable on narrow phones. */
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto !important;
+  scrollbar-color: #a83b78 #29232d;
+  border: 1px solid rgba(244, 63, 140, .28);
+  border-radius: 10px;
+  position: relative;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll::-webkit-scrollbar {
+  height: 9px !important;
+  display: block !important;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll::-webkit-scrollbar-track {
+  background: #29232d;
+  border-radius: 8px;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll::-webkit-scrollbar-thumb {
+  background: #a83b78;
+  border: 2px solid #29232d;
+  border-radius: 8px;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll table,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(th:nth-child(3):last-child) table,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(td:nth-child(3):last-child) table {
+  width: max-content !important;
+  min-width: 520px !important;
+  max-width: none !important;
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll th,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll td,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(th:nth-child(3):last-child) th,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(th:nth-child(3):last-child) td,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(td:nth-child(3):last-child) th,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(td:nth-child(3):last-child) td {
+  min-width: 125px !important;
+  max-width: 280px !important;
+  padding: 10px 12px !important;
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  vertical-align: top !important;
+}
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll th:first-child,
+.message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll td:first-child {
+  min-width: 48px !important;
+}
+@media (max-width: 640px) {
+  .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll::after {
+    content: "Swipe left or right to read the full table  ↔";
+    display: block;
+    position: sticky;
+    left: 0;
+    width: max-content;
+    padding: 6px 10px;
+    color: #e8a4c7;
+    background: #17131c;
+    border-top: 1px solid rgba(244, 63, 140, .18);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll table,
+  .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(th:nth-child(3):last-child) table,
+  .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll:has(td:nth-child(3):last-child) table {
+    min-width: 520px !important;
+  }
+}
