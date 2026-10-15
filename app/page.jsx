@@ -303,7 +303,7 @@ export default function Home() {
       // currently open panel are allowed to interact with its own controls.
       const insideAssistantMenu = target.closest(".assistant-more-wrap, .assistant-more-menu");
       const insideSources = target.closest(".assistant-sources-button, .source-panel");
-      const insideModelMenu = target.closest(".composer-model-button, .model-menu");
+      const insideModelMenu = target.closest(".composer-model-button, .model-selector-button, .model-menu");
       const insideAttachMenu = target.closest(".attach-menu-wrap, .attach-menu");
       // Include the actual mobile hamburger trigger and the topbar overflow
       // menu. Without these selectors, the document click handler immediately
