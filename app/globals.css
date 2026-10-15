@@ -2588,3 +2588,228 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     color: #fff !important;
   }
 }
+
+
+/* Complete light theme on the mobile workspace: override older mobile-only dark
+   surface rules so the selected theme applies to the whole app, not just sidebar. */
+.app-shell.theme-light {
+  --bg: #f4f5f8 !important;
+  --panel: #ffffff !important;
+  --panel2: #eef0f5 !important;
+  --line: rgba(20,24,35,.12) !important;
+  --text: #171923 !important;
+  --muted: #626779 !important;
+  --dim: #818697 !important;
+  color: #171923 !important;
+  background: #f4f5f8 !important;
+}
+.app-shell.theme-light .workspace,
+.app-shell.theme-light .workspace .messages,
+.app-shell.theme-light .workspace .conversation,
+.app-shell.theme-light .workspace .welcome,
+.app-shell.theme-light .workspace .topbar {
+  color: #171923 !important;
+  background-color: #f4f5f8 !important;
+}
+.app-shell.theme-light .workspace {
+  background-image: var(--user-gradient), radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--user-accent,#f43f8c) 5%, transparent), transparent 42%) !important;
+}
+.app-shell.theme-light .topbar {
+  border-bottom: 1px solid rgba(20,24,35,.08) !important;
+}
+.app-shell.theme-light .topbar button,
+.app-shell.theme-light .topbar .eyebrow,
+.app-shell.theme-light .welcome > p,
+.app-shell.theme-light .trust-row {
+  color: #626779 !important;
+}
+.app-shell.theme-light .welcome h2 {
+  color: #171923 !important;
+}
+.app-shell.theme-light .welcome h2 span {
+  background: none !important;
+  -webkit-text-fill-color: #171923 !important;
+  color: #171923 !important;
+}
+.app-shell.theme-light .prompt-card {
+  color: #171923 !important;
+  background: #ffffff !important;
+  border-color: color-mix(in srgb, var(--user-accent,#f43f8c) 22%, rgba(20,24,35,.1)) !important;
+  box-shadow: 0 2px 8px rgba(20,24,35,.035) !important;
+}
+.app-shell.theme-light .prompt-card strong,
+.app-shell.theme-light .prompt-card > span,
+.app-shell.theme-light .prompt-card > b {
+  color: #252938 !important;
+}
+.app-shell.theme-light .prompt-card small {
+  color: #626779 !important;
+}
+.app-shell.theme-light .prompt-card .prompt-icon {
+  background: color-mix(in srgb, var(--user-accent,#f43f8c) 12%, #ffffff) !important;
+  color: var(--user-accent,#f43f8c) !important;
+}
+.app-shell.theme-light .composer-dock {
+  background: linear-gradient(to bottom, transparent, rgba(244,245,248,.94) 25%, #f4f5f8 52%) !important;
+}
+.app-shell.theme-light .composer {
+  background: rgba(255,255,255,.96) !important;
+  border-color: rgba(20,24,35,.12) !important;
+  color: #171923 !important;
+  box-shadow: 0 8px 30px rgba(20,24,35,.07) !important;
+}
+.app-shell.theme-light .composer textarea,
+.app-shell.theme-light .composer input,
+.app-shell.theme-light .composer .message-input,
+.app-shell.theme-light .composer-placeholder {
+  color: #171923 !important;
+  -webkit-text-fill-color: #171923 !important;
+}
+.app-shell.theme-light .composer textarea::placeholder,
+.app-shell.theme-light .composer input::placeholder {
+  color: #777d8d !important;
+  -webkit-text-fill-color: #777d8d !important;
+  opacity: 1 !important;
+}
+.app-shell.theme-light .composer .attach-button,
+.app-shell.theme-light .composer .composer-model-button,
+.app-shell.theme-light .composer .model-strip {
+  color: #343746 !important;
+}
+.app-shell.theme-light .messages {
+  background-image: none !important;
+}
+.app-shell.theme-light .sidebar {
+  background: #ffffff !important;
+  color: #171923 !important;
+  border-right-color: rgba(20,24,35,.12) !important;
+}
+.app-shell.theme-light .sidebar .brand-copy strong,
+.app-shell.theme-light .sidebar .history-item,
+.app-shell.theme-light .sidebar .history-item strong {
+  color: #171923 !important;
+}
+.app-shell.theme-light .sidebar .brand-copy small,
+.app-shell.theme-light .sidebar .history-header,
+.app-shell.theme-light .sidebar .history-item small,
+.app-shell.theme-light .sidebar .sidebar-search {
+  color: #626779 !important;
+}
+.app-shell.theme-light .sidebar .sidebar-search input {
+  color: #171923 !important;
+}
+.app-shell.theme-light .sidebar .history-item.selected,
+.app-shell.theme-light .sidebar .new-chat-button {
+  color: #ffffff !important;
+}
+.app-shell.theme-light .sidebar .history-item.selected *,
+.app-shell.theme-light .sidebar .new-chat-button * {
+  color: #ffffff !important;
+}
+.app-shell.theme-light .top-more-menu,
+.app-shell.theme-light .more-menu,
+.app-shell.theme-light .assistant-more-menu,
+.app-shell.theme-light .attach-menu,
+.app-shell.theme-light .model-menu {
+  background: #ffffff !important;
+  color: #171923 !important;
+  border-color: rgba(20,24,35,.14) !important;
+}
+@media (prefers-color-scheme: light) {
+  .app-shell.theme-system {
+    --bg: #f4f5f8 !important;
+    --panel: #ffffff !important;
+    --panel2: #eef0f5 !important;
+    --line: rgba(20,24,35,.12) !important;
+    --text: #171923 !important;
+    --muted: #626779 !important;
+    --dim: #818697 !important;
+    color: #171923 !important;
+    background: #f4f5f8 !important;
+  }
+  .app-shell.theme-system .workspace,
+  .app-shell.theme-system .workspace .messages,
+  .app-shell.theme-system .workspace .conversation,
+  .app-shell.theme-system .workspace .welcome,
+  .app-shell.theme-system .workspace .topbar {
+    color: #171923 !important;
+    background-color: #f4f5f8 !important;
+  }
+  .app-shell.theme-system .workspace {
+    background-image: var(--user-gradient), radial-gradient(ellipse at 80% 0%, color-mix(in srgb, var(--user-accent,#f43f8c) 5%, transparent), transparent 42%) !important;
+  }
+  .app-shell.theme-system .topbar { border-bottom: 1px solid rgba(20,24,35,.08) !important; }
+  .app-shell.theme-system .topbar button,
+  .app-shell.theme-system .topbar .eyebrow,
+  .app-shell.theme-system .welcome > p,
+  .app-shell.theme-system .trust-row { color: #626779 !important; }
+  .app-shell.theme-system .welcome h2 { color: #171923 !important; }
+  .app-shell.theme-system .welcome h2 span {
+    background: none !important;
+    -webkit-text-fill-color: #171923 !important;
+    color: #171923 !important;
+  }
+  .app-shell.theme-system .prompt-card {
+    color: #171923 !important;
+    background: #ffffff !important;
+    border-color: color-mix(in srgb, var(--user-accent,#f43f8c) 22%, rgba(20,24,35,.1)) !important;
+    box-shadow: 0 2px 8px rgba(20,24,35,.035) !important;
+  }
+  .app-shell.theme-system .prompt-card strong,
+  .app-shell.theme-system .prompt-card > span,
+  .app-shell.theme-system .prompt-card > b { color: #252938 !important; }
+  .app-shell.theme-system .prompt-card small { color: #626779 !important; }
+  .app-shell.theme-system .prompt-card .prompt-icon {
+    background: color-mix(in srgb, var(--user-accent,#f43f8c) 12%, #ffffff) !important;
+    color: var(--user-accent,#f43f8c) !important;
+  }
+  .app-shell.theme-system .composer-dock {
+    background: linear-gradient(to bottom, transparent, rgba(244,245,248,.94) 25%, #f4f5f8 52%) !important;
+  }
+  .app-shell.theme-system .composer {
+    background: rgba(255,255,255,.96) !important;
+    border-color: rgba(20,24,35,.12) !important;
+    color: #171923 !important;
+    box-shadow: 0 8px 30px rgba(20,24,35,.07) !important;
+  }
+  .app-shell.theme-system .composer textarea,
+  .app-shell.theme-system .composer input,
+  .app-shell.theme-system .composer .message-input,
+  .app-shell.theme-system .composer-placeholder {
+    color: #171923 !important;
+    -webkit-text-fill-color: #171923 !important;
+  }
+  .app-shell.theme-system .composer textarea::placeholder,
+  .app-shell.theme-system .composer input::placeholder {
+    color: #777d8d !important;
+    -webkit-text-fill-color: #777d8d !important;
+    opacity: 1 !important;
+  }
+  .app-shell.theme-system .messages { background-image: none !important; }
+  .app-shell.theme-system .sidebar {
+    background: #ffffff !important;
+    color: #171923 !important;
+    border-right-color: rgba(20,24,35,.12) !important;
+  }
+  .app-shell.theme-system .sidebar .brand-copy strong,
+  .app-shell.theme-system .sidebar .history-item,
+  .app-shell.theme-system .sidebar .history-item strong { color: #171923 !important; }
+  .app-shell.theme-system .sidebar .brand-copy small,
+  .app-shell.theme-system .sidebar .history-header,
+  .app-shell.theme-system .sidebar .history-item small,
+  .app-shell.theme-system .sidebar .sidebar-search { color: #626779 !important; }
+  .app-shell.theme-system .sidebar .sidebar-search input { color: #171923 !important; }
+  .app-shell.theme-system .sidebar .history-item.selected,
+  .app-shell.theme-system .sidebar .new-chat-button { color: #ffffff !important; }
+  .app-shell.theme-system .sidebar .history-item.selected *,
+  .app-shell.theme-system .sidebar .new-chat-button * { color: #ffffff !important; }
+  .app-shell.theme-system .top-more-menu,
+  .app-shell.theme-system .more-menu,
+  .app-shell.theme-system .assistant-more-menu,
+  .app-shell.theme-system .attach-menu,
+  .app-shell.theme-system .model-menu {
+    background: #ffffff !important;
+    color: #171923 !important;
+    border-color: rgba(20,24,35,.14) !important;
+  }
+}
