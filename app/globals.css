@@ -2991,3 +2991,69 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell.theme-system .model-strip .selected-model small,
   .app-shell.theme-system .model-strip .live-label { color: #343746 !important; }
 }
+
+
+/* Final light-theme contrast correction: never inherit a custom/dark text token on a light chat surface. */
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble {
+  --assistant-message-text:#171923;
+  box-sizing:border-box!important;
+  padding:14px 16px!important;
+  background:#fff!important;
+  color:#171923!important;
+  border:1px solid #e1e3e8!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content p,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content li,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content blockquote,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h1,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h2,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h3,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h4,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h5,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h6,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content td,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content th {
+  color:#171923!important;
+  opacity:1!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content strong,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content b {
+  color:#111318!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content a,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content a[href^="#source-"] {
+  color:#86198f!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll {
+  background:#fff!important;
+  border-color:#dfe1e7!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content table,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content td {
+  background:#fff!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content th {
+  background:#f1f2f6!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex * {
+  color:#171923!important;
+  fill:#171923!important;
+  opacity:1!important;
+}
+/* Preserve intentional dark code panels while keeping their code readable. */
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .code-block,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content pre {
+  background:#111018!important;
+  color:#f4f4f7!important;
+}
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .code-block *,
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content pre code {
+  color:#f4f4f7!important;
+}
+@media(max-width:640px) {
+  .app-shell.theme-light .message-row.assistant .assistant-answer-bubble {
+    padding:14px 14px!important;
+  }
+}
