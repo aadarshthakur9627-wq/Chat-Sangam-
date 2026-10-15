@@ -2936,3 +2936,58 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     color: #8b1737 !important;
   }
 }
+
+
+/* Finish light-mode contrast for the compact mobile header and Auto selector. */
+.app-shell.theme-light .topbar .top-action,
+.app-shell.theme-light .topbar .more-icon-chip,
+.app-shell.theme-light .topbar .new-chat-icon-chip {
+  background: #ffffff !important;
+  color: #343746 !important;
+  border: 1px solid rgba(20,24,35,.12) !important;
+  box-shadow: 0 2px 8px rgba(20,24,35,.06) !important;
+}
+.app-shell.theme-light .topbar .top-action svg {
+  stroke: currentColor !important;
+}
+.app-shell.theme-light .composer .composer-model-button {
+  background: color-mix(in srgb, var(--user-accent,#f43f8c) 11%, #ffffff) !important;
+  color: #342333 !important;
+  border-color: color-mix(in srgb, var(--user-accent,#f43f8c) 30%, rgba(20,24,35,.1)) !important;
+}
+.app-shell.theme-light .composer .composer-model-button span,
+.app-shell.theme-light .composer .composer-model-button b {
+  color: #342333 !important;
+  -webkit-text-fill-color: #342333 !important;
+}
+.app-shell.theme-light .model-strip .selected-model,
+.app-shell.theme-light .model-strip .selected-model strong,
+.app-shell.theme-light .model-strip .selected-model small,
+.app-shell.theme-light .model-strip .live-label {
+  color: #343746 !important;
+}
+@media (prefers-color-scheme: light) {
+  .app-shell.theme-system .topbar .top-action,
+  .app-shell.theme-system .topbar .more-icon-chip,
+  .app-shell.theme-system .topbar .new-chat-icon-chip {
+    background: #ffffff !important;
+    color: #343746 !important;
+    border: 1px solid rgba(20,24,35,.12) !important;
+    box-shadow: 0 2px 8px rgba(20,24,35,.06) !important;
+  }
+  .app-shell.theme-system .topbar .top-action svg { stroke: currentColor !important; }
+  .app-shell.theme-system .composer .composer-model-button {
+    background: color-mix(in srgb, var(--user-accent,#f43f8c) 11%, #ffffff) !important;
+    color: #342333 !important;
+    border-color: color-mix(in srgb, var(--user-accent,#f43f8c) 30%, rgba(20,24,35,.1)) !important;
+  }
+  .app-shell.theme-system .composer .composer-model-button span,
+  .app-shell.theme-system .composer .composer-model-button b {
+    color: #342333 !important;
+    -webkit-text-fill-color: #342333 !important;
+  }
+  .app-shell.theme-system .model-strip .selected-model,
+  .app-shell.theme-system .model-strip .selected-model strong,
+  .app-shell.theme-system .model-strip .selected-model small,
+  .app-shell.theme-system .model-strip .live-label { color: #343746 !important; }
+}
