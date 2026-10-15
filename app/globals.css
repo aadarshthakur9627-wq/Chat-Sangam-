@@ -2263,7 +2263,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h1,
 .app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h2,
 .app-shell .message-row.assistant .assistant-answer-bubble .markdown-content h3{color:var(--assistant-message-text,#f4f4f7)!important}
-.app-shell .message-row.user .message-bubble{background:var(--user-bubble,#252528)!important;color:var(--user-message-text,#fff)!important}
+.app-shell .message-row.user .message-bubble{background:var(--user-gradient),linear-gradient(135deg,color-mix(in srgb,var(--user-accent,#f43f8c) 36%,var(--user-bubble,#252528)),var(--user-bubble,#252528))!important;color:var(--user-message-text,#fff)!important}
 .app-shell .message-row.user .message-bubble *{color:var(--user-message-text,#fff)!important}
 .app-shell .topbar{background:color-mix(in srgb,var(--template-background,#111018) 82%,transparent)}
 .background-url-input{width:100%;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--text);font-size:11px;outline:none}
