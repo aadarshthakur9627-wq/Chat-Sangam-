@@ -329,10 +329,13 @@ export default function Home() {
       setMobileMenuOpen(false);
       setMessageContextMenu(null);
     }
-    document.addEventListener("pointerdown", closeFloatingPanels);
+    // Close floating panels on completed clicks, not pointerdown. On mobile,
+    // pointerdown fires as soon as a finger touches the screen, so a normal
+    // scroll gesture can dismiss the Sources panel before scrolling begins.
+    document.addEventListener("click", closeFloatingPanels);
     document.addEventListener("keydown", closeFloatingPanelsOnEscape);
     return () => {
-      document.removeEventListener("pointerdown", closeFloatingPanels);
+      document.removeEventListener("click", closeFloatingPanels);
       document.removeEventListener("keydown", closeFloatingPanelsOnEscape);
     };
   }, []);
