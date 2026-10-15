@@ -2337,3 +2337,56 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .settings-profile-button:hover,.settings-profile-button:focus-visible{border-color:rgba(244,63,140,.38);outline:none;background:#29272f}
 .settings-profile-copy{display:grid;gap:4px;flex:1;min-width:0}
 .settings-profile-copy strong{overflow-wrap:anywhere}
+
+
+/* Mobile answer typography fix: prevent dense AI replies from looking oversized. */
+@media (max-width: 640px) {
+  .message-row.assistant .assistant-answer-bubble {
+    padding: 0 1px !important;
+    min-width: 0 !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content {
+    font-size: 14px !important;
+    line-height: 1.62 !important;
+    letter-spacing: 0 !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content p {
+    margin: 0 0 11px !important;
+    line-height: 1.62 !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content h1 {
+    font-size: 20px !important;
+    line-height: 1.3 !important;
+    letter-spacing: -.25px !important;
+    margin: 17px 0 8px !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content h2 {
+    font-size: 17px !important;
+    line-height: 1.35 !important;
+    letter-spacing: 0 !important;
+    margin: 15px 0 7px !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content h3 {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    margin: 13px 0 6px !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content strong,
+  .message-row.assistant .assistant-answer-bubble .markdown-content b {
+    font-weight: 650 !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content ul,
+  .message-row.assistant .assistant-answer-bubble .markdown-content ol {
+    margin: 7px 0 12px !important;
+    padding-left: 21px !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content li {
+    margin: 4px 0 !important;
+    line-height: 1.6 !important;
+  }
+  .message-row.assistant .assistant-answer-bubble .markdown-content hr {
+    margin: 14px 0 !important;
+  }
+}
