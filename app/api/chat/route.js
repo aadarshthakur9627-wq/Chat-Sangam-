@@ -236,9 +236,9 @@ async function createGroqCompletion(params) {
 }
 
 async function browserSearch(query, forceSearch = false, model = GROQ_MODEL) {
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
-  const currentTimestamp = now.toISOString();
+  const current = getCurrentIndiaDateTime();
+  const today = current.date;
+  const currentTimestamp = current.timestamp;
   const freshnessQuery = [
     "Current date in India: " + today + ". Current timestamp: " + currentTimestamp + " (Asia/Kolkata, UTC+05:30).",
     "Search the web for the latest information available as of this exact timestamp, not merely as of the calendar date.",
@@ -476,8 +476,6 @@ function normalizeSearchAnswer(answer) {
     .replace(/\s*〖L\d+(?:[-–—]L?\d+)?〗/gi, "")
     // Groq/Exa can emit zero-based citation placeholders such as [0].
     .replace(/\[0\]/g, "")
-    .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
-    .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
     .replace(/\](?=[A-Za-z])/g, "] ")
     .replace(/\[(\d+)\]\s+\[\1\]/g, "[$1]")
     .replace(/\s{3,}/g, "  ")
@@ -485,77 +483,10 @@ function normalizeSearchAnswer(answer) {
 }
 
 function normalizeDeepResearchAnswer(answer) {
-  const normalized = normalizeSearchAnswer(answer);
-  if (!normalized) return "";
-
-  const lines = normalized.split("\n");
-  const output = [];
-  let i = 0;
-
-  function cells(line) {
-    return line
-      .trim()
-      .replace(/^\|/, "")
-      .replace(/\|$/, "")
-      .split("|")
-      .map((cell) => cell.trim());
-  }
-
-  function isSeparator(line) {
-    const parts = cells(line);
-    return parts.length >= 2 && parts.every((part) => /^:?-{2,}:?$/.test(part));
-  }
-
-  while (i < lines.length) {
-    if (lines[i].includes("|") && i + 1 < lines.length && isSeparator(lines[i + 1])) {
-      const headers = cells(lines[i]);
-      const rows = [];
-      let j = i + 2;
-
-      while (j < lines.length && lines[j].includes("|") && lines[j].trim()) {
-        const row = cells(lines[j]);
-        if (row.length >= 2 && !isSeparator(lines[j])) rows.push(row);
-        j += 1;
-      }
-
-      if (headers.length >= 2 && rows.length) {
-        for (const row of rows) {
-          const parts = [];
-          headers.forEach((header, index) => {
-            const value = row[index] || "";
-            if (!value) return;
-            parts.push("**" + header + ":** " + value);
-          });
-          if (parts.length) output.push("- " + parts.join(" · "));
-        }
-        if (output.length) output.push("");
-        i = j;
-        continue;
-      }
-    }
-
-    if (isSeparator(lines[i])) {
-      i += 1;
-      continue;
-    }
-
-    if (lines[i].includes("|") && cells(lines[i]).length >= 2) {
-      const parts = cells(lines[i]).filter(Boolean);
-      if (parts.length >= 2) {
-        output.push("- " + parts.join(" · "));
-        i += 1;
-        continue;
-      }
-    }
-
-    output.push(lines[i]);
-    i += 1;
-  }
-
-  return output
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  // Keep valid Markdown tables intact. The UI renders them with remark-gfm
+  // inside a horizontal-scroll wrapper; flattening them here broke explicit
+  // table requests before they ever reached the client.
+  return normalizeSearchAnswer(answer);
 }
 
 function formatSources(results) {
