@@ -2502,3 +2502,89 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     min-width: 520px !important;
   }
 }
+
+
+/* Make the Settings dialog itself respond to the selected appearance mode. */
+.settings-center.theme-light {
+  background: #f7f8fc !important;
+  color: #171923 !important;
+  border-color: rgba(20,24,35,.14) !important;
+}
+.settings-center.theme-light .settings-center-head,
+.settings-center.theme-light .settings-center-head h2,
+.settings-center.theme-light .settings-profile,
+.settings-center.theme-light .settings-plan-card,
+.settings-center.theme-light .settings-feature-card,
+.settings-center.theme-light .settings-section-content,
+.settings-center.theme-light .settings-action,
+.settings-center.theme-light .settings-choice-row {
+  color: #171923 !important;
+}
+.settings-center.theme-light .settings-profile,
+.settings-center.theme-light .settings-plan-card,
+.settings-center.theme-light .settings-feature-card,
+.settings-center.theme-light .settings-section-content,
+.settings-center.theme-light .settings-action,
+.settings-center.theme-light .settings-choice-row {
+  background: #fff !important;
+  border-color: rgba(20,24,35,.12) !important;
+}
+.settings-center.theme-light .settings-description,
+.settings-center.theme-light .settings-label,
+.settings-center.theme-light .settings-info-row > span,
+.settings-center.theme-light .settings-center-foot {
+  color: #626779 !important;
+}
+.settings-center.theme-light .settings-back,
+.settings-center.theme-light .settings-close,
+.settings-center.theme-light .settings-nav button,
+.settings-center.theme-light .settings-toggle {
+  color: #343746;
+  background: #eceef4;
+  border-color: rgba(20,24,35,.12);
+}
+.settings-center.theme-light .settings-nav button.active {
+  background: #e2e5ee !important;
+  color: #171923 !important;
+}
+.settings-center.theme-light .settings-choice-row button {
+  color: #626779;
+}
+.settings-center.theme-light .settings-choice-row button.selected {
+  background: #171923 !important;
+  color: #fff !important;
+}
+.settings-center.theme-light .settings-info-row {
+  border-bottom-color: rgba(20,24,35,.1);
+}
+.settings-center.theme-light .settings-note {
+  background: #eceef4;
+  color: #626779;
+}
+@media (prefers-color-scheme: light) {
+  .settings-center.theme-system {
+    background: #f7f8fc !important;
+    color: #171923 !important;
+    border-color: rgba(20,24,35,.14) !important;
+  }
+  .settings-center.theme-system .settings-section-content,
+  .settings-center.theme-system .settings-profile,
+  .settings-center.theme-system .settings-plan-card,
+  .settings-center.theme-system .settings-feature-card,
+  .settings-center.theme-system .settings-choice-row {
+    background: #fff !important;
+    color: #171923 !important;
+    border-color: rgba(20,24,35,.12) !important;
+  }
+  .settings-center.theme-system .settings-description,
+  .settings-center.theme-system .settings-label,
+  .settings-center.theme-system .settings-info-row > span,
+  .settings-center.theme-system .settings-center-foot {
+    color: #626779 !important;
+  }
+  .settings-center.theme-system .settings-choice-row button { color: #626779; }
+  .settings-center.theme-system .settings-choice-row button.selected {
+    background: #171923 !important;
+    color: #fff !important;
+  }
+}
