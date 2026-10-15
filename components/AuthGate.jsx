@@ -42,6 +42,16 @@ export default function AuthGate() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    function handleSignOutRequest() {
+      signOut().catch((signOutError) => {
+        setError(signOutError?.message || "Could not sign out. Please try again.");
+      });
+    }
+    window.addEventListener("chat-sangam-request-signout", handleSignOutRequest);
+    return () => window.removeEventListener("chat-sangam-request-signout", handleSignOutRequest);
+  }, [supabase]);
+
   async function submit(event) {
     event.preventDefault();
     if (!supabase || busy) return;
