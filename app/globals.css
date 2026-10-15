@@ -2331,3 +2331,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .settings-usage-remaining{margin-top:8px;color:#70e3a1;font-size:12px;font-weight:650;letter-spacing:.1px}
 .settings-info-row>strong{overflow-wrap:anywhere;max-width:68%}
+
+
+.settings-profile-button{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid transparent;appearance:none}
+.settings-profile-button:hover,.settings-profile-button:focus-visible{border-color:rgba(244,63,140,.38);outline:none;background:#29272f}
+.settings-profile-copy{display:grid;gap:4px;flex:1;min-width:0}
+.settings-profile-copy strong{overflow-wrap:anywhere}
