@@ -2253,7 +2253,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .app-shell.background-forest .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,rgba(22,101,52,.28),transparent 50%),linear-gradient(145deg,#052e16,#10251b 65%,#111827)!important}
 .app-shell.background-sunset .workspace{background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at top right,rgba(190,24,93,.25),transparent 48%),linear-gradient(145deg,#431407,#312e81 90%)!important}
 .app-shell.background-minimal .workspace{background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(145deg,#171717,#262626)!important}
-.app-shell.background-custom .workspace{background-image:var(--user-gradient),var(--background-image-url,none),var(--custom-background,#08070b)!important}
+.app-shell.background-custom .workspace{background-color:var(--custom-background,#08070b)!important;background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(var(--custom-background,#08070b),var(--custom-background,#08070b))!important}
 .app-shell .messages{color:var(--chat-text,#f4f4f7)}
 .app-shell .message-row.assistant .assistant-answer-bubble{color:var(--assistant-message-text,#f4f4f7)!important;background:color-mix(in srgb,var(--assistant-bubble,#111018) 75%,transparent)!important}
 .app-shell .message-row.assistant .assistant-answer-bubble .markdown-content,
