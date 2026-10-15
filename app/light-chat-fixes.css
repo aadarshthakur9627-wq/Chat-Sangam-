@@ -162,3 +162,27 @@
   .theme-system .top-more-menu,
   .theme-system .appearance-panel { background:#fff!important;color:#24242a!important;border-color:#dedfe6!important; }
 }
+
+
+/* KaTeX was hard-coded white for dark mode; force all math glyphs to readable ink in light mode. */
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex *,
+.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
+.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex * {
+  color:#24242a!important;
+  fill:#24242a!important;
+  opacity:1!important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex-display,
+.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex-display {
+  background:#f8f8fb!important;
+  border-color:#e5e7eb!important;
+}
+@media (prefers-color-scheme:light) {
+  .theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
+  .theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex * {
+    color:#24242a!important;
+    fill:#24242a!important;
+    opacity:1!important;
+  }
+}
