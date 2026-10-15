@@ -2915,3 +2915,24 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell.theme-system .footer-pill,
   .app-shell.theme-system .footer-links { background: #fff !important; }
 }
+
+
+/* Keep provider setup warnings readable when the workspace is in light mode. */
+.app-shell.theme-light .provider-config-warning {
+  background: #fff1f3 !important;
+  border-color: #f3b8c4 !important;
+  color: #672638 !important;
+}
+.app-shell.theme-light .provider-config-warning strong {
+  color: #8b1737 !important;
+}
+@media (prefers-color-scheme: light) {
+  .app-shell.theme-system .provider-config-warning {
+    background: #fff1f3 !important;
+    border-color: #f3b8c4 !important;
+    color: #672638 !important;
+  }
+  .app-shell.theme-system .provider-config-warning strong {
+    color: #8b1737 !important;
+  }
+}
