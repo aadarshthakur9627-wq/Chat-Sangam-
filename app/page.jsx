@@ -174,9 +174,8 @@ function prepareCitationMarkdown(content, sources) {
     .replace(/<\/p>\s*<p>/gi, "\n\n")
     .replace(/<p>/gi, "")
     .replace(/<\/p>/gi, "\n\n")
-    // Remove accidental web-search table scaffolding.
-    .replace(/\|\s*#\s*\|\s*Headline\s*\|\s*Key point\s*\|\s*Source\s*\|/gi, "")
-    .replace(/\|?\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|\s*-{2,}\s*\|?/g, "")
+    // Preserve Markdown table headers and separator rows. Removing the separator
+    // makes valid GFM tables render as plain text, especially four-column tables.
     .trim();
 
   return cleaned.replace(/\[(\d+)\](?!\()/g, (match, id) => {
