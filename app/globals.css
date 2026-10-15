@@ -3131,3 +3131,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     border-left-color:var(--user-accent,#a21caf)!important;
   }
 }
+
+
+/* Keep user-selected wallpaper/custom surfaces available in light and system-light themes. */
+.app-shell.theme-light .workspace {
+  background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--user-accent,#f43f8c) 5%,transparent),transparent 42%)!important;
+}
+.app-shell.theme-light.background-custom .workspace {
+  background-color:var(--custom-background,#08070b)!important;
+  background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(var(--custom-background,#08070b),var(--custom-background,#08070b))!important;
+}
+@media (prefers-color-scheme:light) {
+  .app-shell.theme-system .workspace {
+    background-image:var(--user-gradient),var(--background-image-url,none),radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--user-accent,#f43f8c) 5%,transparent),transparent 42%)!important;
+  }
+  .app-shell.theme-system.background-custom .workspace {
+    background-color:var(--custom-background,#08070b)!important;
+    background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(var(--custom-background,#08070b),var(--custom-background,#08070b))!important;
+  }
+}
