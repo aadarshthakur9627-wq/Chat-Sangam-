@@ -3116,3 +3116,18 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     color:#f4f4f7!important;
   }
 }
+
+
+/* Light/system-light blockquotes must not pair dark backgrounds with dark text. */
+.app-shell.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content blockquote {
+  background:#f5f5fa!important;
+  color:#343746!important;
+  border-left-color:var(--user-accent,#a21caf)!important;
+}
+@media (prefers-color-scheme:light) {
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content blockquote {
+    background:#f5f5fa!important;
+    color:#343746!important;
+    border-left-color:var(--user-accent,#a21caf)!important;
+  }
+}
