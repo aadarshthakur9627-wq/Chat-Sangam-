@@ -82,6 +82,14 @@ function createChat() {
   };
 }
 
+// Repair legacy single-turn chats saved in the wrong order. Only normalize the
+// very first pair when the conversation starts with an assistant answer.
+function normalizeChatMessageOrder(chat) {
+  if (!chat || !Array.isArray(chat.messages) || chat.messages.length < 2) return chat;
+  if (chat.messages[0]?.role !== "assistant" || chat.messages[1]?.role !== "user") return chat;
+  return { ...chat, messages: [chat.messages[1], chat.messages[0], ...chat.messages.slice(2)] };
+}
+
 function formatTime(timestamp) {
   if (!timestamp) return "";
   return new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" }).format(timestamp);
@@ -370,7 +378,7 @@ export default function Home() {
       if (savedBgImage && /^https?:\/\//i.test(savedBgImage)) setBackgroundImageUrl(savedBgImage);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
-      const initial = Array.isArray(parsed) && parsed.length ? parsed : [createChat()];
+      const initial = Array.isArray(parsed) && parsed.length ? parsed.map(normalizeChatMessageOrder) : [createChat()];
       setChats(initial);
       setActiveChatId(initial[0].id);
     } catch (error) {
@@ -432,7 +440,7 @@ export default function Home() {
         const previousUserId = localStorage.getItem("chat-sangam-history-user-id");
         const switchedUser = Boolean(previousUserId && previousUserId !== userId);
         const localChats = switchedUser ? [] : chatsRef.current;
-        const remoteChats = Array.isArray(data.chats) ? data.chats : [];
+        const remoteChats = Array.isArray(data.chats) ? data.chats.map(normalizeChatMessageOrder) : [];
 
         if (remoteChats.length) {
           const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
