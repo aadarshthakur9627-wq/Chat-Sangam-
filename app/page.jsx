@@ -384,6 +384,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // Do not persist defaults before the saved appearance settings have been loaded.
+    // Otherwise the first mount can overwrite the user's custom theme in localStorage.
+    if (!loaded) return;
     try {
       localStorage.setItem("chat-sangam-accent", accentColour);
       localStorage.setItem("chat-sangam-gradient", accentGradient);
@@ -398,7 +401,7 @@ export default function Home() {
       localStorage.setItem("chat-sangam-assistant-bubble", assistantBubbleColour);
       localStorage.setItem("chat-sangam-background-image", backgroundImageUrl);
     } catch {}
-  }, [accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground, chatTextColour, userMessageTextColour, assistantMessageTextColour, userBubbleColour, assistantBubbleColour, backgroundImageUrl]);
+  }, [loaded, accentColour, accentGradient, appearanceMode, customGradientEnd, backgroundTemplate, customBackground, chatTextColour, userMessageTextColour, assistantMessageTextColour, userBubbleColour, assistantBubbleColour, backgroundImageUrl]);
 
   useEffect(() => {
     if (!loaded) return;
