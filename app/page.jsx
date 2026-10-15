@@ -305,9 +305,12 @@ export default function Home() {
       const insideSources = target.closest(".assistant-sources-button, .source-panel");
       const insideModelMenu = target.closest(".composer-model-button, .model-menu");
       const insideAttachMenu = target.closest(".attach-menu-wrap, .attach-menu");
-      const insideSidebar = target.closest(".sidebar, .sidebar-toggle");
+      // Include the actual mobile hamburger trigger and the topbar overflow
+      // menu. Without these selectors, the document click handler immediately
+      // closed each menu after its own button tried to open it.
+      const insideSidebar = target.closest(".sidebar, .sidebar-toggle, .mobile-menu-button, .mobile-backdrop");
       const insideSettings = target.closest(".settings-panel, .settings-button, .appearance-panel");
-      const insideMoreMenu = target.closest(".more-menu");
+      const insideMoreMenu = target.closest(".more-menu, .more-menu-wrap, .top-more-menu");
 
       if (!insideAssistantMenu) setAssistantMenuIndex(null);
       if (!insideSources) setOpenSourcesIndex(null);
