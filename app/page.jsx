@@ -345,7 +345,7 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedAccent = localStorage.getItem("chat-sangam-accent");
-      if (savedAccent && ["#f43f8c", "#0a84ff", "#30d158", "#bf5af2", "#ff9f0a"].includes(savedAccent)) setAccentColour(savedAccent);
+      if (savedAccent && /^#[0-9a-f]{6}$/i.test(savedAccent)) setAccentColour(savedAccent);
       const savedGradient = localStorage.getItem("chat-sangam-gradient");
       if (savedGradient && ["linear", "soft", "aurora", "custom"].includes(savedGradient)) setAccentGradient(savedGradient);
       const savedMode = localStorage.getItem("chat-sangam-appearance");
@@ -353,7 +353,7 @@ export default function Home() {
       const savedGradientEnd = localStorage.getItem("chat-sangam-gradient-end");
       if (savedGradientEnd && /^#[0-9a-f]{6}$/i.test(savedGradientEnd)) setCustomGradientEnd(savedGradientEnd);
       const savedTemplate = localStorage.getItem("chat-sangam-background-template");
-      if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
+      if (savedTemplate && ["default", "midnight", "ocean", "forest", "sunset", "minimal", "custom"].includes(savedTemplate)) setBackgroundTemplate(savedTemplate);
       const savedBackground = localStorage.getItem("chat-sangam-custom-background");
       if (savedBackground && /^#[0-9a-f]{6}$/i.test(savedBackground)) setCustomBackground(savedBackground);
       const savedChatText = localStorage.getItem("chat-sangam-chat-text");
