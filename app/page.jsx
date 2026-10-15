@@ -221,6 +221,7 @@ export default function Home() {
   const [modelSearch, setModelSearch] = useState("");
   const [modelCategory, setModelCategory] = useState("Popular");
   const [hapticFeedback, setHapticFeedback] = useState(true);
+  const [dailyUsage, setDailyUsage] = useState({ used: 0, limit: 20, resetsAt: null, plan: "free", loading: false, error: "" });
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [accentColour, setAccentColour] = useState("#f43f8c");
   const [accentGradient, setAccentGradient] = useState("linear");
@@ -250,6 +251,24 @@ export default function Home() {
   useEffect(() => {
     chatsRef.current = chats;
   }, [chats]);
+
+  useEffect(() => {
+    if (!settingsCenterOpen || !cloudSyncReady) return;
+    let cancelled = false;
+    setDailyUsage((current) => ({ ...current, loading: true, error: "" }));
+    fetch("/api/usage", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Usage information unavailable.");
+        if (!cancelled) setDailyUsage({ used: Number(data.used) || 0, limit: Number(data.limit) || 20, resetsAt: data.resetsAt || null, plan: data.plan || "free", loading: false, error: "" });
+      })
+      .catch((error) => {
+        if (!cancelled) setDailyUsage((current) => ({ ...current, loading: false, error: error?.message || "Usage information unavailable." }));
+      });
+    return () => { cancelled = true; };
+  }, [settingsCenterOpen, cloudSyncReady]);
+
+
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [fileLoading, setFileLoading] = useState(false);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -1681,7 +1700,7 @@ export default function Home() {
           <section className="settings-center" role="dialog" aria-modal="true" aria-labelledby="settings-center-title">
             <header className="settings-center-head"><button type="button" className="settings-back" onClick={() => setSettingsCenterOpen(false)} aria-label="Close settings">‹</button><h2 id="settings-center-title">Settings</h2><button type="button" className="settings-close" onClick={() => setSettingsCenterOpen(false)} aria-label="Close settings">×</button></header>
             <div className="settings-profile"><span className="settings-avatar">✦</span><span><strong>Chat Sangam</strong><small>Signed-in account · synced chat history</small></span><span className="settings-chevron">›</span></div>
-            <div className="settings-plan-card"><div className="settings-plan-title"><span>◇</span><strong>Free Plan</strong><span className="settings-plan-badge">ACTIVE</span></div><p>20 AI requests per day</p><div className="settings-plan-track"><span /></div><small>Daily limit resets at midnight UTC. Usage is enforced securely on the server.</small><button type="button" className="settings-upgrade" onClick={() => setSettingsSection("subscription")}>Explore plans <span>→</span></button></div>
+            <div className="settings-plan-card"><div className="settings-plan-title"><span>◇</span><strong>{dailyUsage.plan === "pro" ? "Pro Plan" : "Free Plan"}</strong><span className="settings-plan-badge">ACTIVE</span></div><p>{dailyUsage.loading ? "Loading usage…" : `${dailyUsage.used} / ${dailyUsage.limit} AI requests used today`}</p><div className="settings-plan-track"><span style={{ width: `${Math.min(100, (dailyUsage.used / Math.max(1, dailyUsage.limit)) * 100)}%` }} /></div><small>{dailyUsage.error || (dailyUsage.resetsAt ? `Daily limit resets at ${new Date(dailyUsage.resetsAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC. Usage is enforced securely on the server.` : "Usage is enforced securely on the server.")}</small><button type="button" className="settings-upgrade" onClick={() => setSettingsSection("subscription")}>Explore plans <span>→</span></button></div>
             <div className="settings-columns">
               <nav className="settings-nav" aria-label="Settings sections">
                 {[["account","♙","Account"],["subscription","♛","Subscription"],["ai","◉","AI Preferences"],["memory","▤","Memory"],["appearance","◐","Appearance"]].map(([key,icon,label]) => <button key={key} type="button" className={settingsSection === key ? "active" : ""} onClick={() => setSettingsSection(key)}><span>{icon}</span>{label}<b>›</b></button>)}
