@@ -2813,3 +2813,105 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     border-color: rgba(20,24,35,.14) !important;
   }
 }
+
+
+/* Match the model-picker portal and sidebar footer to light/system appearance.
+   The model picker is rendered in document.body, so it needs its own theme class. */
+.model-menu-portal.theme-light {
+  background: #f7f8fc !important;
+  color: #171923 !important;
+  border-color: rgba(20,24,35,.12) !important;
+  box-shadow: 0 24px 80px rgba(20,24,35,.18) !important;
+}
+.model-menu-portal.theme-light .model-menu-head,
+.model-menu-portal.theme-light .model-menu-head > span,
+.model-menu-portal.theme-light .model-option-copy strong {
+  color: #171923 !important;
+}
+.model-menu-portal.theme-light .model-search,
+.model-menu-portal.theme-light .model-categories,
+.model-menu-portal.theme-light .model-menu-divider {
+  background: #eceef4 !important;
+  border-color: rgba(20,24,35,.1) !important;
+}
+.model-menu-portal.theme-light .model-search,
+.model-menu-portal.theme-light .model-search input,
+.model-menu-portal.theme-light .model-search button,
+.model-menu-portal.theme-light .model-categories button,
+.model-menu-portal.theme-light .model-auto-label,
+.model-menu-portal.theme-light .model-option-copy small,
+.model-menu-portal.theme-light .model-menu-head small {
+  color: #626779 !important;
+}
+.model-menu-portal.theme-light .model-categories button.active {
+  background: #ffffff !important;
+  color: #171923 !important;
+  box-shadow: 0 1px 4px rgba(20,24,35,.12);
+}
+.model-menu-portal.theme-light .model-option,
+.model-menu-portal.theme-light .model-menu-portal .model-option {
+  background: #ffffff !important;
+  border-color: rgba(20,24,35,.08) !important;
+  color: #171923 !important;
+}
+.model-menu-portal.theme-light .model-option.active {
+  background: color-mix(in srgb, var(--user-accent,#f43f8c) 7%, #ffffff) !important;
+  border-color: var(--user-accent,#f43f8c) !important;
+}
+.model-menu-portal.theme-light .model-refresh {
+  color: #343746 !important;
+  border-color: rgba(20,24,35,.12) !important;
+  background: #ffffff !important;
+}
+.model-menu-portal.theme-light .model-sheet-handle { background: #a8abb5 !important; }
+.model-menu-portal.theme-light .model-option-icon {
+  background: color-mix(in srgb, var(--user-accent,#f43f8c) 10%, #ffffff) !important;
+}
+.model-menu-portal.theme-light .compare-toggle {
+  background: #eceef4 !important;
+  color: #171923 !important;
+  border-color: rgba(20,24,35,.12) !important;
+}
+.app-shell.theme-light .sidebar-footer {
+  background: #f7f8fc !important;
+  border-top-color: rgba(20,24,35,.1) !important;
+}
+.app-shell.theme-light .footer-pill,
+.app-shell.theme-light .footer-links button {
+  color: #626779 !important;
+}
+.app-shell.theme-light .footer-pill { background: #ffffff !important; border-color: rgba(20,24,35,.1) !important; }
+.app-shell.theme-light .footer-links { background: #ffffff !important; }
+@media (prefers-color-scheme: light) {
+  .model-menu-portal.theme-system {
+    background: #f7f8fc !important;
+    color: #171923 !important;
+    border-color: rgba(20,24,35,.12) !important;
+    box-shadow: 0 24px 80px rgba(20,24,35,.18) !important;
+  }
+  .model-menu-portal.theme-system .model-menu-head,
+  .model-menu-portal.theme-system .model-menu-head > span,
+  .model-menu-portal.theme-system .model-option-copy strong { color: #171923 !important; }
+  .model-menu-portal.theme-system .model-search,
+  .model-menu-portal.theme-system .model-categories,
+  .model-menu-portal.theme-system .model-menu-divider { background: #eceef4 !important; border-color: rgba(20,24,35,.1) !important; }
+  .model-menu-portal.theme-system .model-search,
+  .model-menu-portal.theme-system .model-search input,
+  .model-menu-portal.theme-system .model-search button,
+  .model-menu-portal.theme-system .model-categories button,
+  .model-menu-portal.theme-system .model-auto-label,
+  .model-menu-portal.theme-system .model-option-copy small,
+  .model-menu-portal.theme-system .model-menu-head small { color: #626779 !important; }
+  .model-menu-portal.theme-system .model-categories button.active { background: #fff !important; color: #171923 !important; }
+  .model-menu-portal.theme-system .model-option { background: #fff !important; border-color: rgba(20,24,35,.08) !important; color: #171923 !important; }
+  .model-menu-portal.theme-system .model-option.active { background: color-mix(in srgb, var(--user-accent,#f43f8c) 7%, #fff) !important; border-color: var(--user-accent,#f43f8c) !important; }
+  .model-menu-portal.theme-system .model-refresh { color: #343746 !important; border-color: rgba(20,24,35,.12) !important; background: #fff !important; }
+  .model-menu-portal.theme-system .model-sheet-handle { background: #a8abb5 !important; }
+  .model-menu-portal.theme-system .model-option-icon { background: color-mix(in srgb, var(--user-accent,#f43f8c) 10%, #fff) !important; }
+  .model-menu-portal.theme-system .compare-toggle { background: #eceef4 !important; color: #171923 !important; border-color: rgba(20,24,35,.12) !important; }
+  .app-shell.theme-system .sidebar-footer { background: #f7f8fc !important; border-top-color: rgba(20,24,35,.1) !important; }
+  .app-shell.theme-system .footer-pill,
+  .app-shell.theme-system .footer-links button { color: #626779 !important; }
+  .app-shell.theme-system .footer-pill,
+  .app-shell.theme-system .footer-links { background: #fff !important; }
+}
