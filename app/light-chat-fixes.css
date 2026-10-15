@@ -1,0 +1,50 @@
+/* Light-theme conversation readability fixes. Keep dark theme unchanged. */
+.theme-light .message-row.assistant .assistant-answer-bubble {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 14px 16px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  color: #24242a !important;
+  box-shadow: 0 2px 10px rgba(20, 20, 30, .045) !important;
+  overflow: visible !important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content {
+  min-width: 0 !important;
+  color: #24242a !important;
+  overflow-wrap: anywhere !important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content p,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content li,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content blockquote {
+  color: #24242a !important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content strong,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h1,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h2,
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content h3 {
+  color: #17171b !important;
+}
+.theme-light .message-row.assistant .assistant-answer-bubble .markdown-content a {
+  color: #a21caf !important;
+}
+.theme-light .message-row.assistant .assistant-action-bar {
+  border-top-color: #e5e7eb !important;
+}
+.theme-light .message-row.assistant .action-icon-button {
+  color: #62626c !important;
+}
+.theme-light .message-row.assistant .action-icon-button:hover,
+.theme-light .message-row.assistant .action-icon-button.active {
+  color: #25252a !important;
+  background: #f3f4f6 !important;
+  border-color: #e5e7eb !important;
+}
+@media (max-width: 700px) {
+  .theme-light .message-row.assistant .assistant-answer-bubble {
+    padding: 13px 14px !important;
+    border-radius: 14px !important;
+  }
+}
