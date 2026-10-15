@@ -3057,3 +3057,62 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     padding:14px 14px!important;
   }
 }
+
+
+/* System appearance was the remaining contrast bug: system mode uses light surfaces on light OS,
+   but custom default text tokens were still the dark-theme near-white. */
+@media (prefers-color-scheme: light) {
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble {
+    --assistant-message-text:#171923!important;
+    background:#fff!important;
+    color:#171923!important;
+    border-color:#e1e3e8!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content p,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content li,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content blockquote,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h1,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h2,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h3,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h4,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h5,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content h6,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content td,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content th {
+    color:#171923!important;
+    opacity:1!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content strong,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content b {
+    color:#111318!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content a,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content a[href^="#source-"] {
+    color:#86198f!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .table-scroll,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content table,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content td {
+    background:#fff!important;
+    border-color:#dfe1e7!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content th {
+    background:#f1f2f6!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .katex * {
+    color:#171923!important;
+    fill:#171923!important;
+    opacity:1!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .code-block,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content pre {
+    background:#111018!important;
+    color:#f4f4f7!important;
+  }
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content .code-block *,
+  .app-shell.theme-system .message-row.assistant .assistant-answer-bubble .markdown-content pre code {
+    color:#f4f4f7!important;
+  }
+}
