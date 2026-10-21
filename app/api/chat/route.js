@@ -1031,8 +1031,8 @@ export async function POST(request) {
     const usage = Array.isArray(usageRows) ? usageRows[0] : usageRows;
     if (!usage?.allowed) {
       return Response.json({
-        error: "You've reached today's Free plan limit of " + (usage?.daily_limit || 20) + " AI requests. Your quota resets at midnight UTC.",
-        usage: { used: usage?.used || 0, limit: usage?.daily_limit || 20 },
+        error: "You've reached today's " + ((usage?.daily_limit || 5) > 5 ? "Pro" : "Free") + " plan limit of " + (usage?.daily_limit || 5) + " AI requests. Your quota resets at midnight UTC.",
+        usage: { used: usage?.used || 0, limit: usage?.daily_limit || 5 },
       }, { status: 429 });
     }
 
