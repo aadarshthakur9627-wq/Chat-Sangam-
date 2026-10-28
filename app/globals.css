@@ -3460,3 +3460,94 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     animation: none !important;
   }
 }
+
+
+/* Chat Sangam Aurora Glass — next-gen translucent UI layer */
+.app-shell {
+  --sg-glass: rgba(255,255,255,.045);
+  --sg-glass-strong: rgba(255,255,255,.075);
+  --sg-glass-line: rgba(255,255,255,.105);
+  --sg-glass-highlight: rgba(255,255,255,.16);
+  --sg-shadow-deep: 0 24px 70px rgba(0,0,0,.28);
+}
+.app-shell .workspace {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg, #09090f);
+  background-image: radial-gradient(70% 48% at 8% -4%, rgba(137,92,246,.15), transparent 68%), radial-gradient(60% 50% at 100% 5%, rgba(236,72,153,.105), transparent 65%), radial-gradient(60% 60% at 52% 105%, rgba(56,189,248,.075), transparent 70%);
+}
+.app-shell .workspace::before {
+  content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none; opacity: .16;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+.app-shell .sidebar {
+  background: color-mix(in srgb, var(--panel, #101018) 78%, transparent);
+  border-right: 1px solid rgba(255,255,255,.065);
+  backdrop-filter: blur(32px) saturate(155%); -webkit-backdrop-filter: blur(32px) saturate(155%);
+}
+.app-shell .topbar {
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012)), color-mix(in srgb, var(--panel, #101018) 74%, transparent);
+  border-bottom: 1px solid rgba(255,255,255,.065);
+  backdrop-filter: blur(30px) saturate(160%); -webkit-backdrop-filter: blur(30px) saturate(160%);
+}
+.app-shell .top-action, .app-shell .composer-model-button, .app-shell .menu-control, .app-shell .thinking-picker, .app-shell .engine-badge {
+  border-color: rgba(255,255,255,.085);
+  background-image: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+}
+.app-shell .top-action:hover, .app-shell .composer-model-button:hover, .app-shell .menu-control:hover {
+  border-color: rgba(196,181,253,.28); background-color: rgba(255,255,255,.055);
+  box-shadow: 0 6px 24px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.09);
+}
+.app-shell .message-row { animation: sg-message-enter .36s cubic-bezier(.2,.75,.25,1) both; }
+.app-shell .assistant-answer-bubble { background: linear-gradient(145deg, rgba(255,255,255,.025), rgba(255,255,255,.008)); }
+.app-shell .model-menu, .app-shell .attach-menu, .app-shell .message-context-menu, .app-shell .top-more-menu, .app-shell .assistant-more-menu, .app-shell .appearance-panel {
+  background: color-mix(in srgb, var(--panel, #11111a) 83%, transparent);
+  border-color: rgba(255,255,255,.105); box-shadow: 0 26px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.075);
+  backdrop-filter: blur(36px) saturate(170%); -webkit-backdrop-filter: blur(36px) saturate(170%);
+}
+.app-shell .model-option { transition: background .18s ease, transform .18s cubic-bezier(.2,.75,.25,1), border-color .18s ease; }
+.app-shell .model-option:hover { transform: translateX(2px); background: linear-gradient(100deg, rgba(168,85,247,.12), rgba(236,72,153,.06)); }
+.app-shell .send-button { box-shadow: 0 6px 20px rgba(139,92,246,.22), inset 0 1px 0 rgba(255,255,255,.22); transition: transform .16s ease, box-shadow .2s ease, filter .2s ease; }
+.app-shell .send-button:hover { filter: brightness(1.08) saturate(1.08); box-shadow: 0 8px 26px rgba(139,92,246,.3), 0 0 18px rgba(236,72,153,.12); }
+.app-shell .send-button:active { transform: scale(.94); }
+.app-shell .hero-glow { filter: blur(22px); opacity: .72; animation: sg-glow-breathe 7s ease-in-out infinite; }
+.app-shell .prompt-card, .app-shell .comparison-card, .app-shell .source-card {
+  border-color: rgba(255,255,255,.085);
+  background-image: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: 0 8px 28px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.045);
+}
+.app-shell .prompt-card:hover, .app-shell .comparison-card:hover, .app-shell .source-card:hover {
+  border-color: rgba(196,181,253,.28);
+  box-shadow: 0 16px 40px rgba(0,0,0,.16), 0 0 24px rgba(139,92,246,.075), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.app-shell .composer {
+  position: relative; border-color: rgba(255,255,255,.11);
+  background: linear-gradient(150deg, rgba(255,255,255,.065), rgba(255,255,255,.025) 55%, rgba(139,92,246,.025));
+  box-shadow: 0 20px 64px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(32px) saturate(155%); -webkit-backdrop-filter: blur(32px) saturate(155%);
+}
+.app-shell .composer::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; padding: 1px;
+  background: linear-gradient(125deg, rgba(236,72,153,.42), rgba(139,92,246,.22) 42%, rgba(56,189,248,.22) 80%, rgba(236,72,153,.25));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: .62; pointer-events: none;
+}
+.app-shell .composer:focus-within::before { opacity: 1; }
+.app-shell .composer:focus-within {
+  border-color: rgba(196,181,253,.26);
+  box-shadow: 0 24px 74px rgba(0,0,0,.28), 0 0 0 3px rgba(139,92,246,.075), 0 0 40px rgba(139,92,246,.09), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.app-shell .brand-mark { box-shadow: 0 6px 22px rgba(139,92,246,.2), 0 0 0 1px rgba(255,255,255,.12), inset 0 1px 0 rgba(255,255,255,.24); }
+.app-shell .history-item { border: 1px solid transparent; }
+.app-shell .history-item:hover { background: linear-gradient(100deg, rgba(139,92,246,.085), rgba(255,255,255,.025)); border-color: rgba(255,255,255,.045); }
+@keyframes sg-message-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sg-glow-breathe { 0%, 100% { opacity: .48; transform: scale(.96); } 50% { opacity: .82; transform: scale(1.04); } }
+@media (max-width: 640px) {
+  .app-shell .workspace { background-attachment: scroll; }
+  .app-shell .topbar, .app-shell .composer { backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%); }
+  .app-shell .message-row { animation-duration: .24s; }
+}
+@media (prefers-reduced-motion: reduce) { .app-shell .message-row, .app-shell .hero-glow { animation: none !important; }
+}
