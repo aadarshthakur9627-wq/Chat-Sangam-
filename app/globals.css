@@ -3150,3 +3150,190 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     background-image:var(--user-gradient),var(--background-image-url,none),linear-gradient(var(--custom-background,#08070b),var(--custom-background,#08070b))!important;
   }
 }
+
+
+/* Chat Sangam premium motion + interaction polish (2026) */
+:root {
+  --premium-border: color-mix(in srgb, var(--user-accent, #f43f8c) 17%, var(--line, rgba(255,255,255,.08)));
+  --premium-ease: cubic-bezier(.2,.75,.25,1);
+}
+.app-shell .workspace {
+  isolation: isolate;
+  background-image:
+    radial-gradient(ellipse at 75% -8%, color-mix(in srgb, var(--user-accent, #f43f8c) 11%, transparent), transparent 38%),
+    radial-gradient(ellipse at 100% 48%, rgba(139,92,246,.075), transparent 32%),
+    linear-gradient(180deg, rgba(255,255,255,.012), transparent 34%);
+}
+.app-shell .topbar {
+  position: relative;
+  z-index: 5;
+  border-bottom-color: color-mix(in srgb, var(--user-accent, #f43f8c) 12%, var(--line, rgba(255,255,255,.08)));
+  background: color-mix(in srgb, var(--bg, #07060a) 84%, transparent);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+.app-shell .brand-mark,
+.app-shell .hero-mark,
+.app-shell .model-orb {
+  position: relative;
+  isolation: isolate;
+  background-size: 180% 180%;
+  animation: sangam-gradient-drift 10s ease-in-out infinite alternate;
+}
+.app-shell .hero-mark {
+  border: 1px solid rgba(255,255,255,.2);
+  box-shadow: 0 12px 34px rgba(244,63,140,.18), 0 0 60px rgba(139,92,246,.13), inset 0 1px 0 rgba(255,255,255,.22);
+  animation: sangam-gradient-drift 10s ease-in-out infinite alternate, sangam-orb-float 6s ease-in-out infinite;
+}
+.app-shell .hero-glow {
+  opacity: .78;
+  animation: sangam-glow-breathe 7s ease-in-out infinite;
+}
+.app-shell .welcome h2 {
+  text-wrap: balance;
+  line-height: 1.02;
+  letter-spacing: clamp(-3px, -.045em, -1px);
+}
+.app-shell .welcome > p {
+  text-wrap: pretty;
+}
+.app-shell .prompt-card {
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--line, rgba(255,255,255,.08)) 72%, var(--user-accent, #f43f8c));
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.052), rgba(255,255,255,.014)),
+    color-mix(in srgb, var(--panel, #0d0b12) 90%, transparent);
+  box-shadow: 0 6px 24px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.035);
+  transition: transform .22s var(--premium-ease), border-color .22s ease, background .22s ease, box-shadow .22s ease;
+}
+.app-shell .prompt-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(115deg, transparent 15%, rgba(255,255,255,.075) 48%, transparent 75%);
+  transform: translateX(-60%);
+  transition: opacity .22s ease, transform .55s var(--premium-ease);
+}
+.app-shell .prompt-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--user-accent, #f43f8c) 43%, var(--line, rgba(255,255,255,.08)));
+  box-shadow: 0 14px 34px rgba(0,0,0,.17), 0 0 28px color-mix(in srgb, var(--user-accent, #f43f8c) 8%, transparent);
+}
+.app-shell .prompt-card:hover::after { opacity: 1; transform: translateX(60%); }
+.app-shell .prompt-icon {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 5px 14px rgba(0,0,0,.13);
+  transition: transform .22s var(--premium-ease), box-shadow .22s ease;
+}
+.app-shell .prompt-card:hover .prompt-icon { transform: translateY(-2px) scale(1.04); box-shadow: 0 7px 18px rgba(244,63,140,.12); }
+.app-shell .composer {
+  border-color: color-mix(in srgb, var(--user-accent, #f43f8c) 18%, var(--line, rgba(255,255,255,.08)));
+  box-shadow: 0 16px 48px rgba(0,0,0,.2), 0 0 0 1px rgba(255,255,255,.012), 0 0 35px color-mix(in srgb, var(--user-accent, #f43f8c) 5%, transparent);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s var(--premium-ease);
+}
+.app-shell .composer:focus-within {
+  border-color: color-mix(in srgb, var(--user-accent, #f43f8c) 52%, var(--line, rgba(255,255,255,.08)));
+  box-shadow: 0 18px 54px rgba(0,0,0,.24), 0 0 0 3px color-mix(in srgb, var(--user-accent, #f43f8c) 9%, transparent), 0 0 36px color-mix(in srgb, var(--user-accent, #f43f8c) 10%, transparent);
+}
+.app-shell button,
+.app-shell a,
+.model-menu-portal button {
+  -webkit-tap-highlight-color: transparent;
+}
+.app-shell button:focus-visible,
+.app-shell a:focus-visible,
+.model-menu-portal button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--user-accent, #f43f8c) 78%, #fff);
+  outline-offset: 3px;
+}
+.app-shell .new-chat-button,
+.app-shell .top-action,
+.app-shell .web-search-toggle,
+.app-shell .deep-research-toggle,
+.app-shell .engine-badge,
+.app-shell .thinking-picker {
+  transition: transform .16s var(--premium-ease), border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.app-shell .new-chat-button:active,
+.app-shell .top-action:active,
+.app-shell .web-search-toggle:active,
+.app-shell .deep-research-toggle:active {
+  transform: scale(.98);
+}
+.app-shell .history-item {
+  transition: background .18s ease, border-color .18s ease, color .18s ease, transform .18s var(--premium-ease);
+}
+.app-shell .history-item:hover { transform: translateX(2px); }
+.app-shell .message-avatar.assistant {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 5px 18px rgba(244,63,140,.055);
+}
+.app-shell .assistant-answer-bubble {
+  border-radius: 4px 16px 16px 16px;
+}
+.app-shell .trust-row {
+  row-gap: 9px;
+}
+@keyframes sangam-gradient-drift {
+  0% { background-position: 0% 40%; }
+  100% { background-position: 100% 60%; }
+}
+@keyframes sangam-orb-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes sangam-glow-breathe {
+  0%, 100% { opacity: .55; transform: translateX(-50%) scale(.94); }
+  50% { opacity: .95; transform: translateX(-50%) scale(1.06); }
+}
+@media (max-width: 900px) {
+  .app-shell .messages { padding-left: 18px; padding-right: 18px; }
+  .app-shell .welcome { margin-top: clamp(24px, 5vh, 52px); }
+  .app-shell .prompt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .app-shell .prompt-card { min-height: 98px; }
+}
+@media (max-width: 640px) {
+  .app-shell .workspace {
+    background-image:
+      radial-gradient(ellipse at 65% -8%, color-mix(in srgb, var(--user-accent, #f43f8c) 9%, transparent), transparent 42%),
+      linear-gradient(180deg, rgba(255,255,255,.012), transparent 32%);
+  }
+  .app-shell .topbar {
+    padding-left: 13px;
+    padding-right: 13px;
+    min-height: 60px;
+  }
+  .app-shell .messages { padding: 20px 14px 190px; }
+  .app-shell .welcome { margin-top: 26px; }
+  .app-shell .hero-mark { width: 58px; height: 58px; border-radius: 18px; margin-bottom: 15px; }
+  .app-shell .welcome h2 {
+    font-size: clamp(34px, 10vw, 48px);
+    letter-spacing: -1.7px;
+    line-height: 1.04;
+  }
+  .app-shell .welcome > p { font-size: 12px; padding: 0 7px; }
+  .app-shell .prompt-grid { margin-top: 22px; gap: 8px; }
+  .app-shell .prompt-card { min-height: 98px; padding: 12px; border-radius: 13px; }
+  .app-shell .prompt-card strong { font-size: 11px; }
+  .app-shell .prompt-card small { font-size: 9px; }
+  .app-shell .composer {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.16), 0 0 24px color-mix(in srgb, var(--user-accent, #f43f8c) 5%, transparent);
+  }
+  .app-shell .composer:focus-within {
+    box-shadow: 0 12px 34px rgba(0,0,0,.2), 0 0 0 2px color-mix(in srgb, var(--user-accent, #f43f8c) 9%, transparent);
+  }
+  .app-shell .trust-row { gap: 8px 12px; font-size: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *,
+  .model-menu-portal *,
+  .app-shell *::before,
+  .app-shell *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
