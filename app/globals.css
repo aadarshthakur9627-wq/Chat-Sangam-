@@ -3337,3 +3337,431 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Premium polish v2 — depth, glass surfaces, and restrained colour motion */
+.app-shell {
+  --sangam-pink: #f43f8c;
+  --sangam-violet: #8b5cf6;
+  --sangam-cyan: #38bdf8;
+}
+.app-shell .workspace {
+  isolation: isolate;
+  background-image:
+    radial-gradient(ellipse at 13% 0%, rgba(139,92,246,.105), transparent 34%),
+    radial-gradient(ellipse at 88% 14%, rgba(244,63,140,.075), transparent 31%),
+    radial-gradient(ellipse at 55% 100%, rgba(56,189,248,.045), transparent 38%);
+}
+.app-shell .sidebar {
+  backdrop-filter: blur(24px) saturate(135%);
+  -webkit-backdrop-filter: blur(24px) saturate(135%);
+  box-shadow: inset -1px 0 0 rgba(255,255,255,.035), 12px 0 42px rgba(0,0,0,.07);
+}
+.app-shell .topbar {
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  background: color-mix(in srgb, var(--panel, #0d0b12) 78%, transparent);
+  box-shadow: 0 1px 0 rgba(255,255,255,.035);
+}
+.app-shell .brand-mark,
+.app-shell .hero-mark,
+.app-shell .model-orb {
+  background-size: 220% 220%;
+  animation: sangam-gradient-drift 9s ease-in-out infinite alternate, sangam-orb-float 6s ease-in-out infinite;
+  box-shadow: 0 8px 26px rgba(139,92,246,.16), 0 0 42px rgba(244,63,140,.09), inset 0 1px 0 rgba(255,255,255,.24);
+}
+.app-shell .hero-mark {
+  position: relative;
+  isolation: isolate;
+}
+.app-shell .hero-mark::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -13px;
+  border-radius: 28px;
+  background: conic-gradient(from 0deg, rgba(244,63,140,0), rgba(244,63,140,.22), rgba(139,92,246,.2), rgba(56,189,248,.16), rgba(244,63,140,0));
+  filter: blur(16px);
+  opacity: .7;
+  animation: sangam-halo-rotate 14s linear infinite;
+}
+.app-shell .welcome h2 {
+  background: linear-gradient(105deg, #fff 8%, #f7d7eb 38%, #c4b5fd 68%, #bae6fd 92%);
+  background-size: 180% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: sangam-title-shimmer 11s ease-in-out infinite alternate;
+}
+.app-shell .prompt-card {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.app-shell .prompt-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(244,63,140,.24), rgba(139,92,246,.12) 48%, rgba(56,189,248,.2));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: .6;
+  pointer-events: none;
+}
+.app-shell .prompt-card:hover::before { opacity: 1; }
+.app-shell .composer {
+  background-image: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+}
+.app-shell .composer:focus-within {
+  box-shadow: 0 18px 58px rgba(0,0,0,.24), 0 0 0 1px rgba(244,63,140,.13), 0 0 34px rgba(139,92,246,.10);
+}
+.app-shell .new-chat-button {
+  background-image: linear-gradient(112deg, #ec4899 0%, #a855f7 48%, #6366f1 100%);
+  background-size: 180% 180%;
+  box-shadow: 0 8px 24px rgba(168,85,247,.17), inset 0 1px 0 rgba(255,255,255,.2);
+  transition: background-position .35s ease, transform .18s var(--premium-ease), box-shadow .22s ease;
+}
+.app-shell .new-chat-button:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 10px 28px rgba(168,85,247,.24), 0 0 22px rgba(244,63,140,.1), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.app-shell .message-avatar.assistant {
+  border: 1px solid rgba(244,63,140,.16);
+  background-image: linear-gradient(145deg, rgba(244,63,140,.14), rgba(139,92,246,.13));
+}
+@keyframes sangam-halo-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes sangam-title-shimmer {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@media (max-width: 640px) {
+  .app-shell .sidebar {
+    backdrop-filter: blur(28px) saturate(140%);
+    -webkit-backdrop-filter: blur(28px) saturate(140%);
+  }
+  .app-shell .hero-mark::before { inset: -9px; filter: blur(12px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell .brand-mark,
+  .app-shell .hero-mark,
+  .app-shell .model-orb,
+  .app-shell .hero-mark::before,
+  .app-shell .welcome h2 {
+    animation: none !important;
+  }
+}
+
+
+/* Chat Sangam Aurora Glass — next-gen translucent UI layer */
+.app-shell {
+  --sg-glass: rgba(255,255,255,.045);
+  --sg-glass-strong: rgba(255,255,255,.075);
+  --sg-glass-line: rgba(255,255,255,.105);
+  --sg-glass-highlight: rgba(255,255,255,.16);
+  --sg-shadow-deep: 0 24px 70px rgba(0,0,0,.28);
+}
+.app-shell .workspace {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--bg, #09090f);
+  background-image: radial-gradient(70% 48% at 8% -4%, rgba(137,92,246,.15), transparent 68%), radial-gradient(60% 50% at 100% 5%, rgba(236,72,153,.105), transparent 65%), radial-gradient(60% 60% at 52% 105%, rgba(56,189,248,.075), transparent 70%);
+}
+.app-shell .workspace::before {
+  content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none; opacity: .16;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.16'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+.app-shell .sidebar {
+  background: color-mix(in srgb, var(--panel, #101018) 78%, transparent);
+  border-right: 1px solid rgba(255,255,255,.065);
+  backdrop-filter: blur(32px) saturate(155%); -webkit-backdrop-filter: blur(32px) saturate(155%);
+}
+.app-shell .topbar {
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.012)), color-mix(in srgb, var(--panel, #101018) 74%, transparent);
+  border-bottom: 1px solid rgba(255,255,255,.065);
+  backdrop-filter: blur(30px) saturate(160%); -webkit-backdrop-filter: blur(30px) saturate(160%);
+}
+.app-shell .top-action, .app-shell .composer-model-button, .app-shell .menu-control, .app-shell .thinking-picker, .app-shell .engine-badge {
+  border-color: rgba(255,255,255,.085);
+  background-image: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055);
+}
+.app-shell .top-action:hover, .app-shell .composer-model-button:hover, .app-shell .menu-control:hover {
+  border-color: rgba(196,181,253,.28); background-color: rgba(255,255,255,.055);
+  box-shadow: 0 6px 24px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.09);
+}
+.app-shell .message-row { animation: sg-message-enter .36s cubic-bezier(.2,.75,.25,1) both; }
+.app-shell .assistant-answer-bubble { background: linear-gradient(145deg, rgba(255,255,255,.025), rgba(255,255,255,.008)); }
+.app-shell .model-menu, .app-shell .attach-menu, .app-shell .message-context-menu, .app-shell .top-more-menu, .app-shell .assistant-more-menu, .app-shell .appearance-panel {
+  background: color-mix(in srgb, var(--panel, #11111a) 83%, transparent);
+  border-color: rgba(255,255,255,.105); box-shadow: 0 26px 90px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.075);
+  backdrop-filter: blur(36px) saturate(170%); -webkit-backdrop-filter: blur(36px) saturate(170%);
+}
+.app-shell .model-option { transition: background .18s ease, transform .18s cubic-bezier(.2,.75,.25,1), border-color .18s ease; }
+.app-shell .model-option:hover { transform: translateX(2px); background: linear-gradient(100deg, rgba(168,85,247,.12), rgba(236,72,153,.06)); }
+.app-shell .send-button { box-shadow: 0 6px 20px rgba(139,92,246,.22), inset 0 1px 0 rgba(255,255,255,.22); transition: transform .16s ease, box-shadow .2s ease, filter .2s ease; }
+.app-shell .send-button:hover { filter: brightness(1.08) saturate(1.08); box-shadow: 0 8px 26px rgba(139,92,246,.3), 0 0 18px rgba(236,72,153,.12); }
+.app-shell .send-button:active { transform: scale(.94); }
+.app-shell .hero-glow { filter: blur(22px); opacity: .72; animation: sg-glow-breathe 7s ease-in-out infinite; }
+.app-shell .prompt-card, .app-shell .comparison-card, .app-shell .source-card {
+  border-color: rgba(255,255,255,.085);
+  background-image: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.018));
+  box-shadow: 0 8px 28px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.045);
+}
+.app-shell .prompt-card:hover, .app-shell .comparison-card:hover, .app-shell .source-card:hover {
+  border-color: rgba(196,181,253,.28);
+  box-shadow: 0 16px 40px rgba(0,0,0,.16), 0 0 24px rgba(139,92,246,.075), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.app-shell .composer {
+  position: relative; border-color: rgba(255,255,255,.11);
+  background: linear-gradient(150deg, rgba(255,255,255,.065), rgba(255,255,255,.025) 55%, rgba(139,92,246,.025));
+  box-shadow: 0 20px 64px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(32px) saturate(155%); -webkit-backdrop-filter: blur(32px) saturate(155%);
+}
+.app-shell .composer::before {
+  content: ""; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; padding: 1px;
+  background: linear-gradient(125deg, rgba(236,72,153,.42), rgba(139,92,246,.22) 42%, rgba(56,189,248,.22) 80%, rgba(236,72,153,.25));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: .62; pointer-events: none;
+}
+.app-shell .composer:focus-within::before { opacity: 1; }
+.app-shell .composer:focus-within {
+  border-color: rgba(196,181,253,.26);
+  box-shadow: 0 24px 74px rgba(0,0,0,.28), 0 0 0 3px rgba(139,92,246,.075), 0 0 40px rgba(139,92,246,.09), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.app-shell .brand-mark { box-shadow: 0 6px 22px rgba(139,92,246,.2), 0 0 0 1px rgba(255,255,255,.12), inset 0 1px 0 rgba(255,255,255,.24); }
+.app-shell .history-item { border: 1px solid transparent; }
+.app-shell .history-item:hover { background: linear-gradient(100deg, rgba(139,92,246,.085), rgba(255,255,255,.025)); border-color: rgba(255,255,255,.045); }
+@keyframes sg-message-enter { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sg-glow-breathe { 0%, 100% { opacity: .48; transform: scale(.96); } 50% { opacity: .82; transform: scale(1.04); } }
+@media (max-width: 640px) {
+  .app-shell .workspace { background-attachment: scroll; }
+  .app-shell .topbar, .app-shell .composer { backdrop-filter: blur(24px) saturate(145%); -webkit-backdrop-filter: blur(24px) saturate(145%); }
+  .app-shell .message-row { animation-duration: .24s; }
+}
+@media (prefers-reduced-motion: reduce) { .app-shell .message-row, .app-shell .hero-glow { animation: none !important; }
+}
+
+
+/* Reading comfort v1 — generous, ChatGPT-style answer typography */
+.app-shell .markdown-content {
+  max-width: 100%;
+  font-size: 16px;
+  line-height: 1.82;
+  letter-spacing: .005em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.app-shell .markdown-content > * { max-width: 100%; }
+.app-shell .markdown-content p {
+  margin: 0 0 1.05em;
+  line-height: 1.82;
+}
+.app-shell .markdown-content p:last-child { margin-bottom: 0; }
+.app-shell .markdown-content h1,
+.app-shell .markdown-content h2,
+.app-shell .markdown-content h3,
+.app-shell .markdown-content h4 {
+  line-height: 1.4;
+  letter-spacing: -.018em;
+  margin: 1.55em 0 .62em;
+  font-weight: 700;
+}
+.app-shell .markdown-content h1 { font-size: 1.65em; }
+.app-shell .markdown-content h2 { font-size: 1.4em; }
+.app-shell .markdown-content h3 { font-size: 1.18em; }
+.app-shell .markdown-content h4 { font-size: 1.06em; }
+.app-shell .markdown-content h1:first-child,
+.app-shell .markdown-content h2:first-child,
+.app-shell .markdown-content h3:first-child,
+.app-shell .markdown-content h4:first-child { margin-top: 0; }
+.app-shell .markdown-content ul,
+.app-shell .markdown-content ol {
+  margin: .65em 0 1.15em;
+  padding-left: 1.55em;
+}
+.app-shell .markdown-content li {
+  padding-left: .22em;
+  margin: .42em 0;
+  line-height: 1.78;
+}
+.app-shell .markdown-content li > p { margin: .25em 0 .55em; }
+.app-shell .markdown-content li::marker { color: var(--sangam-pink, #ec4899); }
+.app-shell .markdown-content blockquote {
+  margin: 1.1em 0;
+  padding: .7em 1em;
+  border-left: 3px solid var(--sangam-violet, #8b5cf6);
+  border-radius: 0 12px 12px 0;
+  background: rgba(139,92,246,.065);
+  line-height: 1.8;
+}
+.app-shell .markdown-content pre {
+  margin: 1em 0 1.25em;
+  padding: 1.05em 1.1em;
+  border-radius: 14px;
+  max-width: 100%;
+  overflow-x: auto;
+  line-height: 1.65;
+}
+.app-shell .markdown-content :not(pre) > code {
+  padding: .12em .38em;
+  border-radius: 5px;
+  font-size: .9em;
+  overflow-wrap: anywhere;
+}
+.app-shell .markdown-content hr {
+  margin: 1.7em 0;
+  border: 0;
+  border-top: 1px solid var(--border, rgba(128,128,128,.22));
+}
+.app-shell .markdown-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.15em 0 1.4em;
+  border-radius: 12px;
+  line-height: 1.65;
+  -webkit-overflow-scrolling: touch;
+}
+.app-shell .markdown-content th,
+.app-shell .markdown-content td {
+  padding: .78em .95em;
+  min-width: 108px;
+  vertical-align: top;
+  text-align: left;
+}
+.app-shell .markdown-content th { font-weight: 700; }
+.app-shell .markdown-content strong { font-weight: 750; }
+.app-shell .markdown-content a { text-underline-offset: 3px; }
+.app-shell .message-bubble.assistant-answer-bubble {
+  padding-top: 1.05em;
+  padding-bottom: 1.05em;
+}
+@media (max-width: 640px) {
+  .app-shell .markdown-content {
+    font-size: 16px;
+    line-height: 1.88;
+    letter-spacing: .006em;
+  }
+  .app-shell .markdown-content p { margin-bottom: 1.12em; line-height: 1.88; }
+  .app-shell .markdown-content h1 { font-size: 1.5em; }
+  .app-shell .markdown-content h2 { font-size: 1.3em; }
+  .app-shell .markdown-content h3 { font-size: 1.14em; }
+  .app-shell .markdown-content h1,
+  .app-shell .markdown-content h2,
+  .app-shell .markdown-content h3,
+  .app-shell .markdown-content h4 { margin-top: 1.4em; margin-bottom: .58em; }
+  .app-shell .markdown-content li { margin: .48em 0; line-height: 1.82; }
+  .app-shell .markdown-content th,
+  .app-shell .markdown-content td { padding: .72em .82em; min-width: 120px; }
+  .app-shell .message-bubble.assistant-answer-bubble { padding-top: 1em; padding-bottom: 1em; }
+}
+
+/* Mobile reading fix: leave enough scroll room above the fixed composer. */
+@media (max-width: 700px) {
+  .app-shell .messages {
+    padding-bottom: 240px !important;
+    scroll-padding-bottom: 240px;
+  }
+  .app-shell .conversation > .message-row:last-child {
+    scroll-margin-bottom: 240px;
+  }
+}
+
+
+/* ChatGPT-style scroll-under header: translucent top controls stay visible while chat text moves beneath. */
+.app-shell .workspace { position: relative; }
+.app-shell .topbar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 35 !important;
+  background: color-mix(in srgb, var(--panel, #fff) 62%, transparent) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.055)) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  border-bottom: 1px solid rgba(120,120,140,.12) !important;
+  box-shadow: 0 8px 26px rgba(30,20,50,.035) !important;
+  pointer-events: none;
+}
+.app-shell .topbar button,
+.app-shell .topbar a,
+.app-shell .topbar input,
+.app-shell .topbar [role="button"],
+.app-shell .topbar .model-selector {
+  pointer-events: auto;
+}
+.app-shell .messages {
+  padding-top: 108px !important;
+}
+@media (max-width: 700px) {
+  .app-shell .topbar {
+    min-height: 84px !important;
+    background: color-mix(in srgb, var(--panel, #fff) 46%, transparent) !important;
+    background-image: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.075)) !important;
+    backdrop-filter: blur(14px) saturate(135%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  }
+  .app-shell .messages { padding-top: 94px !important; }
+}
+
+
+/* Mobile chat polish: keep each turn visually grouped and expose answer actions. */
+@media (max-width: 700px) {
+  .app-shell .message-row { gap: 8px; margin-bottom: 24px; }
+  .app-shell .message-row.user .message-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .app-shell .message-row.user .message-meta { align-self: flex-end; }
+  .app-shell .message-row.user .message-bubble {
+    align-self: flex-end;
+    max-width: min(88%, 620px);
+    border-radius: 20px 20px 5px 20px;
+    padding: 12px 16px;
+  }
+  .app-shell .message-row.assistant .assistant-answer-bubble {
+    border-radius: 5px 18px 18px 18px;
+    padding: 16px 15px;
+    overflow: visible;
+  }
+  .app-shell .assistant-action-bar {
+    display: flex !important;
+    flex-wrap: wrap;
+    min-height: 42px;
+    margin-top: 16px;
+    padding-top: 10px;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .app-shell .assistant-action-bar .action-icon-button {
+    width: 36px !important;
+    height: 36px !important;
+    color: var(--muted, #777) !important;
+  }
+  .app-shell .messages {
+    padding-bottom: 320px !important;
+    scroll-padding-bottom: 320px !important;
+  }
+  .app-shell .conversation > .message-row:last-child {
+    scroll-margin-bottom: 320px !important;
+  }
+  .app-shell .composer-dock {
+    background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg, #fff) 76%, transparent) 28%, var(--bg, #fff) 70%);
+  }
+}
