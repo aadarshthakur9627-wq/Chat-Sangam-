@@ -3718,3 +3718,50 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   }
   .app-shell .messages { padding-top: 94px !important; }
 }
+
+
+/* Mobile chat polish: keep each turn visually grouped and expose answer actions. */
+@media (max-width: 700px) {
+  .app-shell .message-row { gap: 8px; margin-bottom: 24px; }
+  .app-shell .message-row.user .message-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .app-shell .message-row.user .message-meta { align-self: flex-end; }
+  .app-shell .message-row.user .message-bubble {
+    align-self: flex-end;
+    max-width: min(88%, 620px);
+    border-radius: 20px 20px 5px 20px;
+    padding: 12px 16px;
+  }
+  .app-shell .message-row.assistant .assistant-answer-bubble {
+    border-radius: 5px 18px 18px 18px;
+    padding: 16px 15px;
+    overflow: visible;
+  }
+  .app-shell .assistant-action-bar {
+    display: flex !important;
+    flex-wrap: wrap;
+    min-height: 42px;
+    margin-top: 16px;
+    padding-top: 10px;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+  .app-shell .assistant-action-bar .action-icon-button {
+    width: 36px !important;
+    height: 36px !important;
+    color: var(--muted, #777) !important;
+  }
+  .app-shell .messages {
+    padding-bottom: 320px !important;
+    scroll-padding-bottom: 320px !important;
+  }
+  .app-shell .conversation > .message-row:last-child {
+    scroll-margin-bottom: 320px !important;
+  }
+  .app-shell .composer-dock {
+    background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg, #fff) 76%, transparent) 28%, var(--bg, #fff) 70%);
+  }
+}
