@@ -3680,3 +3680,41 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     scroll-margin-bottom: 240px;
   }
 }
+
+
+/* ChatGPT-style scroll-under header: translucent top controls stay visible while chat text moves beneath. */
+.app-shell .workspace { position: relative; }
+.app-shell .topbar {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 35 !important;
+  background: color-mix(in srgb, var(--panel, #fff) 62%, transparent) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.055)) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  border-bottom: 1px solid rgba(120,120,140,.12) !important;
+  box-shadow: 0 8px 26px rgba(30,20,50,.035) !important;
+  pointer-events: none;
+}
+.app-shell .topbar button,
+.app-shell .topbar a,
+.app-shell .topbar input,
+.app-shell .topbar [role="button"],
+.app-shell .topbar .model-selector {
+  pointer-events: auto;
+}
+.app-shell .messages {
+  padding-top: 108px !important;
+}
+@media (max-width: 700px) {
+  .app-shell .topbar {
+    min-height: 84px !important;
+    background: color-mix(in srgb, var(--panel, #fff) 46%, transparent) !important;
+    background-image: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.075)) !important;
+    backdrop-filter: blur(14px) saturate(135%) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(135%) !important;
+  }
+  .app-shell .messages { padding-top: 94px !important; }
+}
