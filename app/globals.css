@@ -3551,3 +3551,121 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 }
 @media (prefers-reduced-motion: reduce) { .app-shell .message-row, .app-shell .hero-glow { animation: none !important; }
 }
+
+
+/* Reading comfort v1 — generous, ChatGPT-style answer typography */
+.app-shell .markdown-content {
+  max-width: 100%;
+  font-size: 16px;
+  line-height: 1.82;
+  letter-spacing: .005em;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.app-shell .markdown-content > * { max-width: 100%; }
+.app-shell .markdown-content p {
+  margin: 0 0 1.05em;
+  line-height: 1.82;
+}
+.app-shell .markdown-content p:last-child { margin-bottom: 0; }
+.app-shell .markdown-content h1,
+.app-shell .markdown-content h2,
+.app-shell .markdown-content h3,
+.app-shell .markdown-content h4 {
+  line-height: 1.4;
+  letter-spacing: -.018em;
+  margin: 1.55em 0 .62em;
+  font-weight: 700;
+}
+.app-shell .markdown-content h1 { font-size: 1.65em; }
+.app-shell .markdown-content h2 { font-size: 1.4em; }
+.app-shell .markdown-content h3 { font-size: 1.18em; }
+.app-shell .markdown-content h4 { font-size: 1.06em; }
+.app-shell .markdown-content h1:first-child,
+.app-shell .markdown-content h2:first-child,
+.app-shell .markdown-content h3:first-child,
+.app-shell .markdown-content h4:first-child { margin-top: 0; }
+.app-shell .markdown-content ul,
+.app-shell .markdown-content ol {
+  margin: .65em 0 1.15em;
+  padding-left: 1.55em;
+}
+.app-shell .markdown-content li {
+  padding-left: .22em;
+  margin: .42em 0;
+  line-height: 1.78;
+}
+.app-shell .markdown-content li > p { margin: .25em 0 .55em; }
+.app-shell .markdown-content li::marker { color: var(--sangam-pink, #ec4899); }
+.app-shell .markdown-content blockquote {
+  margin: 1.1em 0;
+  padding: .7em 1em;
+  border-left: 3px solid var(--sangam-violet, #8b5cf6);
+  border-radius: 0 12px 12px 0;
+  background: rgba(139,92,246,.065);
+  line-height: 1.8;
+}
+.app-shell .markdown-content pre {
+  margin: 1em 0 1.25em;
+  padding: 1.05em 1.1em;
+  border-radius: 14px;
+  max-width: 100%;
+  overflow-x: auto;
+  line-height: 1.65;
+}
+.app-shell .markdown-content :not(pre) > code {
+  padding: .12em .38em;
+  border-radius: 5px;
+  font-size: .9em;
+  overflow-wrap: anywhere;
+}
+.app-shell .markdown-content hr {
+  margin: 1.7em 0;
+  border: 0;
+  border-top: 1px solid var(--border, rgba(128,128,128,.22));
+}
+.app-shell .markdown-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.15em 0 1.4em;
+  border-radius: 12px;
+  line-height: 1.65;
+  -webkit-overflow-scrolling: touch;
+}
+.app-shell .markdown-content th,
+.app-shell .markdown-content td {
+  padding: .78em .95em;
+  min-width: 108px;
+  vertical-align: top;
+  text-align: left;
+}
+.app-shell .markdown-content th { font-weight: 700; }
+.app-shell .markdown-content strong { font-weight: 750; }
+.app-shell .markdown-content a { text-underline-offset: 3px; }
+.app-shell .message-bubble.assistant-answer-bubble {
+  padding-top: 1.05em;
+  padding-bottom: 1.05em;
+}
+@media (max-width: 640px) {
+  .app-shell .markdown-content {
+    font-size: 16px;
+    line-height: 1.88;
+    letter-spacing: .006em;
+  }
+  .app-shell .markdown-content p { margin-bottom: 1.12em; line-height: 1.88; }
+  .app-shell .markdown-content h1 { font-size: 1.5em; }
+  .app-shell .markdown-content h2 { font-size: 1.3em; }
+  .app-shell .markdown-content h3 { font-size: 1.14em; }
+  .app-shell .markdown-content h1,
+  .app-shell .markdown-content h2,
+  .app-shell .markdown-content h3,
+  .app-shell .markdown-content h4 { margin-top: 1.4em; margin-bottom: .58em; }
+  .app-shell .markdown-content li { margin: .48em 0; line-height: 1.82; }
+  .app-shell .markdown-content th,
+  .app-shell .markdown-content td { padding: .72em .82em; min-width: 120px; }
+  .app-shell .message-bubble.assistant-answer-bubble { padding-top: 1em; padding-bottom: 1em; }
+}
