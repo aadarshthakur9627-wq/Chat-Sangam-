@@ -786,6 +786,8 @@ export default function Home() {
       ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
       : effectiveModel;
 
+    const assistantMessageIndex = nextMessages.length;
+
     updateChat(chatId, (chat) => ({
       ...chat,
       updatedAt: Date.now(),
@@ -849,7 +851,7 @@ export default function Home() {
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+          messages: chat.messages.map((msg, index) => index === assistantMessageIndex
             ? { ...msg, modelId: servedModel.id, modelName: servedModel.name, modelProvider: servedModel.provider, fallbackFrom: fallbackFromId || null }
             : msg),
         }));
@@ -863,7 +865,7 @@ export default function Home() {
           updateChat(chatId, (chat) => ({
             ...chat,
             updatedAt: Date.now(),
-            messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+            messages: chat.messages.map((msg, index) => index === assistantMessageIndex
               ? { ...msg, content: "", comparisons: data.results }
               : msg),
           }));
@@ -883,7 +885,7 @@ export default function Home() {
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+          messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
         }));
       }
 
@@ -892,14 +894,14 @@ export default function Home() {
       updateChat(chatId, (chat) => ({
         ...chat,
         updatedAt: Date.now(),
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+        messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
       }));
     } catch (error) {
       if (error?.name === "AbortError") return;
       console.error("Chat error:", error);
       updateChat(chatId, (chat) => ({
         ...chat,
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
+        messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
       }));
     } finally {
       abortControllerRef.current = null;
