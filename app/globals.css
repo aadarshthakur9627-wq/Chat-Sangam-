@@ -3810,3 +3810,56 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     background: rgba(248,248,252,.50) !important;
   }
 }
+
+
+/* ChatGPT-like glass header v2: stronger see-through surface, visible scrolling content. */
+.app-shell .workspace > .topbar,
+.app-shell .topbar {
+  background-color: rgba(248, 248, 252, .24) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,255,255,.20) 0%,
+    rgba(255,255,255,.075) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(155%) !important;
+  backdrop-filter: blur(18px) saturate(155%) !important;
+  border-bottom: 1px solid rgba(120,120,140,.09) !important;
+  box-shadow: 0 4px 20px rgba(20,20,35,.025) !important;
+  isolation: isolate;
+}
+.app-shell.theme-dark .workspace > .topbar,
+.app-shell:not(.theme-light) .workspace > .topbar,
+.app-shell.theme-dark .topbar,
+.app-shell:not(.theme-light) .topbar {
+  background-color: rgba(18,16,23,.30) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,255,255,.075) 0%,
+    rgba(255,255,255,.018) 100%
+  ) !important;
+  border-bottom-color: rgba(255,255,255,.065) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,.07) !important;
+}
+.app-shell.theme-light .workspace > .topbar,
+.app-shell.theme-light .topbar {
+  background-color: rgba(248,248,252,.24) !important;
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,255,255,.20) 0%,
+    rgba(255,255,255,.075) 100%
+  ) !important;
+}
+.app-shell .topbar button,
+.app-shell .topbar a,
+.app-shell .topbar input,
+.app-shell .topbar [role="button"],
+.app-shell .topbar .model-selector {
+  pointer-events: auto !important;
+}
+@media (max-width: 700px) {
+  .app-shell .workspace > .topbar,
+  .app-shell .topbar {
+    -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+    backdrop-filter: blur(20px) saturate(160%) !important;
+  }
+}
