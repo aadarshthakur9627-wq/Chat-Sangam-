@@ -3765,3 +3765,48 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     background: linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--bg, #fff) 76%, transparent) 28%, var(--bg, #fff) 70%);
   }
 }
+
+
+/* ChatGPT-inspired true translucent header: content remains visible beneath the glass. */
+.app-shell .topbar {
+  background: rgba(248, 248, 252, .54) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.30), rgba(255,255,255,.10)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(165%) !important;
+  backdrop-filter: blur(24px) saturate(165%) !important;
+  border-bottom: 1px solid rgba(120, 120, 140, .10) !important;
+  box-shadow: 0 5px 24px rgba(20, 20, 35, .035) !important;
+  pointer-events: auto !important;
+}
+.app-shell.theme-dark .topbar,
+.app-shell:not(.theme-light) .topbar {
+  background: rgba(18, 16, 23, .58) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.025)) !important;
+  border-bottom-color: rgba(255,255,255,.075) !important;
+  box-shadow: 0 5px 24px rgba(0,0,0,.10) !important;
+}
+.app-shell.theme-light .topbar {
+  background: rgba(248, 248, 252, .56) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.10)) !important;
+  border-bottom-color: rgba(120,120,140,.10) !important;
+}
+.app-shell .topbar button,
+.app-shell .topbar a,
+.app-shell .topbar input,
+.app-shell .topbar [role="button"],
+.app-shell .topbar .model-selector {
+  pointer-events: auto !important;
+}
+@media (max-width: 700px) {
+  .app-shell .topbar {
+    background: rgba(248,248,252,.48) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(170%) !important;
+    backdrop-filter: blur(26px) saturate(170%) !important;
+  }
+  .app-shell.theme-dark .topbar,
+  .app-shell:not(.theme-light) .topbar {
+    background: rgba(18,16,23,.52) !important;
+  }
+  .app-shell.theme-light .topbar {
+    background: rgba(248,248,252,.50) !important;
+  }
+}
