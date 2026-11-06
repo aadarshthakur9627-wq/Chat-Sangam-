@@ -86,8 +86,25 @@ function createChat() {
 // very first pair when the conversation starts with an assistant answer.
 function normalizeChatMessageOrder(chat) {
   if (!chat || !Array.isArray(chat.messages) || chat.messages.length < 2) return chat;
-  if (chat.messages[0]?.role !== "assistant" || chat.messages[1]?.role !== "user") return chat;
-  return { ...chat, messages: [chat.messages[1], chat.messages[0], ...chat.messages.slice(2)] };
+  const messages = chat.messages;
+  // Repair legacy chats where rapid sends stored multiple user turns before
+  // their assistant replies. Only repair complete, balanced user/assistant runs.
+  const hasAdjacentSameRole = messages.some((message, index) =>
+    index > 0 && message?.role === messages[index - 1]?.role
+  );
+  const userMessages = messages.filter((message) => message?.role === "user");
+  const assistantMessages = messages.filter((message) => message?.role === "assistant");
+  if (hasAdjacentSameRole && userMessages.length === assistantMessages.length &&
+      userMessages.length + assistantMessages.length === messages.length) {
+    return {
+      ...chat,
+      messages: userMessages.flatMap((message, index) => [message, assistantMessages[index]]),
+    };
+  }
+  if (messages[0]?.role === "assistant" && messages[1]?.role === "user") {
+    return { ...chat, messages: [messages[1], messages[0], ...messages.slice(2)] };
+  }
+  return chat;
 }
 
 function formatTime(timestamp) {
@@ -219,6 +236,7 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState(null);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [loaded, setLoaded] = useState(false);
   const [cloudSyncReady, setCloudSyncReady] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -757,6 +775,8 @@ export default function Home() {
   }
 
   async function requestCompletion(chatId, nextMessages) {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     const controller = new AbortController();
     abortControllerRef.current = controller;
     setLoading(true);
@@ -785,6 +805,8 @@ export default function Home() {
     const requestModel = imageAttachments.length
       ? GROQ_MODELS.find((model) => model.id === "qwen/qwen3.8-27b")
       : effectiveModel;
+
+    const assistantMessageIndex = nextMessages.length;
 
     updateChat(chatId, (chat) => ({
       ...chat,
@@ -849,7 +871,7 @@ export default function Home() {
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+          messages: chat.messages.map((msg, index) => index === assistantMessageIndex
             ? { ...msg, modelId: servedModel.id, modelName: servedModel.name, modelProvider: servedModel.provider, fallbackFrom: fallbackFromId || null }
             : msg),
         }));
@@ -863,7 +885,7 @@ export default function Home() {
           updateChat(chatId, (chat) => ({
             ...chat,
             updatedAt: Date.now(),
-            messages: chat.messages.map((msg, index) => index === chat.messages.length - 1
+            messages: chat.messages.map((msg, index) => index === assistantMessageIndex
               ? { ...msg, content: "", comparisons: data.results }
               : msg),
           }));
@@ -883,7 +905,7 @@ export default function Home() {
         updateChat(chatId, (chat) => ({
           ...chat,
           updatedAt: Date.now(),
-          messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+          messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
         }));
       }
 
@@ -892,17 +914,18 @@ export default function Home() {
       updateChat(chatId, (chat) => ({
         ...chat,
         updatedAt: Date.now(),
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
+        messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: fallbackNotice + parsed.text, sources: parsed.sources || msg.sources || [] } : msg),
       }));
     } catch (error) {
       if (error?.name === "AbortError") return;
       console.error("Chat error:", error);
       updateChat(chatId, (chat) => ({
         ...chat,
-        messages: chat.messages.map((msg, index) => index === chat.messages.length - 1 ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
+        messages: chat.messages.map((msg, index) => index === assistantMessageIndex ? { ...msg, content: "⚠️ " + (error?.message || "Kuch problem aa gayi. Please dobara try karo.") } : msg),
       }));
     } finally {
       abortControllerRef.current = null;
+      loadingRef.current = false;
       setLoading(false);
       // Allow the same question to be retried immediately after success or failure.
       lastRequestRef.current = { fingerprint: "", at: 0 };
@@ -1004,7 +1027,7 @@ export default function Home() {
   async function sendMessage(event) {
     event?.preventDefault();
     const text = message.trim();
-    if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
+    if ((!text && !attachedFiles.length && !attachedImages.length) || loading || loadingRef.current || fileLoading || !activeChat) return;
     if (selectedProviderConfigured === false) {
       if (effectiveModel.kind === "auto") {
         alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
