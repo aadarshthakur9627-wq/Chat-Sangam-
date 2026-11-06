@@ -19,6 +19,7 @@
     "katex": "^0.16.22",
     "rehype-katex": "^7.0.1",
     "remark-math": "^6.0.0",
-    "@supabase/ssr": "0.12.7"
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "latest"
   }
 }

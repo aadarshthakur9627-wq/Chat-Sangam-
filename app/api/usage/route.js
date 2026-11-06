@@ -21,6 +21,6 @@ export async function GET() {
     used: Number(usage?.used) || 0,
     limit: Number(usage?.daily_limit) || 20,
     resetsAt: usage?.resets_at || null,
-    plan: Number(usage?.daily_limit) > 20 ? "pro" : "free",
+    plan: Number(usage?.daily_limit) > 5 ? "pro" : "free",
   }, { headers: { "Cache-Control": "private, no-store, max-age=0" } });
 }
