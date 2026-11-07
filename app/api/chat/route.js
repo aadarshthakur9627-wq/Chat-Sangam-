@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
+import { createProviderOrder, normalizeCompareModels, shouldRetryWithAnotherProvider } from "../../../lib/ai/routing.mjs";
 
 let groqClient;
 
@@ -859,23 +860,6 @@ function isProviderConfigured(modelId) {
   return Boolean(process.env.GROQ_API_KEY?.trim());
 }
 
-function shouldRetryWithAnotherProvider(error) {
-  const status = Number(error?.status);
-  const errorCode = String(error?.error?.code || error?.code || "").toLowerCase();
-  const errorText = String(error?.error?.message || error?.message || "").toLowerCase();
-
-  // GPT-OSS can occasionally return a tool call when this request did not
-  // enable tools (Groq reports this as tool_use_failed / "tool choice is none").
-  // This is a provider-generation failure, not a bad user request: Auto mode
-  // should move to the next configured free provider instead of stopping at 400.
-  const toolRoutingFailure =
-    errorCode === "tool_use_failed" ||
-    errorText.includes("tool choice is none") ||
-    errorText.includes("model called a tool") ||
-    errorText.includes("failed_generation");
-
-  return toolRoutingFailure || !status || [401, 403, 404, 408, 429].includes(status) || status >= 500;
-}
 
 async function generateRoutedProviderAnswer(modelId, messages, attachments, query, webSearch, deepResearchEnabled, safeReasoning) {
   if (modelId === ANTIGRAVITY_MODEL_ID) {
@@ -946,16 +930,6 @@ async function generateRoutedProviderAnswer(modelId, messages, attachments, quer
   return { answer: normalizeSearchAnswer(answer) + formatSources(results) };
 }
 
-function routedModelOrder(requestedModelId) {
-  const freeOrder = [GROQ_MODEL, GEMINI_MODEL, ANTIGRAVITY_MODEL_ID];
-  if (requestedModelId === AUTO_FREE_MODEL_ID) return freeOrder;
-  const primary = requestedModelId === ANTIGRAVITY_MODEL_ID
-    ? ANTIGRAVITY_MODEL_ID
-    : requestedModelId === GEMINI_MODEL
-      ? GEMINI_MODEL
-      : resolveGroqModel(requestedModelId);
-  return [primary, ...freeOrder.filter((modelId) => modelId !== primary)];
-}
 
 const MAX_CHAT_REQUEST_BYTES = 5 * 1024 * 1024;
 
@@ -992,9 +966,7 @@ export async function POST(request) {
     const requestedModelId = typeof body.model === "string" ? body.model : GROQ_MODEL;
     const isGeminiModel = requestedModelId === GEMINI_MODEL;
     const requestedModel = resolveGroqModel(body.model);
-    const requestedCompareModels = Array.isArray(body.compareModels)
-      ? [...new Set(body.compareModels.map(resolveGroqModel))].filter((model) => GROQ_MODEL_CATALOG[model]?.kind === "text").slice(0, 3)
-      : [];
+    const requestedCompareModels = normalizeCompareModels(body.compareModels, GROQ_MODEL_CATALOG);
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch === true;
     const deepResearchEnabled = body.deepResearch === true;
@@ -1022,6 +994,9 @@ export async function POST(request) {
     }
 
     const latest = latestUserMessage(messages);
+    if (!latest) {
+      return Response.json({ error: "A user message is required to start an AI request." }, { status: 400 });
+    }
 
     const { data: usageRows, error: usageError } = await supabase.rpc("consume_chat_sangam_daily_credit");
     if (usageError) {
@@ -1114,7 +1089,13 @@ export async function POST(request) {
 
     if (latest && !imageAttachments.length) {
       const isAutoFree = requestedModelId === AUTO_FREE_MODEL_ID;
-      const order = routedModelOrder(requestedModelId);
+      const order = createProviderOrder(requestedModelId, {
+        groqModel: GROQ_MODEL,
+        geminiModel: GEMINI_MODEL,
+        antigravityModel: ANTIGRAVITY_MODEL_ID,
+        autoModel: AUTO_FREE_MODEL_ID,
+        resolveGroqModel,
+      });
       const candidates = order.filter((modelId) => isProviderConfigured(modelId));
       if (!candidates.length) {
         return Response.json(
