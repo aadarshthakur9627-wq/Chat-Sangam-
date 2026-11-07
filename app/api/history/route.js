@@ -91,21 +91,30 @@ export async function PUT(request) {
     const { user, error: authResponse } = await requireUser(supabase);
     if (!user) return authResponse;
 
-    let body;
+    let rawBody;
     try {
-      body = await request.json();
+      rawBody = await request.text();
     } catch {
-      return Response.json({ error: "Invalid history payload." }, { status: 400 });
+      return Response.json({ error: "Could not read history payload." }, { status: 400 });
     }
-    if (!body || !Array.isArray(body.chats)) {
-      return Response.json({ error: "A chats array is required." }, { status: 400 });
+    const parsed = parseHistoryPayload(rawBody);
+    if (!parsed.ok) return Response.json({ error: parsed.error }, { status: parsed.status });
+
+    const chats = parsed.body.chats.slice(0, 30);
+    const uniqueChats = new Map();
+    for (const chat of chats) {
+      if (typeof chat?.id !== "string") continue;
+      const id = chat.id.trim();
+      if (!id || id.length > 100) continue;
+      uniqueChats.set(id, { ...chat, id });
     }
-    const chats = body.chats.slice(0, 30);
-    const conversationRows = chats.filter((chat) => typeof chat?.id === "string" && chat.id.length <= 100).map((chat) => ({
+    const normalizedChats = [...uniqueChats.values()];
+    const now = Date.now();
+    const conversationRows = normalizedChats.map((chat) => ({
       user_id: user.id,
       external_id: chat.id,
-      title: String(chat.title || "New conversation").replace(/\s+/g, " ").slice(0, 200) || "New conversation",
-      updated_at: new Date(Number(chat.updatedAt) || Date.now()).toISOString(),
+      title: String(chat.title || "New conversation").replace(/\\s+/g, " ").slice(0, 200) || "New conversation",
+      updated_at: normalizeHistoryTimestamp(chat.updatedAt, now),
     }));
     if (!conversationRows.length) return Response.json({ ok: true, saved: 0 });
 
