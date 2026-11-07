@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
+import { parseHistoryPayload, normalizeHistoryTimestamp } from "../../../lib/history/validation.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -123,20 +124,25 @@ export async function PUT(request) {
 
     const databaseIds = new Map((savedConversations || []).map((chat) => [chat.external_id, chat.id]));
     const messageRows = [];
-    for (const chat of chats) {
-      if (!databaseIds.has(chat?.id) || !Array.isArray(chat?.messages)) continue;
+    const seenMessageIds = new Set();
+    for (const chat of normalizedChats) {
+      if (!databaseIds.has(chat.id) || !Array.isArray(chat.messages)) continue;
       const recentMessages = chat.messages.slice(-120);
       for (let messageIndex = 0; messageIndex < recentMessages.length; messageIndex += 1) {
         const message = recentMessages[messageIndex];
         if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string") continue;
+        const fallbackId = String(chat.id) + ":" + String(Math.max(0, chat.messages.length - recentMessages.length + messageIndex));
+        const externalId = typeof message.id === "string" && message.id.trim() && message.id.length <= 120 ? message.id.trim() : fallbackId;
+        if (seenMessageIds.has(externalId)) continue;
+        seenMessageIds.add(externalId);
         messageRows.push({
           user_id: user.id,
           conversation_id: databaseIds.get(chat.id),
-          external_id: typeof message.id === "string" && message.id.length <= 120 ? message.id : String(chat.id) + ":" + String(Math.max(0, chat.messages.length - recentMessages.length + messageIndex)),
+          external_id: externalId,
           role: message.role,
           content: message.content.slice(0, 120000),
           metadata: safeMetadata(message),
-          created_at: new Date(Number(message.createdAt) || ((Number(chat.updatedAt) || Date.now()) - (chat.messages.length - recentMessages.length + messageIndex))).toISOString(),
+          created_at: normalizeHistoryTimestamp(message.createdAt, Number.isFinite(Number(chat.updatedAt)) ? Number(chat.updatedAt) - (chat.messages.length - recentMessages.length + messageIndex) : now),
         });
       }
     }
