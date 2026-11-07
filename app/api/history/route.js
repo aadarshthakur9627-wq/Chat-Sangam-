@@ -1,5 +1,5 @@
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
-import { parseHistoryPayload, normalizeHistoryTimestamp } from "../../../lib/history/validation.mjs";
+import { MAX_HISTORY_REQUEST_BYTES, parseHistoryPayload, normalizeHistoryTimestamp } from "../../../lib/history/validation.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +90,11 @@ export async function PUT(request) {
     const supabase = await createServerSupabaseClient();
     const { user, error: authResponse } = await requireUser(supabase);
     if (!user) return authResponse;
+
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > MAX_HISTORY_REQUEST_BYTES) {
+      return Response.json({ error: "Chat history is too large to sync. Please reduce the number or size of saved chats." }, { status: 413 });
+    }
 
     let rawBody;
     try {
