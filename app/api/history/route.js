@@ -113,7 +113,7 @@ export async function PUT(request) {
     const conversationRows = normalizedChats.map((chat) => ({
       user_id: user.id,
       external_id: chat.id,
-      title: String(chat.title || "New conversation").replace(/\\s+/g, " ").slice(0, 200) || "New conversation",
+      title: String(chat.title || "New conversation").replace(/\s+/g, " ").slice(0, 200) || "New conversation",
       updated_at: normalizeHistoryTimestamp(chat.updatedAt, now),
     }));
     if (!conversationRows.length) return Response.json({ ok: true, saved: 0 });
