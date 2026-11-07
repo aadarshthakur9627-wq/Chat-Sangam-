@@ -861,6 +861,48 @@ function isProviderConfigured(modelId) {
 }
 
 
+async function createGroqStreamResponse(modelId, messages, attachments, safeReasoning, fallbackFrom) {
+  const responseStream = await createGroqCompletion({
+    model: resolveGroqModel(modelId),
+    messages: buildMessages(messages, attachments, resolveGroqModel(modelId)),
+    temperature: 0.6,
+    top_p: 0.95,
+    reasoning_effort: safeReasoning,
+    include_reasoning: false,
+    max_completion_tokens: 3072,
+    stream: true,
+  });
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of responseStream) {
+          const content = chunk.choices?.[0]?.delta?.content;
+          if (typeof content === "string" && content) {
+            controller.enqueue(encoder.encode(content));
+          }
+        }
+        controller.close();
+      } catch (error) {
+        console.error("Groq chat streaming error:", error);
+        controller.enqueue(encoder.encode("\n\n[Response stream interrupted. Please try again.]"));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Chat-Sangam-Model": modelId,
+      ...(fallbackFrom ? { "X-Chat-Sangam-Fallback-From": fallbackFrom } : {}),
+    },
+  });
+}
+
 async function generateRoutedProviderAnswer(modelId, messages, attachments, query, webSearch, deepResearchEnabled, safeReasoning) {
   if (modelId === ANTIGRAVITY_MODEL_ID) {
     return generateAntigravityAnswer(messages, attachments, query, webSearch, deepResearchEnabled);
@@ -1110,10 +1152,22 @@ export async function POST(request) {
       for (const modelId of candidates) {
         tried.push(modelId);
         try {
+          const fallbackFrom = lastFailedModelId || (!isAutoFree && modelId !== order[0] ? order[0] : "");
+          const canStreamGroq = modelId !== GEMINI_MODEL
+            && modelId !== ANTIGRAVITY_MODEL_ID
+            && !webSearch
+            && !deepResearchEnabled
+            && !(shouldAutoSearch(latest) && !isDirectClockQuestion(latest));
+
+          if (canStreamGroq) {
+            return await createGroqStreamResponse(
+              modelId, messages, attachments, safeReasoning, fallbackFrom
+            );
+          }
+
           const result = await generateRoutedProviderAnswer(
             modelId, messages, attachments, latest, webSearch, deepResearchEnabled, safeReasoning
           );
-          const fallbackFrom = lastFailedModelId || (!isAutoFree && modelId !== order[0] ? order[0] : "");
           return new Response(result.answer, {
             headers: {
               "Content-Type": "text/plain; charset=utf-8",
