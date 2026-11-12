@@ -1005,7 +1005,7 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
-    if (selectedProviderConfigured === false) {
+    if (selectedProviderConfigured === false && !compareReady) {
       if (effectiveModel.kind === "auto") {
         alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
       } else {
@@ -1381,7 +1381,7 @@ export default function Home() {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
                         setModelMenuOpen(false);
-                        if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
+                        if (item.kind === "vision") setCompareMode(false);
                       }}
                       disabled={(item.kind === "vision" && !visionActive) || (item.kind === "auto" ? [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) : item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
@@ -1483,7 +1483,7 @@ export default function Home() {
                 >
                   <div className={"message-avatar " + msg.role}>{msg.role === "user" ? "A" : "✦"}</div>
                   <div className="message-main">
-                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Groq · Multi-model" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : (msg.modelProvider === "Google Gemini" ? "Gemini · " : msg.modelProvider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
+                    <div className="message-meta"><strong>{msg.role === "user" ? "You" : "Chat Sangam"}</strong><span>{msg.role === "assistant" ? (Array.isArray(msg.comparisons) ? "Multi-model comparison" : (msg.vision ? "Groq · Qwen 3.8 27B Vision" : (msg.modelProvider === "Google Gemini" ? "Gemini · " : msg.modelProvider === "Google Antigravity" ? "Antigravity · " : "Groq · ") + (msg.modelName || "GPT-OSS 20B"))) : "Message"}</span></div>
                     <div className={"message-bubble " + (msg.role === "assistant" ? "assistant-answer-bubble" : "")}>
                       {msg.role === "assistant" ? (
                         <div className="markdown-content">
