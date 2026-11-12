@@ -25,3 +25,19 @@ test("normalizes invalid timestamps using a safe fallback", () => {
   assert.equal(normalizeHistoryTimestamp("not-a-date", 0), new Date(0).toISOString());
   assert.equal(normalizeHistoryTimestamp(1000), new Date(1000).toISOString());
 });
+
+test("accepts bounded explicit deleted chat IDs", () => {
+  const result = parseHistoryPayload(JSON.stringify({
+    chats: [],
+    deletedChatIds: ["chat-1", "chat-2"],
+  }));
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.body.deletedChatIds, ["chat-1", "chat-2"]);
+});
+
+test("rejects invalid deleted chat IDs", () => {
+  assert.equal(parseHistoryPayload(JSON.stringify({ chats: [], deletedChatIds: "chat-1" })).status, 400);
+  assert.equal(parseHistoryPayload(JSON.stringify({ chats: [], deletedChatIds: [""] })).status, 400);
+  assert.equal(parseHistoryPayload(JSON.stringify({ chats: [], deletedChatIds: ["x".repeat(101)] })).status, 400);
+  assert.equal(parseHistoryPayload(JSON.stringify({ chats: [], deletedChatIds: Array.from({ length: 201 }, (_, i) => String(i)) })).status, 400);
+});
