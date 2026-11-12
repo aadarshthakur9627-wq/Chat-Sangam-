@@ -128,14 +128,17 @@ export async function PUT(request) {
       if (upsertConversationsError) throw upsertConversationsError;
     }
 
-    const { data: savedConversations, error: loadConversationsError } = await supabase
-      .from("conversations")
-      .select("id, external_id")
-      .eq("user_id", user.id);
-    if (loadConversationsError) throw loadConversationsError;
-
-    const desiredConversationIds = new Set(conversationRows.map((chat) => chat.external_id));
-    const staleConversations = (savedConversations || []).filter((chat) => !desiredConversationIds.has(chat.external_id));
+    const externalIds = conversationRows.map((chat) => chat.external_id);
+    let savedConversations = [];
+    if (externalIds.length) {
+      const { data, error: loadConversationsError } = await supabase
+        .from("conversations")
+        .select("id, external_id")
+        .eq("user_id", user.id)
+        .in("external_id", externalIds);
+      if (loadConversationsError) throw loadConversationsError;
+      savedConversations = data || [];
+    }
 
     const databaseIds = new Map((savedConversations || []).map((chat) => [chat.external_id, chat.id]));
     const messageRows = [];
@@ -170,48 +173,25 @@ export async function PUT(request) {
       if (messagesError) throw messagesError;
     }
 
-    // Treat PUT as a complete snapshot: remove messages omitted from each saved chat.
-    // Do this only after all requested upserts succeed, so a transient insert failure
-    // cannot erase the user's last successfully saved version.
-    for (const chat of savedConversations || []) {
-      if (!desiredConversationIds.has(chat.external_id)) continue;
-      const wanted = new Set(messageRows
-        .filter((message) => message.conversation_id === chat.id)
-        .map((message) => message.external_id));
-      const { data: existingMessages, error: existingMessagesError } = await supabase
-        .from("messages")
-        .select("external_id")
-        .eq("user_id", user.id)
-        .eq("conversation_id", chat.id);
-      if (existingMessagesError) throw existingMessagesError;
-      const staleMessageIds = (existingMessages || [])
-        .map((message) => message.external_id)
-        .filter((id) => !wanted.has(id));
-      for (let offset = 0; offset < staleMessageIds.length; offset += 200) {
-        const batch = staleMessageIds.slice(offset, offset + 200);
-        const { error: deleteMessagesError } = await supabase
-          .from("messages")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("conversation_id", chat.id)
-          .in("external_id", batch);
-        if (deleteMessagesError) throw deleteMessagesError;
-      }
-    }
-
-    // Delete conversations removed by the client; cascading FK removes their messages.
-    const staleConversationIds = staleConversations.map((chat) => chat.id);
-    for (let offset = 0; offset < staleConversationIds.length; offset += 100) {
-      const batch = staleConversationIds.slice(offset, offset + 100);
-      const { error: deleteConversationsError } = await supabase
+    // Delete only explicitly requested chat IDs. A full-snapshot delete would risk
+    // erasing chats created on another device during concurrent synchronization.
+    const deletedChatIds = [...new Set((parsed.body.deletedChatIds || [])
+      .filter((id) => typeof id === "string" && id.trim() && id.length <= 100)
+      .map((id) => id.trim()))].slice(0, 200);
+    let deletedChats = 0;
+    for (let offset = 0; offset < deletedChatIds.length; offset += 100) {
+      const batch = deletedChatIds.slice(offset, offset + 100);
+      const { data: deletedRows, error: deleteConversationsError } = await supabase
         .from("conversations")
         .delete()
         .eq("user_id", user.id)
-        .in("id", batch);
+        .in("external_id", batch)
+        .select("id");
       if (deleteConversationsError) throw deleteConversationsError;
+      deletedChats += deletedRows?.length || 0;
     }
 
-    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length, deletedChats: staleConversationIds.length }, { headers: { "Cache-Control": "private, no-store" } });
+    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length, deletedChats }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Chat history save error:", error);
     return Response.json({ error: "Could not save chat history." }, { status: 500 });
