@@ -2,6 +2,13 @@
 
 Chat Sangam is a mobile-first, multi-model AI workspace built with Next.js. It includes a free-model router, chat and vision models, Markdown/math rendering, web search and research, document extraction, and browser-local chat history.
 
+## Model comparison
+
+- Compare mode can run selected Groq and Gemini text models in parallel and displays each response in its own card.
+- Comparison is currently unavailable with image attachments, Web Search, or Deep Research enabled.
+- Each provider call uses that provider's own API quota and pricing. Chat Sangam's Free plan label does not mean third-party model APIs are unlimited or always free.
+- If a selected provider key is missing or its API is unavailable, that model's comparison card displays the provider error while other model results remain visible.
+
 ## Current model routing
 
 - **Auto (Free)** is the default selection.
