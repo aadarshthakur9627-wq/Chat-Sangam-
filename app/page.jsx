@@ -1410,7 +1410,7 @@ export default function Home() {
                   <label className="model-search"><span>⌕</span><input value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder="Search models" aria-label="Search AI models" /><button type="button" onClick={() => setModelSearch("")} aria-label="Clear model search">×</button></label>
                   <div className="model-categories" role="tablist" aria-label="Model categories">{["Popular","Intelligence","Latest"].map((category) => <button key={category} type="button" role="tab" aria-selected={modelCategory === category} className={modelCategory === category ? "active" : ""} onClick={() => setModelCategory(category)}>{category}</button>)}</div>
                   <div className="model-auto-label">or pick your own</div>
-                  {[AUTO_ENGINE, ...GROQ_MODELS].filter((item) => item.name.toLowerCase().includes(modelSearch.toLowerCase()) || item.provider.toLowerCase().includes(modelSearch.toLowerCase())).filter((item) => modelCategory !== "Latest" || item.id !== "auto-free").map((item) => (
+                  {[AUTO_ENGINE, ...GROQ_MODELS].filter((item) => { const query = modelSearch.trim().toLowerCase(); const matchesSearch = !query || [item.name, item.provider, item.description].some((value) => value.toLowerCase().includes(query)); const matchesCategory = modelCategory === "Popular" ? item.kind === "auto" || item.id === "openai/gpt-oss-20b" || item.id === "gemini-3.5-flash-lite" : modelCategory === "Intelligence" ? item.kind === "text" || item.kind === "agent" : item.kind === "vision" || item.kind === "agent"; return matchesSearch && matchesCategory; }).map((item) => (
                     <button className={"model-option " + (selectedModelId === item.id ? "active" : "")} type="button" role="menuitem" key={item.id}
                       onClick={() => {
                         if (item.kind === "vision" && !visionActive) return;
@@ -1434,13 +1434,17 @@ export default function Home() {
                       </button>
                       {compareMode && !visionActive && (
                         <div className="compare-picks">
+                          <div className="compare-picks-head"><strong>Compare up to 3 models</strong><span>{compareModelIds.length}/3 selected</span></div>
+                          <p>Choose at least two models. They receive the same prompt in parallel.</p>
                           {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
                             <label key={item.id} className="compare-pick">
-                              <input type="checkbox" checked={compareModelIds.includes(item.id)}
+                              <input type="checkbox" checked={compareModelIds.includes(item.id)} disabled={!compareModelIds.includes(item.id) && compareModelIds.length >= 3}
                                 onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
-                              <span>{item.icon}</span><strong>{item.name}</strong>
+                              <span>{item.icon}</span><strong>{item.name}</strong><small>{item.provider}</small>
+                              {compareModelIds.includes(item.id) && <b aria-label="Selected">✓</b>}
                             </label>
                           ))}
+                          {compareModelIds.length < 2 && <small className="compare-validation">Select one more model to enable comparison.</small>}
                         </div>
                       )}
                       <div className="model-menu-divider" />
@@ -1691,7 +1695,7 @@ export default function Home() {
           )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-               <div className="composer-top-actions"><button type="button" className="composer-model composer-model-button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu"><span>{effectiveModel.icon} {effectiveModel.kind === "auto" ? "Auto" : effectiveModel.name}</span><b>⌄</b>{deepResearch ? <em>Research</em> : webSearch ? <em>Web Search</em> : null}</button><button type="button" className={"composer-compare-button " + (compareMode ? "active" : "")} onClick={toggleCompareMode} disabled={loading || visionActive} aria-pressed={compareMode} title={visionActive ? "Model comparison is unavailable with images" : "Compare responses from multiple AI models"}><span aria-hidden="true">⇄</span>{compareMode ? "Comparing" : "Compare models"}</button></div>
+               <div className="composer-top-actions"><button type="button" className="composer-model composer-model-button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu"><span>{effectiveModel.icon} {effectiveModel.kind === "auto" ? "Auto" : effectiveModel.name}</span><b>⌄</b>{deepResearch ? <em>Research</em> : webSearch ? <em>Web Search</em> : null}</button><button type="button" className={"composer-compare-button " + (compareMode ? "active" : "")} onClick={() => { if (compareMode) { setCompareMode(false); } else { toggleCompareMode(); setModelMenuOpen(true); } }} disabled={loading || visionActive} aria-pressed={compareMode} title={visionActive ? "Model comparison is unavailable with images" : "Compare responses from multiple AI models"}><span aria-hidden="true">⇄</span>{compareMode ? "Comparing" : "Compare models"}</button></div>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
