@@ -1595,6 +1595,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   border:1px solid color-mix(in srgb,var(--pink) 34%,transparent)!important;
   font-size:12px!important; font-weight:600!important;
 }
+.composer-top-actions { display:flex; align-items:center; gap:7px; min-width:0; flex-wrap:wrap; }
+.composer-compare-button { display:inline-flex; align-items:center; justify-content:center; gap:5px; min-height:32px; padding:6px 10px; border:1px solid rgba(139,92,246,.28); border-radius:999px; background:rgba(139,92,246,.09); color:#cbbcff; font-size:11px; font-weight:650; white-space:nowrap; transition:background .18s,border-color .18s,transform .12s; }
+.composer-compare-button:hover:not(:disabled) { background:rgba(139,92,246,.17); border-color:rgba(139,92,246,.55); }
+.composer-compare-button:active:not(:disabled) { transform:scale(.97); }
+.composer-compare-button.active { color:#fff; border-color:rgba(244,63,140,.48); background:linear-gradient(110deg,rgba(244,63,140,.2),rgba(139,92,246,.22)); box-shadow:0 0 16px rgba(139,92,246,.12); }
+.composer-compare-button:disabled { opacity:.45; cursor:not-allowed; }
+.composer-compare-button span { font-size:14px; }
 .composer-model-button b { color:var(--pink); font-size:15px; }
 .composer-model-button em {
   font-style:normal; font-size:10px; padding:3px 7px; border-radius:999px;
