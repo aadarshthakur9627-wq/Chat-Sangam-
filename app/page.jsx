@@ -1040,6 +1040,11 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
+    if (compareMode && compareModels.length < 2) {
+      alert("Select at least two AI models in Compare Models before sending.");
+      setModelMenuOpen(true);
+      return;
+    }
     if (selectedProviderConfigured === false && !compareReady) {
       if (effectiveModel.kind === "auto") {
         alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
@@ -1406,7 +1411,7 @@ export default function Home() {
               {modelMenuOpen && typeof document !== "undefined" && createPortal(
                 <div className={"model-menu model-menu-portal theme-" + appearanceMode} role="menu" style={{ "--user-accent": accentColour, "--user-gradient": accentGradient === "soft" ? "linear-gradient(135deg," + accentColour + "30," + accentColour + "08 58%,transparent)" : accentGradient === "aurora" ? "linear-gradient(135deg," + accentColour + "35,#8b5cf625 55%,#0a84ff18)" : "linear-gradient(135deg," + accentColour + "22," + accentColour + "05 60%,transparent)" }}>
                   <div className="model-sheet-handle" />
-                  <div className="model-menu-head"><span>Choose a model</span><button type="button" className="model-refresh" onClick={() => { setProviderStatus({ groq: null, gemini: null, antigravity: null }); fetch("/api/status", { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error("Provider status request failed"); return response.json(); }).then((data) => setProviderStatus({ groq: Boolean(data?.providers?.groq?.configured), gemini: Boolean(data?.providers?.gemini?.configured), antigravity: Boolean(data?.providers?.antigravity?.configured) })).catch(() => setProviderStatus({ groq: null, gemini: null, antigravity: null })); }} aria-label="Refresh provider status">↻</button></div>
+                  <div className="model-menu-head"><span>Choose chat model</span><button type="button" className="model-refresh" onClick={() => { setProviderStatus({ groq: null, gemini: null, antigravity: null }); fetch("/api/status", { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error("Provider status request failed"); return response.json(); }).then((data) => setProviderStatus({ groq: Boolean(data?.providers?.groq?.configured), gemini: Boolean(data?.providers?.gemini?.configured), antigravity: Boolean(data?.providers?.antigravity?.configured) })).catch(() => setProviderStatus({ groq: null, gemini: null, antigravity: null })); }} aria-label="Refresh provider status">↻</button></div>
                   <label className="model-search"><span>⌕</span><input value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder="Search models" aria-label="Search AI models" /><button type="button" onClick={() => setModelSearch("")} aria-label="Clear model search">×</button></label>
                   <div className="model-categories" role="tablist" aria-label="Model categories">{["Popular","Intelligence","Latest"].map((category) => <button key={category} type="button" role="tab" aria-selected={modelCategory === category} className={modelCategory === category ? "active" : ""} onClick={() => setModelCategory(category)}>{category}</button>)}</div>
                   <div className="model-auto-label">or pick your own</div>
@@ -1415,6 +1420,7 @@ export default function Home() {
                       onClick={() => {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
+                        setCompareMode(false);
                         setModelMenuOpen(false);
                         if (item.kind === "vision") setCompareMode(false);
                       }}
