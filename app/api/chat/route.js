@@ -31,6 +31,7 @@ const ANTIGRAVITY_BASE_MODEL = "gemini-3.5-flash-lite";
 const GROQ_MODEL_CATALOG = {
   "openai/gpt-oss-20b": { name: "GPT-OSS 20B", kind: "text" },
   "qwen/qwen3.8-27b": { name: "Qwen 3.8 27B", kind: "vision" },
+  [GEMINI_MODEL]: { name: "Gemini 3.5 Flash-Lite", kind: "text", provider: "Google Gemini" },
 };
 
 function resolveGroqModel(model) {
@@ -822,6 +823,28 @@ function buildMessages(messages, attachments, model = GROQ_MODEL) {
   ];
 }
 
+async function compareProviderCompletion(modelId, messages, attachments, query, safeReasoning) {
+  if (modelId === GEMINI_MODEL) {
+    if (!process.env.GEMINI_API_KEY?.trim()) {
+      throw new Error("Gemini is not configured. Add GEMINI_API_KEY to this deployment to compare Gemini responses.");
+    }
+    const result = await generateGeminiAnswer(messages, attachments, query, false);
+    return { content: result.answer, provider: "Google Gemini" };
+  }
+
+  if (!process.env.GROQ_API_KEY?.trim()) {
+    throw new Error("Groq is not configured. Add GROQ_API_KEY to this deployment to compare Groq responses.");
+  }
+  const response = await compareModelCompletion(modelId, [
+    { role: "system", content: CHAT_SANGAM_SYSTEM_PROMPT + "\\n\\n" + getRuntimeDateInstruction() + "\\n\\nCURRENT ENGINE: Groq API using " + modelId + "." },
+    ...attachFileContext(messages, attachments),
+  ], safeReasoning);
+  return {
+    content: response.choices?.[0]?.message?.content || "No response.",
+    provider: "Groq",
+  };
+}
+
 async function compareModelCompletion(model, messages, safeReasoning) {
   const base = {
     model,
@@ -1055,23 +1078,28 @@ export async function POST(request) {
 
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {
-        const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. For direct date/time questions, use the trusted server clock in context. For other current information, state the limitation instead of attempting a browser tool call.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
           try {
-            const response = await compareModelCompletion(
+            const response = await compareProviderCompletion(model, messages, attachments, latest, safeReasoning);
+            return {
               model,
-              [{ role: "system", content: system }, ...attachFileContext(messages, attachments)],
-              safeReasoning
-            );
-            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: response.choices?.[0]?.message?.content || "No response." };
+              name: GROQ_MODEL_CATALOG[model]?.name || model,
+              provider: response.provider || GROQ_MODEL_CATALOG[model]?.provider || "Groq",
+              content: response.content || "No response.",
+            };
           } catch (error) {
-            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: groqErrorMessage(error) };
+            return {
+              model,
+              name: GROQ_MODEL_CATALOG[model]?.name || model,
+              provider: GROQ_MODEL_CATALOG[model]?.provider || "Groq",
+              content: error?.message || groqErrorMessage(error),
+            };
           }
         }));
         return Response.json({ mode: "compare", results });
       } catch (error) {
-        console.error("Groq multi-model error:", error);
-        return Response.json({ error: groqErrorMessage(error) }, { status: 503 });
+        console.error("Multi-model comparison error:", error);
+        return Response.json({ error: error?.message || "AI comparison failed." }, { status: 503 });
       }
     }
 
