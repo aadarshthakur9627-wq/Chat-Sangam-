@@ -523,18 +523,17 @@ export default function Home() {
     if (!loaded || !cloudSyncReady || loading || !chats.length) return;
     const timer = setTimeout(async () => {
       try {
+        const deletedChatIds = [...deletedChatIdsRef.current];
         const response = await fetch("/api/history", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chats: sanitizeCloudChats(chats),
-            deletedChatIds: [...deletedChatIdsRef.current],
+            deletedChatIds,
           }),
         });
         if (response.ok) {
-          for (const id of deletedChatIdsRef.current) {
-            if (deletedChatIdsRef.current.has(id)) deletedChatIdsRef.current.delete(id);
-          }
+          for (const id of deletedChatIds) deletedChatIdsRef.current.delete(id);
           localStorage.setItem("chat-sangam-deleted-chat-ids", JSON.stringify([...deletedChatIdsRef.current]));
         } else if (response.status !== 401) {
           console.error("Cloud history save failed:", response.status);
