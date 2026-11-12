@@ -1,0 +1,3 @@
+-- Historical migration already applied to the hosted Chat Sangam database.
+-- Current canonical schema is recreated by the fresh foundation migration.
+-- Historical hosted migration marker; rebuilt by 20261112035054_chat_sangam_fresh_foundation.sql.
