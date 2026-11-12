@@ -121,20 +121,21 @@ export async function PUT(request) {
       title: String(chat.title || "New conversation").replace(/\s+/g, " ").slice(0, 200) || "New conversation",
       updated_at: normalizeHistoryTimestamp(chat.updatedAt, now),
     }));
-    if (!conversationRows.length) return Response.json({ ok: true, saved: 0 });
+    if (conversationRows.length) {
+      const { error: upsertConversationsError } = await supabase
+        .from("conversations")
+        .upsert(conversationRows, { onConflict: "user_id,external_id" });
+      if (upsertConversationsError) throw upsertConversationsError;
+    }
 
-    const { error: upsertConversationsError } = await supabase
-      .from("conversations")
-      .upsert(conversationRows, { onConflict: "user_id,external_id" });
-    if (upsertConversationsError) throw upsertConversationsError;
-
-    const externalIds = conversationRows.map((chat) => chat.external_id);
     const { data: savedConversations, error: loadConversationsError } = await supabase
       .from("conversations")
       .select("id, external_id")
-      .eq("user_id", user.id)
-      .in("external_id", externalIds);
+      .eq("user_id", user.id);
     if (loadConversationsError) throw loadConversationsError;
+
+    const desiredConversationIds = new Set(conversationRows.map((chat) => chat.external_id));
+    const staleConversations = (savedConversations || []).filter((chat) => !desiredConversationIds.has(chat.external_id));
 
     const databaseIds = new Map((savedConversations || []).map((chat) => [chat.external_id, chat.id]));
     const messageRows = [];
@@ -169,7 +170,48 @@ export async function PUT(request) {
       if (messagesError) throw messagesError;
     }
 
-    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length }, { headers: { "Cache-Control": "private, no-store" } });
+    // Treat PUT as a complete snapshot: remove messages omitted from each saved chat.
+    // Do this only after all requested upserts succeed, so a transient insert failure
+    // cannot erase the user's last successfully saved version.
+    for (const chat of savedConversations || []) {
+      if (!desiredConversationIds.has(chat.external_id)) continue;
+      const wanted = new Set(messageRows
+        .filter((message) => message.conversation_id === chat.id)
+        .map((message) => message.external_id));
+      const { data: existingMessages, error: existingMessagesError } = await supabase
+        .from("messages")
+        .select("external_id")
+        .eq("user_id", user.id)
+        .eq("conversation_id", chat.id);
+      if (existingMessagesError) throw existingMessagesError;
+      const staleMessageIds = (existingMessages || [])
+        .map((message) => message.external_id)
+        .filter((id) => !wanted.has(id));
+      for (let offset = 0; offset < staleMessageIds.length; offset += 200) {
+        const batch = staleMessageIds.slice(offset, offset + 200);
+        const { error: deleteMessagesError } = await supabase
+          .from("messages")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("conversation_id", chat.id)
+          .in("external_id", batch);
+        if (deleteMessagesError) throw deleteMessagesError;
+      }
+    }
+
+    // Delete conversations removed by the client; cascading FK removes their messages.
+    const staleConversationIds = staleConversations.map((chat) => chat.id);
+    for (let offset = 0; offset < staleConversationIds.length; offset += 100) {
+      const batch = staleConversationIds.slice(offset, offset + 100);
+      const { error: deleteConversationsError } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("user_id", user.id)
+        .in("id", batch);
+      if (deleteConversationsError) throw deleteConversationsError;
+    }
+
+    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length, deletedChats: staleConversationIds.length }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Chat history save error:", error);
     return Response.json({ error: "Could not save chat history." }, { status: 500 });
