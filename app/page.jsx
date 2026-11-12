@@ -1691,7 +1691,7 @@ export default function Home() {
           )}
           <form className="composer" onSubmit={sendMessage}>
             <div className="composer-top">
-               <button type="button" className="composer-model composer-model-button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu"><span>{effectiveModel.icon} {effectiveModel.kind === "auto" ? "Auto" : effectiveModel.name}</span><b>⌄</b>{deepResearch ? <em>Research</em> : webSearch ? <em>Web Search</em> : null}</button>
+               <div className="composer-top-actions"><button type="button" className="composer-model composer-model-button" onClick={() => setModelMenuOpen((value) => !value)} disabled={loading} aria-expanded={modelMenuOpen} aria-haspopup="menu"><span>{effectiveModel.icon} {effectiveModel.kind === "auto" ? "Auto" : effectiveModel.name}</span><b>⌄</b>{deepResearch ? <em>Research</em> : webSearch ? <em>Web Search</em> : null}</button><button type="button" className={"composer-compare-button " + (compareMode ? "active" : "")} onClick={toggleCompareMode} disabled={loading || visionActive} aria-pressed={compareMode} title={visionActive ? "Model comparison is unavailable with images" : "Compare responses from multiple AI models"}><span aria-hidden="true">⇄</span>{compareMode ? "Comparing" : "Compare models"}</button></div>
               {editingIndex !== null ? (
                 <button className="composer-cancel" type="button" onClick={cancelEdit}>Cancel</button>
               ) : (
