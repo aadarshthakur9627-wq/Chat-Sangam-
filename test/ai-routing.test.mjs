@@ -37,10 +37,11 @@ test("comparison accepts only unique, explicitly catalogued text models", () => 
     "groq-a": { kind: "text" },
     "groq-b": { kind: "text" },
     "vision-only": { kind: "vision" },
+    "gemini-flash": { kind: "text", provider: "Google Gemini" },
   };
   assert.deepEqual(
-    normalizeCompareModels(["groq-a", "untrusted", "vision-only", "groq-a", "groq-b"], catalog),
-    ["groq-a", "groq-b"],
+    normalizeCompareModels(["groq-a", "untrusted", "vision-only", "gemini-flash", "groq-a", "groq-b"], catalog),
+    ["groq-a", "gemini-flash", "groq-b"],
   );
 });
 
