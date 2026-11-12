@@ -250,7 +250,7 @@ export default function Home() {
   const [selectedModelId, setSelectedModelId] = useState(ACTIVE_ENGINE.id);
   const [providerStatus, setProviderStatus] = useState({ groq: null, gemini: null, antigravity: null });
   const [compareMode, setCompareMode] = useState(false);
-  const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b"]);
+  const [compareModelIds, setCompareModelIds] = useState(["openai/gpt-oss-20b", "gemini-3.5-flash-lite"]);
   const [attachedFiles, setAttachedFiles] = useState([]);
   const [attachedImages, setAttachedImages] = useState([]);
   const imageCacheRef = useRef(new Map());
@@ -1434,8 +1434,8 @@ export default function Home() {
                       </button>
                       {compareMode && !visionActive && (
                         <div className="compare-picks">
-                          <div className="compare-picks-head"><strong>Compare up to 3 models</strong><span>{compareModelIds.length}/3 selected</span></div>
-                          <p>Choose at least two models. They receive the same prompt in parallel.</p>
+                          <div className="compare-picks-head"><strong>Choose models to compare</strong><span>{compareModelIds.length} selected · max 3</span></div>
+                          <p>Pick at least 2 text models. Change your selection anytime before sending.</p>
                           {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)} disabled={!compareModelIds.includes(item.id) && compareModelIds.length >= 3}
@@ -1533,8 +1533,10 @@ export default function Home() {
                                   <div className="comparison-card" key={result.model}>
                                     <div className="comparison-card-head">
                                       <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
-                                      <span><strong>{result.name || result.model}</strong><small>{result.provider || "AI model"}</small></span>
+                                      <span className="comparison-card-title"><strong>{result.name || result.model}</strong><small>{result.provider || "AI model"}</small></span>
+                                      <span className={"comparison-result-status " + (result.ok === false ? "failed" : "complete")}>{result.ok === false ? "Failed" : "Complete"}</span>
                                     </div>
+                                    <div className="comparison-card-metrics"><span>{Number.isFinite(result.latencyMs) ? (result.latencyMs / 1000).toFixed(1) + "s" : "—"}</span><span>{result.ok === false ? "Provider error" : "Response time"}</span></div>
                                     <div className="comparison-card-body">
                                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                         pre: CodeBlock,
