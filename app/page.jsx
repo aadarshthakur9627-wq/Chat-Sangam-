@@ -577,10 +577,10 @@ export default function Home() {
     ? ([providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].some(Boolean) ? true : [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) ? false : null)
     : providerStatus[selectedProviderKey];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
-  const compareReady = compareMode && selectedModel.provider === "Groq API" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
+  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
 
   function toggleCompareMode() {
-    const textModels = GROQ_MODELS.filter((model) => model.kind === "text" && model.provider === "Groq API").map((model) => model.id);
+    const textModels = GROQ_MODELS.filter((model) => model.kind === "text").map((model) => model.id);
     if (loading || visionActive || textModels.length < 2) return;
     setCompareModelIds((current) => {
       const valid = current.filter((id) => textModels.includes(id));
@@ -1389,17 +1389,17 @@ export default function Home() {
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
-                  {GROQ_MODELS.filter((item) => item.kind === "text" && item.provider === "Groq API").length >= 2 && (
+                  {GROQ_MODELS.filter((item) => item.kind === "text").length >= 2 && (
                     <>
                       <div className="model-menu-divider" />
                       <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
                         <span className="compare-toggle-icon">⇄</span>
-                        <span className="model-option-copy"><strong>Compare Groq models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
+                        <span className="model-option-copy"><strong>Compare AI models</strong><small>{visionActive ? "Unavailable with images" : "Run selected models in parallel"}</small></span>
                         <span className={"compare-switch " + (compareMode ? "on" : "")} aria-hidden="true"><i /></span>
                       </button>
                       {compareMode && !visionActive && (
                         <div className="compare-picks">
-                          {GROQ_MODELS.filter((item) => item.kind === "text" && item.provider === "Groq API").map((item) => (
+                          {GROQ_MODELS.filter((item) => item.kind === "text").map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)}
                                 onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
@@ -1494,7 +1494,7 @@ export default function Home() {
                                   <div className="comparison-card" key={result.model}>
                                     <div className="comparison-card-head">
                                       <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
-                                      <span><strong>{result.name || result.model}</strong><small>Groq</small></span>
+                                      <span><strong>{result.name || result.model}</strong><small>{result.provider || "AI model"}</small></span>
                                     </div>
                                     <div className="comparison-card-body">
                                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
