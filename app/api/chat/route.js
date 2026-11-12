@@ -836,7 +836,7 @@ async function compareProviderCompletion(modelId, messages, attachments, query, 
     throw new Error("Groq is not configured. Add GROQ_API_KEY to this deployment to compare Groq responses.");
   }
   const response = await compareModelCompletion(modelId, [
-    { role: "system", content: CHAT_SANGAM_SYSTEM_PROMPT + "\\n\\n" + getRuntimeDateInstruction() + "\\n\\nCURRENT ENGINE: Groq API using " + modelId + "." },
+    { role: "system", content: [CHAT_SANGAM_SYSTEM_PROMPT, getRuntimeDateInstruction(), "CURRENT ENGINE: Groq API using " + modelId + "."].join("\n\n") },
     ...attachFileContext(messages, attachments),
   ], safeReasoning);
   return {
