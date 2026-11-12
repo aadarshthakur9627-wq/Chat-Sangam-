@@ -262,7 +262,22 @@ export default function Home() {
 
   useEffect(() => {
     function handleAuthChanged(event) {
-      setAccountEmail(event.detail?.user?.email || "");
+      const nextUser = event.detail?.user || null;
+      setAccountEmail(nextUser?.email || "");
+      if (!nextUser) {
+        setCloudSyncReady(false);
+        // A signed-out account's cached conversations must not remain visible
+        // on a shared device. Preserve guest-only chats until the first sign-in,
+        // but clear any local snapshot that was previously linked to an account.
+        const linkedUserId = localStorage.getItem("chat-sangam-history-user-id");
+        if (linkedUserId) {
+          const freshChats = [createChat()];
+          localStorage.removeItem("chat-sangam-history-user-id");
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(freshChats));
+          setChats(freshChats);
+          setActiveChatId(freshChats[0].id);
+        }
+      }
     }
     window.addEventListener("chat-sangam-auth-changed", handleAuthChanged);
     return () => window.removeEventListener("chat-sangam-auth-changed", handleAuthChanged);
