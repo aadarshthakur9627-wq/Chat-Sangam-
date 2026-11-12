@@ -73,3 +73,13 @@ After a deployment, verify these separately:
 - **“Gemini is not configured”**: add `GEMINI_API_KEY` to the correct Vercel environment and redeploy.
 - **Rate limit / temporary provider error**: wait, check the provider dashboard and key permissions, then retry. Do not repeatedly submit the same prompt while a request is still running.
 - **A scanned PDF appears empty**: OCR the PDF first and upload the resulting searchable PDF or text.
+
+## Supabase database foundation
+
+- Supabase Auth owns sign-in identities; a server-side trigger creates each user's profile.
+- `public.profiles`, `public.conversations`, and `public.messages` use Row Level Security (RLS) to isolate each user's records.
+- Private usage counters and Razorpay webhook idempotency records live in the non-exposed `private` schema.
+- Billing orders and subscriptions are server-managed; clients do not receive direct table access.
+- Server-enforced limits: **Free 20 AI requests per UTC day** and **active Pro 500 per UTC day**. Provider-specific API quotas and pricing remain separate.
+- The hosted database was reset using the fresh foundation migration. It intentionally deletes existing Chat Sangam Auth users and app data, but preserves Supabase-managed Auth/Storage system schemas and migration history. Do not rerun it against an environment with users unless a full reset is intended.
+- The schema is prepared for cloud history, but the current chat UI still stores history in browser local storage until the cloud-history integration is completed.
