@@ -463,8 +463,10 @@ export default function Home() {
           deletedChatIdsRef.current.clear();
           localStorage.removeItem("chat-sangam-deleted-chat-ids");
         }
-        const localChats = switchedUser ? [] : chatsRef.current;
-        const remoteChats = Array.isArray(data.chats) ? data.chats.map(normalizeChatMessageOrder) : [];
+        const localChats = switchedUser ? [] : chatsRef.current.filter((chat) => !deletedChatIdsRef.current.has(chat.id));
+        const remoteChats = Array.isArray(data.chats)
+          ? data.chats.filter((chat) => !deletedChatIdsRef.current.has(chat.id)).map(normalizeChatMessageOrder)
+          : [];
 
         if (remoteChats.length) {
           const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
