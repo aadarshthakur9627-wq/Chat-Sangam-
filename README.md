@@ -83,5 +83,5 @@ After a deployment, verify these separately:
 - Server-enforced limits: **Free 20 AI requests per UTC day** and **active Pro 500 per UTC day**. Provider-specific API quotas and pricing remain separate.
 - The hosted database was reset using the fresh foundation migration. It intentionally deletes existing Chat Sangam Auth users and app data, but preserves Supabase-managed Auth/Storage system schemas and migration history. Do not rerun it against an environment with users unless a full reset is intended.
 - Signed-in users sync up to 30 conversations and the latest 120 messages per conversation to Supabase; browser local storage is used as an offline cache and as the initial import source on first sign-in.
-- PUT history sync is a full snapshot: removed conversations and removed messages are deleted from the signed-in user's cloud history. Signing out clears the account-linked local cache on that device.
+- Cloud chat deletion is sent as explicit, bounded tombstones rather than deleting every remote chat absent from a local snapshot; this avoids erasing chats created on another device during concurrent sync. Signing out clears the account-linked local cache on that device.
 - Supabase Auth uses cookie-based SSR sessions. The Next.js root `proxy.js` refreshes sessions with `auth.getClaims()` before server routes use them.
