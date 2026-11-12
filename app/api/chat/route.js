@@ -1079,6 +1079,7 @@ export async function POST(request) {
     if (requestedCompareModels.length >= 2 && !imageAttachments.length && !webSearch && !deepResearchEnabled && latest) {
       try {
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
+          const startedAt = Date.now();
           try {
             const response = await compareProviderCompletion(model, messages, attachments, latest, safeReasoning);
             return {
@@ -1086,6 +1087,8 @@ export async function POST(request) {
               name: GROQ_MODEL_CATALOG[model]?.name || model,
               provider: response.provider || GROQ_MODEL_CATALOG[model]?.provider || "Groq",
               content: response.content || "No response.",
+              ok: Boolean(response.content),
+              latencyMs: Date.now() - startedAt,
             };
           } catch (error) {
             return {
@@ -1093,6 +1096,8 @@ export async function POST(request) {
               name: GROQ_MODEL_CATALOG[model]?.name || model,
               provider: GROQ_MODEL_CATALOG[model]?.provider || "Groq",
               content: error?.message || groqErrorMessage(error),
+              ok: false,
+              latencyMs: Date.now() - startedAt,
             };
           }
         }));
