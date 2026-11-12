@@ -3346,3 +3346,39 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
     transition-duration: .01ms !important;
   }
 }
+
+/* Model Arena: readable selection controls and resilient comparison cards. */
+.compare-picks-head{align-items:center;gap:10px}
+.compare-picks-head strong{font-size:14px!important;letter-spacing:-.1px}
+.compare-picks-head span{white-space:nowrap;font-size:12px!important}
+.compare-picks>p{font-size:12px!important;line-height:1.5!important;margin:4px 3px 10px!important}
+.compare-pick{display:flex!important;align-items:center;gap:11px!important;min-height:54px!important;padding:10px 12px!important;border:1px solid rgba(255,255,255,.075)!important;border-radius:12px!important;color:#e8e3ed!important;font-size:13px!important}
+.compare-pick input{width:18px!important;height:18px!important;flex:0 0 18px;accent-color:#a78bfa}
+.compare-pick strong{font-size:13px!important;line-height:1.3;flex:1;min-width:0}
+.compare-pick small{font-size:11px!important;white-space:nowrap}
+.compare-validation{font-size:12px!important;padding:9px 4px!important}
+.comparison-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:14px}
+.comparison-card{min-width:0;width:100%;border-radius:16px;background:linear-gradient(160deg,rgba(34,29,44,.96),rgba(12,12,17,.96));border:1px solid rgba(190,170,230,.18);box-shadow:0 10px 28px rgba(0,0,0,.16)}
+.comparison-card-head{min-width:0;gap:10px;padding:13px 14px;background:rgba(255,255,255,.035)}
+.comparison-card-title{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.comparison-card-head strong{font-size:13px!important;line-height:1.3;overflow-wrap:anywhere}
+.comparison-card-head small{font-size:11px!important;line-height:1.3}
+.comparison-result-status{flex:0 0 auto;padding:4px 7px;border-radius:20px;font-size:10px;font-weight:700}
+.comparison-result-status.complete{background:rgba(34,197,94,.12);color:#86efac}
+.comparison-result-status.failed{background:rgba(248,113,113,.13);color:#fca5a5}
+.comparison-card-metrics{display:flex;align-items:center;gap:6px;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,.06);color:#a8a0b1;font-size:11px}
+.comparison-card-metrics span:first-child{font-weight:750;color:#e8ddff;font-variant-numeric:tabular-nums}
+.comparison-card-body{min-width:0;padding:14px!important;font-size:14px!important;line-height:1.7!important;overflow-wrap:anywhere;word-break:normal}
+.comparison-card-body .markdown-content{min-width:0;font-size:14px!important;line-height:1.7!important}
+.comparison-card-body pre,.comparison-card-body .code-block{max-width:100%;overflow-x:auto}
+.comparison-card-body .table-scroll{max-width:100%;overflow-x:auto}
+@media(max-width:700px){
+ .comparison-grid{grid-template-columns:minmax(0,1fr)!important;gap:12px}
+ .comparison-card{border-radius:15px}
+ .comparison-card-head{padding:12px}
+ .comparison-card-head strong{font-size:14px!important}
+ .comparison-card-head small{font-size:11px!important}
+ .comparison-card-body{padding:13px!important;font-size:14px!important}
+ .comparison-card-body .markdown-content{font-size:14px!important;line-height:1.68!important}
+ .compare-pick{min-height:56px!important}
+}
