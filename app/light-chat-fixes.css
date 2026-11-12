@@ -163,6 +163,150 @@
   .theme-system .appearance-panel { background:#fff!important;color:#24242a!important;border-color:#dedfe6!important; }
 }
 
+/* Premium workspace refresh: quieter surfaces, clearer hierarchy, and roomier controls. */
+.app-shell {
+  --premium-line: color-mix(in srgb, var(--line) 80%, transparent);
+  --premium-accent: var(--user-accent, #f43f8c);
+  letter-spacing: -.01em;
+}
+.app-shell .sidebar {
+  width: 278px;
+  flex-basis: 278px;
+  padding: 22px 16px 16px;
+  border-right-color: var(--premium-line);
+  box-shadow: 12px 0 36px rgba(0,0,0,.08);
+}
+.app-shell .sidebar-head { padding: 2px 5px 24px; }
+.app-shell .brand { gap: 12px; }
+.app-shell .brand-mark,
+.app-shell .hero-mark {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--premium-accent) 86%, white), color-mix(in srgb, var(--premium-accent) 52%, #635bdb));
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--premium-accent) 20%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.app-shell .brand-copy strong { font-size: 17px; letter-spacing: -.55px; }
+.app-shell .brand-copy small { font-size: 11px; letter-spacing: .01em; }
+.app-shell .icon-button { border-radius: 12px; transition: border-color .18s, background .18s, color .18s; }
+.app-shell .new-chat-button {
+  height: 47px;
+  border-radius: 13px;
+  border-color: color-mix(in srgb, var(--premium-accent) 28%, var(--line));
+  background: linear-gradient(115deg, color-mix(in srgb, var(--premium-accent) 15%, var(--panel)), color-mix(in srgb, #7667ef 10%, var(--panel)));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  font-size: 13px;
+  font-weight: 600;
+}
+.app-shell .new-chat-button:hover { transform: translateY(-1px); box-shadow: 0 9px 22px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.08); }
+.app-shell .sidebar-search { height: 42px; margin-top: 14px; border-radius: 12px; }
+.app-shell .history-header { padding: 24px 9px 10px; font-size: 10px; letter-spacing: 1.35px; }
+.app-shell .history-item { min-height: 44px; border-radius: 11px; padding: 9px 10px; }
+.app-shell .history-text strong { font-size: 13px; }
+.app-shell .history-text small { font-size: 10px; }
+.app-shell .sidebar-footer { padding-top: 17px; }
+.app-shell .footer-pill, .app-shell .footer-links { font-size: 11px; }
+
+.app-shell .topbar {
+  height: 76px;
+  flex-basis: 76px;
+  padding: 0 clamp(20px, 3vw, 42px);
+  border-bottom-color: var(--premium-line);
+}
+.app-shell .eyebrow { font-size: 9px; letter-spacing: 1.55px; }
+.app-shell .topbar h1 { font-size: 17px; font-weight: 600; letter-spacing: -.45px; }
+.app-shell .topbar-right { gap: 8px; }
+.app-shell .topbar-right > button,
+.app-shell .engine-badge { height: 42px; border-radius: 12px; font-size: 11px; }
+.app-shell .model-strip { min-height: 56px; padding: 0 clamp(20px, 3vw, 42px); }
+.app-shell .selected-model strong { font-size: 11px; }
+.app-shell .selected-model small, .app-shell .live-label { font-size: 10px; }
+.app-shell .coming-soon { font-size: 9px; }
+.app-shell .messages { padding: 34px 26px 210px; }
+.app-shell .welcome { max-width: 850px; margin: clamp(38px, 8vh, 92px) auto 0; }
+.app-shell .hero-glow { opacity: .48; width: 420px; height: 230px; filter: blur(26px); }
+.app-shell .hero-mark { width: 58px; height: 58px; margin-bottom: 20px; border-radius: 19px; font-size: 25px; }
+.app-shell .hero-kicker { font-size: 10px; letter-spacing: 2.2px; }
+.app-shell .welcome h2 { margin: 15px 0 13px; font-size: clamp(42px, 5.5vw, 62px); line-height: 1.03; letter-spacing: -2.7px; }
+.app-shell .welcome h2 span { background: linear-gradient(100deg, var(--text), color-mix(in srgb, var(--premium-accent) 72%, #c1aaff)); -webkit-background-clip: text; background-clip: text; }
+.app-shell .welcome > p { font-size: 14px; line-height: 1.75; }
+.app-shell .prompt-grid { gap: 12px; margin-top: 34px; }
+.app-shell .prompt-card {
+  min-height: 118px;
+  gap: 13px;
+  padding: 16px;
+  border-color: var(--premium-line);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--panel) 76%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 8px 24px rgba(0,0,0,.045);
+}
+.app-shell .prompt-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--premium-accent) 36%, var(--line)); }
+.app-shell .prompt-icon { width: 31px; height: 31px; border-radius: 10px; background: color-mix(in srgb, var(--premium-accent) 14%, var(--panel)); color: color-mix(in srgb, var(--premium-accent) 84%, white); font-size: 14px; }
+.app-shell .prompt-card strong { font-size: 13px; }
+.app-shell .prompt-card small { font-size: 11px; line-height: 1.5; }
+.app-shell .prompt-card > b { right: 15px; bottom: 14px; font-size: 15px; }
+.app-shell .trust-row { gap: 18px; margin-top: 24px; color: var(--muted); font-size: 10px; }
+
+.app-shell .conversation { max-width: 920px; }
+.app-shell .message-row { max-width: 860px; gap: 14px; margin-bottom: 32px; }
+.app-shell .message-avatar { width: 34px; height: 34px; flex-basis: 34px; border-radius: 11px; }
+.app-shell .message-meta { gap: 9px; margin: 2px 0 8px; }
+.app-shell .message-meta strong { font-size: 12px; }
+.app-shell .message-meta span { font-size: 10px; }
+.app-shell .message-bubble { font-size: 14px; line-height: 1.8; }
+.app-shell .message-row.user .message-bubble { border-radius: 16px; padding: 11px 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.045); }
+.app-shell .message-row.assistant .assistant-answer-bubble { font-size: 14px; line-height: 1.8; }
+.app-shell .composer-dock { padding: 26px 24px 17px; }
+.app-shell .composer { max-width: 860px; padding: 11px 13px 12px; border-radius: 20px; box-shadow: 0 18px 60px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.06); }
+.app-shell .composer:focus-within { border-color: color-mix(in srgb, var(--premium-accent) 45%, var(--line)); box-shadow: 0 20px 65px rgba(0,0,0,.24), 0 0 0 3px color-mix(in srgb, var(--premium-accent) 8%, transparent); }
+.app-shell .composer-top { padding: 2px 5px 9px; }
+.app-shell .composer-model-button { font-size: 11px; }
+.app-shell .composer-hint { font-size: 10px; }
+.app-shell .composer textarea { min-height: 48px; padding: 13px 8px; font-size: 14px; }
+.app-shell .attach-button, .app-shell .send-button { width: 44px; height: 44px; border-radius: 14px; }
+.app-shell .send-button { background: linear-gradient(145deg, color-mix(in srgb, var(--premium-accent) 90%, white), color-mix(in srgb, var(--premium-accent) 68%, #6254d8)); box-shadow: 0 7px 18px color-mix(in srgb, var(--premium-accent) 20%, transparent); }
+.app-shell .composer-note { font-size: 10px; margin-top: 9px; }
+
+@media (max-width: 1050px) {
+  .app-shell .coming-soon { display: none; }
+  .app-shell .topbar { padding-inline: 20px; }
+}
+@media (max-width: 760px) {
+  .app-shell .sidebar { width: min(88vw, 310px); flex-basis: min(88vw, 310px); padding: 18px 15px 14px; }
+  .app-shell .topbar { height: 64px; flex-basis: 64px; padding: 0 14px; }
+  .app-shell .topbar h1 { font-size: 15px; }
+  .app-shell .topbar-right { gap: 6px; }
+  .app-shell .topbar-right > button, .app-shell .engine-badge { height: 38px; padding-inline: 9px; }
+  .app-shell .web-search-toggle, .app-shell .deep-research-toggle { font-size: 0 !important; gap: 0 !important; }
+  .app-shell .web-search-toggle > span, .app-shell .deep-research-toggle > span { font-size: 16px; }
+  .app-shell .web-search-toggle b, .app-shell .deep-research-toggle b { display: none; }
+  .app-shell .engine-badge > span:not(.engine-dot) { display: none; }
+  .app-shell .model-strip { min-height: 48px; padding: 0 15px; }
+  .app-shell .selected-model small { display: none; }
+  .app-shell .messages { padding: 28px 15px 185px; }
+  .app-shell .welcome { margin-top: 5vh; }
+  .app-shell .welcome h2 { font-size: clamp(38px, 10vw, 52px); letter-spacing: -1.8px; }
+  .app-shell .welcome > p { max-width: 360px; font-size: 13px; }
+  .app-shell .prompt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 26px; }
+  .app-shell .prompt-card { min-height: 108px; padding: 13px; }
+  .app-shell .prompt-card strong { font-size: 12px; }
+  .app-shell .prompt-card small { font-size: 10px; }
+  .app-shell .trust-row { gap: 8px 13px; font-size: 9px; }
+  .app-shell .message-row { gap: 10px; margin-bottom: 24px; }
+  .app-shell .message-avatar { width: 30px; height: 30px; flex-basis: 30px; }
+  .app-shell .message-bubble, .app-shell .message-row.assistant .assistant-answer-bubble { font-size: 14px; }
+  .app-shell .composer-dock { padding: 16px 10px max(12px, env(safe-area-inset-bottom)); }
+  .app-shell .composer { padding: 8px 9px 9px; border-radius: 17px; }
+  .app-shell .composer textarea { min-height: 44px; font-size: 14px; }
+  .app-shell .composer-hint { display: none; }
+  .app-shell .composer-note { font-size: 9px; padding-inline: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .app-shell *::before, .app-shell *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+.app-shell.theme-light .new-chat-button { color: #fff; background: linear-gradient(115deg, color-mix(in srgb, var(--premium-accent) 82%, #25213a), color-mix(in srgb, var(--premium-accent) 68%, #6254d8)); }
+@media (prefers-color-scheme: light) {
+  .app-shell.theme-system .new-chat-button { color: #fff; background: linear-gradient(115deg, color-mix(in srgb, var(--premium-accent) 82%, #25213a), color-mix(in srgb, var(--premium-accent) 68%, #6254d8)); }
+}
+
 
 /* KaTeX was hard-coded white for dark mode; force all math glyphs to readable ink in light mode. */
 .theme-light .message-row.assistant .assistant-answer-bubble .markdown-content .katex,
@@ -186,3 +330,4 @@
     opacity:1!important;
   }
 }
+
