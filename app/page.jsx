@@ -1026,7 +1026,7 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
-    if (selectedProviderConfigured === false) {
+    if (!compareReady && selectedProviderConfigured === false) {
       if (effectiveModel.kind === "auto") {
         alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
       } else {
