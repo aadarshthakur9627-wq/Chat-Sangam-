@@ -596,7 +596,7 @@ export default function Home() {
     ? ([providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].some(Boolean) ? true : [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) ? false : null)
     : providerStatus[selectedProviderKey];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
-  const compareReady = compareMode && selectedModel.kind === "text" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
+  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length === 2;
 
   function toggleCompareMode() {
     const textModels = GROQ_MODELS.filter((model) => model.kind === "text" && ["Groq API", "Google Gemini"].includes(model.provider)).map((model) => model.id);
@@ -1402,7 +1402,7 @@ export default function Home() {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
                         setModelMenuOpen(false);
-                        if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
+                        if (item.kind === "vision") setCompareMode(false);
                       }}
                       disabled={(item.kind === "vision" && !visionActive) || (item.kind === "auto" ? [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) : item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
@@ -1423,7 +1423,7 @@ export default function Home() {
                           {GROQ_MODELS.filter((item) => item.kind === "text" && ["Groq API", "Google Gemini"].includes(item.provider)).map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)}
-                                onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
+                                onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 2))} />
                               <span>{item.icon}</span><strong>{item.name}</strong>
                             </label>
                           ))}
@@ -1515,7 +1515,7 @@ export default function Home() {
                                   <div className="comparison-card" key={result.model}>
                                     <div className="comparison-card-head">
                                       <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
-                                      <span><strong>{result.name || result.model}</strong><small>Groq</small></span>
+                                      <span><strong>{result.name || result.model}</strong><small>{GROQ_MODELS.find((model) => model.id === result.model)?.provider || "AI provider"}</small></span>
                                     </div>
                                     <div className="comparison-card-body">
                                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
