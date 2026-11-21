@@ -511,16 +511,16 @@ export default function Home() {
     if (!loaded || !cloudSyncReady || loading || !chats.length) return;
     const timer = setTimeout(async () => {
       try {
+        const syncedDeletedIds = [...deletedChatIdsRef.current];
         const response = await fetch("/api/history", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             chats: sanitizeCloudChats(chats),
-            deletedChatIds: [...deletedChatIdsRef.current],
+            deletedChatIds: syncedDeletedIds,
           }),
         });
         if (response.ok) {
-          const syncedDeletedIds = [...deletedChatIdsRef.current];
           for (const id of syncedDeletedIds) deletedChatIdsRef.current.delete(id);
           localStorage.setItem("chat-sangam-deleted-chat-ids", JSON.stringify([...deletedChatIdsRef.current]));
         } else if (response.status !== 401) {
