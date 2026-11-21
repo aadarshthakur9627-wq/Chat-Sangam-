@@ -992,8 +992,9 @@ export async function POST(request) {
     const requestedModelId = typeof body.model === "string" ? body.model : GROQ_MODEL;
     const isGeminiModel = requestedModelId === GEMINI_MODEL;
     const requestedModel = resolveGroqModel(body.model);
+    const supportedCompareModels = [GROQ_MODEL, GEMINI_MODEL];
     const requestedCompareModels = Array.isArray(body.compareModels)
-      ? [...new Set(body.compareModels.map(resolveGroqModel))].filter((model) => GROQ_MODEL_CATALOG[model]?.kind === "text").slice(0, 3)
+      ? [...new Set(body.compareModels.filter((model) => supportedCompareModels.includes(model)))].slice(0, 2)
       : [];
     const messages = Array.isArray(rawMessages) ? normalizeMessages(rawMessages) : rawMessages;
     const webSearch = body.webSearch === true;
@@ -1040,15 +1041,20 @@ export async function POST(request) {
       try {
         const system = CHAT_SANGAM_SYSTEM_PROMPT + "\n\n" + getRuntimeDateInstruction() + "\n\nCURRENT ENGINE: Groq multi-model comparison. Answer the user's request directly. Do not call or attempt any tools, functions, browser search, or external actions; this comparison request has no tools enabled. For direct date/time questions, use the trusted server clock in context. For other current information, state the limitation instead of attempting a browser tool call.";
         const results = await Promise.all(requestedCompareModels.map(async (model) => {
+          const name = model === GEMINI_MODEL ? "Gemini 3.5 Flash-Lite" : GROQ_MODEL_CATALOG[model]?.name || model;
           try {
+            if (model === GEMINI_MODEL) {
+              const result = await generateGeminiAnswer(messages, attachments, latest, false);
+              return { model, name, content: result.answer || "No response." };
+            }
             const response = await compareModelCompletion(
               model,
               [{ role: "system", content: system }, ...attachFileContext(messages, attachments)],
               safeReasoning
             );
-            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: response.choices?.[0]?.message?.content || "No response." };
+            return { model, name, content: response.choices?.[0]?.message?.content || "No response." };
           } catch (error) {
-            return { model, name: GROQ_MODEL_CATALOG[model]?.name || model, content: groqErrorMessage(error) };
+            return { model, name, content: model === GEMINI_MODEL ? (error?.message || "Gemini request failed.") : groqErrorMessage(error) };
           }
         }));
         return Response.json({ mode: "compare", results });
