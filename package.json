@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test"
   },
   "dependencies": {
     "groq-sdk": "latest",

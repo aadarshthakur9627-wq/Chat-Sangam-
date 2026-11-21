@@ -255,6 +255,7 @@ export default function Home() {
   const [attachedImages, setAttachedImages] = useState([]);
   const imageCacheRef = useRef(new Map());
   const chatsRef = useRef(chats);
+  const deletedChatIdsRef = useRef(new Set());
 
   useEffect(() => {
     chatsRef.current = chats;
@@ -378,7 +379,11 @@ export default function Home() {
       if (savedBgImage && /^https?:\/\//i.test(savedBgImage)) setBackgroundImageUrl(savedBgImage);
       const saved = localStorage.getItem(STORAGE_KEY);
       const parsed = saved ? JSON.parse(saved) : [];
-      const initial = Array.isArray(parsed) && parsed.length ? parsed.map(normalizeChatMessageOrder) : [createChat()];
+      const deletedChatIds = JSON.parse(localStorage.getItem("chat-sangam-deleted-chat-ids") || "[]");
+      deletedChatIdsRef.current = new Set(Array.isArray(deletedChatIds) ? deletedChatIds.filter((id) => typeof id === "string" && id.length <= 100) : []);
+      const initial = Array.isArray(parsed) && parsed.length
+        ? parsed.filter((chat) => !deletedChatIdsRef.current.has(chat?.id)).map(normalizeChatMessageOrder)
+        : [createChat()];
       setChats(initial);
       setActiveChatId(initial[0].id);
     } catch (error) {
@@ -439,8 +444,15 @@ export default function Home() {
         const userId = data.userId;
         const previousUserId = localStorage.getItem("chat-sangam-history-user-id");
         const switchedUser = Boolean(previousUserId && previousUserId !== userId);
-        const localChats = switchedUser ? [] : chatsRef.current;
-        const remoteChats = Array.isArray(data.chats) ? data.chats.map(normalizeChatMessageOrder) : [];
+        if (switchedUser) {
+          deletedChatIdsRef.current.clear();
+          localStorage.removeItem("chat-sangam-deleted-chat-ids");
+        }
+        const localChats = (switchedUser ? [] : chatsRef.current)
+          .filter((chat) => !deletedChatIdsRef.current.has(chat.id));
+        const remoteChats = Array.isArray(data.chats)
+          ? data.chats.filter((chat) => !deletedChatIdsRef.current.has(chat.id)).map(normalizeChatMessageOrder)
+          : [];
 
         if (remoteChats.length) {
           const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
@@ -457,7 +469,7 @@ export default function Home() {
           const saveResponse = await fetch("/api/history", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chats: sanitizeCloudChats(localChats) }),
+            body: JSON.stringify({ chats: sanitizeCloudChats(localChats), deletedChatIds: [...deletedChatIdsRef.current] }),
           });
           if (!saveResponse.ok) throw new Error("Could not import local chats to your account.");
         } else {
@@ -467,7 +479,7 @@ export default function Home() {
           const saveResponse = await fetch("/api/history", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chats: sanitizeCloudChats(freshChats) }),
+            body: JSON.stringify({ chats: sanitizeCloudChats(freshChats), deletedChatIds: [...deletedChatIdsRef.current] }),
           });
           if (!saveResponse.ok) throw new Error("Could not initialize cloud chat history.");
         }
@@ -499,12 +511,19 @@ export default function Home() {
     if (!loaded || !cloudSyncReady || loading || !chats.length) return;
     const timer = setTimeout(async () => {
       try {
+        const syncedDeletedIds = [...deletedChatIdsRef.current];
         const response = await fetch("/api/history", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chats: sanitizeCloudChats(chats) }),
+          body: JSON.stringify({
+            chats: sanitizeCloudChats(chats),
+            deletedChatIds: syncedDeletedIds,
+          }),
         });
-        if (!response.ok && response.status !== 401) {
+        if (response.ok) {
+          for (const id of syncedDeletedIds) deletedChatIdsRef.current.delete(id);
+          localStorage.setItem("chat-sangam-deleted-chat-ids", JSON.stringify([...deletedChatIdsRef.current]));
+        } else if (response.status !== 401) {
           console.error("Cloud history save failed:", response.status);
         }
       } catch (error) {
@@ -631,6 +650,8 @@ export default function Home() {
     event?.stopPropagation();
     if (loading) return;
     clearImageCacheForChat(id);
+    deletedChatIdsRef.current.add(id);
+    localStorage.setItem("chat-sangam-deleted-chat-ids", JSON.stringify([...deletedChatIdsRef.current]));
     setChats((current) => {
       const remaining = current.filter((chat) => chat.id !== id);
       const next = remaining.length ? remaining : [createChat()];

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
+import { MAX_HISTORY_REQUEST_BYTES, parseHistoryPayload, normalizeHistoryTimestamp } from "../../../lib/history/validation.mjs";
 
 export const dynamic = "force-dynamic";
 
@@ -90,53 +91,76 @@ export async function PUT(request) {
     const { user, error: authResponse } = await requireUser(supabase);
     if (!user) return authResponse;
 
-    let body;
+    const declaredLength = Number(request.headers.get("content-length") || 0);
+    if (declaredLength > MAX_HISTORY_REQUEST_BYTES) {
+      return Response.json({ error: "Chat history is too large to sync. Please reduce the number or size of saved chats." }, { status: 413 });
+    }
+
+    let rawBody;
     try {
-      body = await request.json();
+      rawBody = await request.text();
     } catch {
-      return Response.json({ error: "Invalid history payload." }, { status: 400 });
+      return Response.json({ error: "Could not read history payload." }, { status: 400 });
     }
-    if (!body || !Array.isArray(body.chats)) {
-      return Response.json({ error: "A chats array is required." }, { status: 400 });
+    const parsed = parseHistoryPayload(rawBody);
+    if (!parsed.ok) return Response.json({ error: parsed.error }, { status: parsed.status });
+
+    const chats = parsed.body.chats.slice(0, 30);
+    const uniqueChats = new Map();
+    for (const chat of chats) {
+      if (typeof chat?.id !== "string") continue;
+      const id = chat.id.trim();
+      if (!id || id.length > 100) continue;
+      uniqueChats.set(id, { ...chat, id });
     }
-    const chats = body.chats.slice(0, 30);
-    const conversationRows = chats.filter((chat) => typeof chat?.id === "string" && chat.id.length <= 100).map((chat) => ({
+    const normalizedChats = [...uniqueChats.values()];
+    const now = Date.now();
+    const conversationRows = normalizedChats.map((chat) => ({
       user_id: user.id,
       external_id: chat.id,
       title: String(chat.title || "New conversation").replace(/\s+/g, " ").slice(0, 200) || "New conversation",
-      updated_at: new Date(Number(chat.updatedAt) || Date.now()).toISOString(),
+      updated_at: normalizeHistoryTimestamp(chat.updatedAt, now),
     }));
-    if (!conversationRows.length) return Response.json({ ok: true, saved: 0 });
-
-    const { error: upsertConversationsError } = await supabase
-      .from("conversations")
-      .upsert(conversationRows, { onConflict: "user_id,external_id" });
-    if (upsertConversationsError) throw upsertConversationsError;
+    if (conversationRows.length) {
+      const { error: upsertConversationsError } = await supabase
+        .from("conversations")
+        .upsert(conversationRows, { onConflict: "user_id,external_id" });
+      if (upsertConversationsError) throw upsertConversationsError;
+    }
 
     const externalIds = conversationRows.map((chat) => chat.external_id);
-    const { data: savedConversations, error: loadConversationsError } = await supabase
-      .from("conversations")
-      .select("id, external_id")
-      .eq("user_id", user.id)
-      .in("external_id", externalIds);
-    if (loadConversationsError) throw loadConversationsError;
+    let savedConversations = [];
+    if (externalIds.length) {
+      const { data, error: loadConversationsError } = await supabase
+        .from("conversations")
+        .select("id, external_id")
+        .eq("user_id", user.id)
+        .in("external_id", externalIds);
+      if (loadConversationsError) throw loadConversationsError;
+      savedConversations = data || [];
+    }
 
     const databaseIds = new Map((savedConversations || []).map((chat) => [chat.external_id, chat.id]));
     const messageRows = [];
-    for (const chat of chats) {
-      if (!databaseIds.has(chat?.id) || !Array.isArray(chat?.messages)) continue;
+    const seenMessageIds = new Set();
+    for (const chat of normalizedChats) {
+      if (!databaseIds.has(chat.id) || !Array.isArray(chat.messages)) continue;
       const recentMessages = chat.messages.slice(-120);
       for (let messageIndex = 0; messageIndex < recentMessages.length; messageIndex += 1) {
         const message = recentMessages[messageIndex];
         if (!message || !["user", "assistant"].includes(message.role) || typeof message.content !== "string") continue;
+        const fallbackId = String(chat.id) + ":" + String(Math.max(0, chat.messages.length - recentMessages.length + messageIndex));
+        const externalId = typeof message.id === "string" && message.id.trim() && message.id.length <= 120 ? message.id.trim() : fallbackId;
+        if (seenMessageIds.has(externalId)) continue;
+        seenMessageIds.add(externalId);
         messageRows.push({
           user_id: user.id,
           conversation_id: databaseIds.get(chat.id),
-          external_id: typeof message.id === "string" && message.id.length <= 120 ? message.id : String(chat.id) + ":" + String(Math.max(0, chat.messages.length - recentMessages.length + messageIndex)),
+          external_id: externalId,
           role: message.role,
           content: message.content.slice(0, 120000),
           metadata: safeMetadata(message),
-          created_at: new Date(Number(message.createdAt) || ((Number(chat.updatedAt) || Date.now()) - (chat.messages.length - recentMessages.length + messageIndex))).toISOString(),
+          created_at: normalizeHistoryTimestamp(message.createdAt, Number.isFinite(Number(chat.updatedAt)) ? Number(chat.updatedAt) - (chat.messages.length - recentMessages.length + messageIndex) : now),
         });
       }
     }
@@ -149,7 +173,25 @@ export async function PUT(request) {
       if (messagesError) throw messagesError;
     }
 
-    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length }, { headers: { "Cache-Control": "private, no-store" } });
+    // Delete only explicitly requested chat IDs. A full-snapshot delete would risk
+    // erasing chats created on another device during concurrent synchronization.
+    const deletedChatIds = [...new Set((parsed.body.deletedChatIds || [])
+      .filter((id) => typeof id === "string" && id.trim() && id.length <= 100)
+      .map((id) => id.trim()))].slice(0, 200);
+    let deletedChats = 0;
+    for (let offset = 0; offset < deletedChatIds.length; offset += 100) {
+      const batch = deletedChatIds.slice(offset, offset + 100);
+      const { data: deletedRows, error: deleteConversationsError } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("user_id", user.id)
+        .in("external_id", batch)
+        .select("id");
+      if (deleteConversationsError) throw deleteConversationsError;
+      deletedChats += deletedRows?.length || 0;
+    }
+
+    return Response.json({ ok: true, saved: conversationRows.length, messages: messageRows.length, deletedChats }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Chat history save error:", error);
     return Response.json({ error: "Could not save chat history." }, { status: 500 });
