@@ -1410,7 +1410,7 @@ export default function Home() {
                       {selectedModelId === item.id && <span className="model-check">✓</span>}
                     </button>
                   ))}
-                  {GROQ_MODELS.filter((item) => item.kind === "text" && ["Groq API", "Google Gemini"].includes(item.provider)).length >= 1 && (
+                  {GROQ_MODELS.filter((item) => item.kind === "text" && ["Groq API", "Google Gemini"].includes(item.provider)).length >= 2 && (
                     <>
                       <div className="model-menu-divider" />
                       <button className={"compare-toggle " + (compareMode ? "active" : "")} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); toggleCompareMode(); }} disabled={visionActive || loading} aria-pressed={compareMode}>
@@ -1420,7 +1420,7 @@ export default function Home() {
                       </button>
                       {compareMode && !visionActive && (
                         <div className="compare-picks">
-                          {GROQ_MODELS.filter((item) => item.kind === "text" && item.provider === "Groq API").map((item) => (
+                          {GROQ_MODELS.filter((item) => item.kind === "text" && ["Groq API", "Google Gemini"].includes(item.provider)).map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)}
                                 onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
