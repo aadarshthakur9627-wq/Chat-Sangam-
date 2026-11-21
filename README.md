@@ -1,6 +1,6 @@
 # Chat Sangam
 
-Chat Sangam is a mobile-first, multi-model AI workspace built with Next.js. It includes a free-model router, chat and vision models, Markdown/math rendering, web search and research, document extraction, and browser-local chat history.
+Chat Sangam is a mobile-first, multi-model AI workspace built with Next.js. It includes a free-model router, chat and vision models, Markdown/math rendering, web search and research, document extraction, account authentication, daily usage limits, and Supabase cloud chat history.
 
 ## Current model routing
 
@@ -29,6 +29,12 @@ Set provider keys **on the server only**. Never place API keys in client-side co
 5. Save, then redeploy the relevant deployment so the runtime receives the new value.
 6. Open `/api/status` on that deployment. It returns only whether each key is present; it never returns key values. A key being present does not prove that the key is valid, so send a test prompt too.
 
+## Authentication and cloud history
+
+- Configure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` alongside the provider keys.
+- Sign-in is required for chat generation, document extraction, cloud history, and usage tracking.
+- The Supabase migrations in `supabase/migrations` define the application schema and security policies. Review migrations carefully before applying them to any existing database; never run destructive reset migrations against production data.
+
 ## Local development
 
 1. Install a supported Node.js version.
@@ -40,7 +46,9 @@ Do not commit `.env.local`.
 
 ## Current behavior and limits
 
-- Chat history is stored in the current browser's local storage; it is not a cloud-synced account history.
+- Signed-in users can sync up to 30 conversations to Supabase cloud history; the browser also keeps a local cache for responsiveness.
+- Cloud history is private to the authenticated user and protected by Supabase Row Level Security (RLS).
+- History synchronization validates payload shape, caps request size, and accepts explicit deleted conversation IDs.
 - Chat requests include a bounded recent message window to avoid oversized serverless requests.
 - Up to three recent images are sent to the Groq vision model; supported image formats are JPG, PNG, WEBP, and GIF.
 - PDF, TXT, MD, CSV, and JSON files are supported for text extraction. Scanned PDFs without selectable text need OCR first.
