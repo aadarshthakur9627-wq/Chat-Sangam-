@@ -16,6 +16,12 @@ function safeMetadata(message) {
       url: String(source?.url || "").slice(0, 2000),
       snippet: String(source?.snippet || "").slice(0, 1500),
     })) : [],
+    comparisons: Array.isArray(message?.comparisons) ? message.comparisons.slice(0, 2).map((result) => ({
+      model: typeof result?.model === "string" ? result.model.slice(0, 120) : "",
+      name: typeof result?.name === "string" ? result.name.slice(0, 120) : "",
+      provider: typeof result?.provider === "string" ? result.provider.slice(0, 120) : "",
+      content: typeof result?.content === "string" ? result.content.slice(0, 120000) : "",
+    })).filter((result) => result.model && result.content) : [],
   };
 }
 
