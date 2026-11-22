@@ -465,7 +465,12 @@ export default function Home() {
           const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
           for (const localChat of localChats) {
             const remoteChat = mergedById.get(localChat.id);
-            if (!remoteChat || Number(localChat.updatedAt || 0) > Number(remoteChat.updatedAt || 0)) {
+            const localHasComparison = localChat.messages?.some((message) => Array.isArray(message.comparisons) && message.comparisons.length > 0);
+            const remoteHasComparison = remoteChat?.messages?.some((message) => Array.isArray(message.comparisons) && message.comparisons.length > 0);
+            // Local storage is written immediately, while cloud history is debounced.
+            // On refresh both snapshots can share a timestamp; never let a stale cloud
+            // snapshot erase a comparison result that is already present locally.
+            if (!remoteChat || (localHasComparison && !remoteHasComparison) || Number(localChat.updatedAt || 0) >= Number(remoteChat.updatedAt || 0)) {
               mergedById.set(localChat.id, localChat);
             }
           }
