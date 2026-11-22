@@ -22,6 +22,7 @@ function safeMetadata(message) {
       provider: typeof result?.provider === "string" ? result.provider.slice(0, 120) : "",
       content: typeof result?.content === "string" ? result.content.slice(0, 120000) : "",
     })).filter((result) => result.model && result.content) : [],
+    preferredComparisonModel: typeof message?.preferredComparisonModel === "string" ? message.preferredComparisonModel.slice(0, 120) : null,
   };
 }
 
