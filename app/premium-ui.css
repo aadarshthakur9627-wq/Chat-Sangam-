@@ -248,3 +248,46 @@
   .app-shell.theme-dark *::before,
   .app-shell.theme-dark *::after {animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+
+/* Tablet/mobile polish after reviewing the live narrow-screen layout.
+   The 900px breakpoint also covers Android browsers reporting a wider CSS viewport. */
+@media (max-width:900px) {
+  .app-shell.theme-dark .composer-dock {
+    padding:10px 14px max(10px,env(safe-area-inset-bottom));
+  }
+  .app-shell.theme-dark .composer {
+    padding:9px 12px;
+    border-radius:17px;
+  }
+  .app-shell.theme-dark .composer-top {padding:0 2px 5px}
+  .app-shell.theme-dark .composer textarea {
+    min-height:38px;
+    max-height:150px;
+    padding:9px 5px;
+    font-size:15px;
+    line-height:1.45;
+  }
+  .app-shell.theme-dark .attach-button,
+  .app-shell.theme-dark .send-button,
+  .app-shell.theme-dark .send-stop-button {
+    width:48px;
+    height:48px;
+    min-width:48px;
+    min-height:48px;
+    flex-basis:48px;
+    border-radius:15px;
+  }
+  .app-shell.theme-dark .composer-note {margin-top:5px;font-size:9px}
+  .app-shell.theme-dark .welcome {margin-top:clamp(18px,4vh,38px)}
+  .app-shell.theme-dark .welcome h2 {font-size:clamp(34px,6vw,48px);letter-spacing:-1.8px}
+  .app-shell.theme-dark .prompt-grid {gap:10px;margin-top:17px}
+  .app-shell.theme-dark .prompt-card {min-height:82px;padding:12px}
+}
+@media (max-width:640px) {
+  .app-shell.theme-dark .composer-dock {padding-left:10px;padding-right:10px}
+  .app-shell.theme-dark .composer textarea {font-size:16px}
+  .app-shell.theme-dark .welcome {margin-top:18px}
+  .app-shell.theme-dark .welcome h2 {font-size:clamp(32px,8.5vw,40px)}
+  .app-shell.theme-dark .prompt-card {min-height:76px}
+}
