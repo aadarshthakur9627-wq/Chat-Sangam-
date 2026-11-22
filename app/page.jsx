@@ -209,6 +209,13 @@ function sanitizeCloudChats(chats) {
       fallbackFrom: message?.fallbackFrom,
       vision: Boolean(message?.vision),
       sources: Array.isArray(message?.sources) ? message.sources.slice(0, 8) : [],
+      comparisons: Array.isArray(message?.comparisons) ? message.comparisons.slice(0, 2).map((result) => ({
+        model: typeof result?.model === "string" ? result.model.slice(0, 120) : "",
+        name: typeof result?.name === "string" ? result.name.slice(0, 120) : "",
+        provider: typeof result?.provider === "string" ? result.provider.slice(0, 120) : "",
+        content: typeof result?.content === "string" ? result.content.slice(0, 120000) : "",
+      })).filter((result) => result.model && result.content) : [],
+      preferredComparisonModel: typeof message?.preferredComparisonModel === "string" ? message.preferredComparisonModel.slice(0, 120) : null,
     })),
   })).filter((chat) => chat.id);
 }
@@ -458,7 +465,12 @@ export default function Home() {
           const mergedById = new Map(remoteChats.map((chat) => [chat.id, chat]));
           for (const localChat of localChats) {
             const remoteChat = mergedById.get(localChat.id);
-            if (!remoteChat || Number(localChat.updatedAt || 0) > Number(remoteChat.updatedAt || 0)) {
+            const localHasComparison = localChat.messages?.some((message) => Array.isArray(message.comparisons) && message.comparisons.length > 0);
+            const remoteHasComparison = remoteChat?.messages?.some((message) => Array.isArray(message.comparisons) && message.comparisons.length > 0);
+            // Local storage is written immediately, while cloud history is debounced.
+            // On refresh both snapshots can share a timestamp; never let a stale cloud
+            // snapshot erase a comparison result that is already present locally.
+            if (!remoteChat || (localHasComparison && !remoteHasComparison) || Number(localChat.updatedAt || 0) >= Number(remoteChat.updatedAt || 0)) {
               mergedById.set(localChat.id, localChat);
             }
           }
@@ -596,7 +608,7 @@ export default function Home() {
     ? ([providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].some(Boolean) ? true : [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) ? false : null)
     : providerStatus[selectedProviderKey];
   const compareModels = compareModelIds.map((id) => GROQ_MODELS.find((model) => model.id === id)).filter(Boolean);
-  const compareReady = compareMode && selectedModel.kind === "text" && !visionActive && !webSearch && !deepResearch && compareModels.length >= 2;
+  const compareReady = compareMode && !visionActive && !webSearch && !deepResearch && compareModels.length === 2;
 
   function toggleCompareMode() {
     const textModels = GROQ_MODELS.filter((model) => model.kind === "text" && ["Groq API", "Google Gemini"].includes(model.provider)).map((model) => model.id);
@@ -610,6 +622,33 @@ export default function Home() {
 
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
+  }
+
+  async function copyComparisonAnswer(content) {
+    try { await navigator.clipboard.writeText(String(content || "")); }
+    catch { alert("Copy failed. Please allow clipboard access in your browser."); }
+  }
+
+  function chooseComparisonAnswer(chatId, messageIndex, modelId) {
+    updateChat(chatId, (chat) => ({
+      ...chat,
+      updatedAt: Date.now(),
+      messages: chat.messages.map((item, index) => index === messageIndex
+        ? { ...item, preferredComparisonModel: modelId } : item),
+    }));
+  }
+
+  function exportComparisonAnswers(message) {
+    const content = (message.comparisons || []).map((result) =>
+      "## " + (result.name || result.model) + "\n\n" + (result.content || "")
+    ).join("\n\n---\n\n");
+    const blob = new Blob(["# Chat Sangam — AI Comparison\n\n" + content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "chat-sangam-comparison.md";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function clearImageCacheForChat(chatId, fromIndex = 0) {
@@ -1026,7 +1065,7 @@ export default function Home() {
     event?.preventDefault();
     const text = message.trim();
     if ((!text && !attachedFiles.length && !attachedImages.length) || loading || fileLoading || !activeChat) return;
-    if (selectedProviderConfigured === false) {
+    if (!compareReady && selectedProviderConfigured === false) {
       if (effectiveModel.kind === "auto") {
         alert("No free AI provider is configured for this deployment. Add GROQ_API_KEY or GEMINI_API_KEY in Vercel Environment Variables.");
       } else {
@@ -1402,7 +1441,7 @@ export default function Home() {
                         if (item.kind === "vision" && !visionActive) return;
                         setSelectedModelId(item.id);
                         setModelMenuOpen(false);
-                        if (item.kind === "vision" || item.provider !== "Groq API") setCompareMode(false);
+                        if (item.kind === "vision") setCompareMode(false);
                       }}
                       disabled={(item.kind === "vision" && !visionActive) || (item.kind === "auto" ? [providerStatus.groq, providerStatus.gemini, providerStatus.antigravity].every((value) => value === false) : item.provider === "Google Gemini" ? providerStatus.gemini === false : item.provider === "Google Antigravity" ? providerStatus.antigravity === false : providerStatus.groq === false)}>
                       <span className="model-option-icon">{item.icon}</span>
@@ -1423,7 +1462,7 @@ export default function Home() {
                           {GROQ_MODELS.filter((item) => item.kind === "text" && ["Groq API", "Google Gemini"].includes(item.provider)).map((item) => (
                             <label key={item.id} className="compare-pick">
                               <input type="checkbox" checked={compareModelIds.includes(item.id)}
-                                onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 3))} />
+                                onChange={() => setCompareModelIds((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id].slice(0, 2))} />
                               <span>{item.icon}</span><strong>{item.name}</strong>
                             </label>
                           ))}
@@ -1510,14 +1549,25 @@ export default function Home() {
                         <div className="markdown-content">
                           <div className="message-selectable" id={"message-selectable-" + index}>
                             {Array.isArray(msg.comparisons) && msg.comparisons.length > 0 ? (
+                              <>
+                              <div className="comparison-tools">
+                                <span>{msg.preferredComparisonModel ? "Preferred answer selected" : "Compare for accuracy, clarity and relevance"}</span>
+                                <button type="button" onClick={() => exportComparisonAnswers(msg)}>Export both (.md)</button>
+                              </div>
                               <div className="comparison-grid">
                                 {msg.comparisons.map((result) => (
-                                  <div className="comparison-card" key={result.model}>
+                                  <div className={"comparison-card" + (msg.preferredComparisonModel === result.model ? " comparison-card-preferred" : "")} key={result.model}>
                                     <div className="comparison-card-head">
                                       <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
-                                      <span><strong>{result.name || result.model}</strong><small>Groq</small></span>
+                                      <span><strong>{result.name || result.model}</strong><small>{GROQ_MODELS.find((model) => model.id === result.model)?.provider || "AI provider"}</small></span>
                                     </div>
                                     <div className="comparison-card-body">
+                                      <div className="comparison-card-actions">
+                                        <button type="button" onClick={() => copyComparisonAnswer(result.content)}>Copy answer</button>
+                                        <button type="button" className={msg.preferredComparisonModel === result.model ? "selected" : ""} onClick={() => chooseComparisonAnswer(activeChatId, index, result.model)}>
+                                          {msg.preferredComparisonModel === result.model ? "✓ Preferred answer" : "Choose this answer"}
+                                        </button>
+                                      </div>
                                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                         pre: CodeBlock,
                                         table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
@@ -1526,6 +1576,7 @@ export default function Home() {
                                   </div>
                                 ))}
                               </div>
+                              </>
                             ) : (
                               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                 pre: CodeBlock,

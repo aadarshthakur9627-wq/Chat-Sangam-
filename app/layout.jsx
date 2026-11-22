@@ -1,6 +1,7 @@
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import "./light-chat-fixes.css";
+import "./premium-ui.css";
 import AuthGate from "../components/AuthGate";
 
 export const metadata = {
