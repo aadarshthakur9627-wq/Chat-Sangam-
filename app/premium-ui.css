@@ -291,3 +291,121 @@
   .app-shell.theme-dark .welcome h2 {font-size:clamp(32px,8.5vw,40px)}
   .app-shell.theme-dark .prompt-card {min-height:76px}
 }
+
+
+/* Brand system rollout: history, model picker, settings and active-chat surfaces. */
+.app-shell.theme-dark .history-header {
+  display:flex;align-items:center;justify-content:space-between;
+  padding:18px 10px 9px;color:#8f9bb3;font-size:10px;
+  font-weight:750;letter-spacing:1.05px;text-transform:uppercase;
+}
+.app-shell.theme-dark .history-item {
+  min-height:46px;padding:9px 11px;border:1px solid transparent;
+  border-radius:12px;transition:background .18s,border-color .18s,transform .18s;
+}
+.app-shell.theme-dark .history-item.selected {
+  border-color:rgba(139,124,255,.25);
+  background:linear-gradient(100deg,rgba(139,124,255,.17),rgba(237,108,168,.07));
+  box-shadow:inset 2px 0 #a99dff,0 7px 20px rgba(0,0,0,.12);
+}
+.app-shell.theme-dark .history-delete {
+  border-radius:9px;color:#8490a7;transition:all .16s;
+}
+.app-shell.theme-dark .history-delete:hover {background:rgba(237,108,168,.12);color:#f49ac2}
+.app-shell.theme-dark .model-menu {
+  border:1px solid rgba(169,157,255,.24);
+  background:linear-gradient(160deg,rgba(22,27,43,.99),rgba(13,17,29,.99));
+  box-shadow:0 26px 80px rgba(0,0,0,.58),0 0 32px rgba(139,124,255,.1);
+  backdrop-filter:blur(24px);
+}
+.app-shell.theme-dark .model-menu-head {
+  border-bottom:1px solid rgba(153,169,205,.13);
+}
+.app-shell.theme-dark .model-search {
+  border:1px solid rgba(153,169,205,.15);border-radius:11px;
+  background:rgba(255,255,255,.035);
+}
+.app-shell.theme-dark .model-option {
+  min-height:52px;border:1px solid transparent;border-radius:11px;
+  transition:background .16s,border-color .16s;
+}
+.app-shell.theme-dark .model-option.active {
+  background:linear-gradient(100deg,rgba(139,124,255,.15),rgba(237,108,168,.055));
+  border-color:rgba(139,124,255,.25);
+}
+.app-shell.theme-dark .model-option:focus-visible {
+  outline:2px solid #a99dff;outline-offset:2px;
+}
+.app-shell.theme-dark .settings-overlay {
+  background:rgba(3,5,11,.72);backdrop-filter:blur(12px);
+}
+.app-shell.theme-dark .settings-center,
+.app-shell.theme-dark .settings-panel {
+  border:1px solid rgba(153,169,205,.17);border-radius:20px;
+  background:linear-gradient(155deg,#151b2b,#0d1220);
+  box-shadow:0 30px 100px rgba(0,0,0,.55),0 0 38px rgba(139,124,255,.08);
+}
+.app-shell.theme-dark .settings-center-head,
+.app-shell.theme-dark .settings-nav {
+  border-color:rgba(153,169,205,.13);
+}
+.app-shell.theme-dark .settings-nav button,
+.app-shell.theme-dark .settings-action,
+.app-shell.theme-dark .settings-choice-row {
+  border:1px solid transparent;border-radius:11px;
+  transition:background .16s,border-color .16s;
+}
+.app-shell.theme-dark .settings-nav button:hover,
+.app-shell.theme-dark .settings-action:hover,
+.app-shell.theme-dark .settings-choice-row:hover {
+  border-color:rgba(139,124,255,.22);background:rgba(139,124,255,.08);
+}
+.app-shell.theme-dark .settings-feature-card,
+.app-shell.theme-dark .settings-plan-card {
+  border:1px solid rgba(153,169,205,.15);border-radius:15px;
+  background:linear-gradient(145deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+}
+.app-shell.theme-dark .settings-pro-card {
+  border-color:rgba(237,108,168,.27);
+  background:linear-gradient(135deg,rgba(139,124,255,.12),rgba(237,108,168,.07));
+}
+.app-shell.theme-dark .settings-plan-badge,
+.app-shell.theme-dark .settings-current-plan {
+  border:1px solid rgba(82,214,162,.25);border-radius:999px;
+  background:rgba(82,214,162,.09);color:#8ce8c1;
+}
+.app-shell.theme-dark .settings-info-row {
+  border-bottom:1px solid rgba(153,169,205,.1);
+}
+.app-shell.theme-dark .message-context-menu,
+.app-shell.theme-dark .assistant-more-menu,
+.app-shell.theme-dark .top-more-menu {
+  border:1px solid rgba(153,169,205,.18);border-radius:13px;
+  background:rgba(18,23,37,.98);box-shadow:0 18px 52px rgba(0,0,0,.42);
+  backdrop-filter:blur(18px);
+}
+.app-shell.theme-dark .message-context-menu button,
+.app-shell.theme-dark .assistant-more-menu button,
+.app-shell.theme-dark .top-more-menu button {
+  border-radius:9px;transition:background .15s,color .15s;
+}
+.app-shell.theme-dark .message-context-menu button:hover,
+.app-shell.theme-dark .assistant-more-menu button:hover,
+.app-shell.theme-dark .top-more-menu button:hover {
+  background:rgba(139,124,255,.11);color:#fff;
+}
+.app-shell.theme-dark .source-card {
+  border-radius:12px;transition:border-color .16s,background .16s;
+}
+.app-shell.theme-dark :is(button,a,input,textarea,select):focus-visible {
+  outline:2px solid rgba(169,157,255,.9);outline-offset:3px;
+}
+@media (max-width:640px) {
+  .app-shell.theme-dark .settings-center,
+  .app-shell.theme-dark .settings-panel {
+    width:min(100%,100vw);max-height:92dvh;border-radius:18px 18px 0 0;
+  }
+  .app-shell.theme-dark .settings-overlay {align-items:flex-end;padding:0}
+  .app-shell.theme-dark .history-item {min-height:48px}
+  .app-shell.theme-dark .model-option {min-height:56px}
+}
