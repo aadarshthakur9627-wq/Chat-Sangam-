@@ -215,6 +215,7 @@ function sanitizeCloudChats(chats) {
         provider: typeof result?.provider === "string" ? result.provider.slice(0, 120) : "",
         content: typeof result?.content === "string" ? result.content.slice(0, 120000) : "",
       })).filter((result) => result.model && result.content) : [],
+      preferredComparisonModel: typeof message?.preferredComparisonModel === "string" ? message.preferredComparisonModel.slice(0, 120) : null,
     })),
   })).filter((chat) => chat.id);
 }
@@ -616,6 +617,33 @@ export default function Home() {
 
   function updateChat(id, updater) {
     setChats((current) => current.map((chat) => chat.id === id ? updater(chat) : chat));
+  }
+
+  async function copyComparisonAnswer(content) {
+    try { await navigator.clipboard.writeText(String(content || "")); }
+    catch { alert("Copy failed. Please allow clipboard access in your browser."); }
+  }
+
+  function chooseComparisonAnswer(chatId, messageIndex, modelId) {
+    updateChat(chatId, (chat) => ({
+      ...chat,
+      updatedAt: Date.now(),
+      messages: chat.messages.map((item, index) => index === messageIndex
+        ? { ...item, preferredComparisonModel: modelId } : item),
+    }));
+  }
+
+  function exportComparisonAnswers(message) {
+    const content = (message.comparisons || []).map((result) =>
+      "## " + (result.name || result.model) + "\n\n" + (result.content || "")
+    ).join("\n\n---\n\n");
+    const blob = new Blob(["# Chat Sangam — AI Comparison\n\n" + content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "chat-sangam-comparison.md";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function clearImageCacheForChat(chatId, fromIndex = 0) {
@@ -1516,14 +1544,24 @@ export default function Home() {
                         <div className="markdown-content">
                           <div className="message-selectable" id={"message-selectable-" + index}>
                             {Array.isArray(msg.comparisons) && msg.comparisons.length > 0 ? (
+                              <div className="comparison-tools">
+                                <span>{msg.preferredComparisonModel ? "Preferred answer selected" : "Compare for accuracy, clarity and relevance"}</span>
+                                <button type="button" onClick={() => exportComparisonAnswers(msg)}>Export both (.md)</button>
+                              </div>
                               <div className="comparison-grid">
                                 {msg.comparisons.map((result) => (
-                                  <div className="comparison-card" key={result.model}>
+                                  <div className={"comparison-card" + (msg.preferredComparisonModel === result.model ? " comparison-card-preferred" : "")} key={result.model}>
                                     <div className="comparison-card-head">
                                       <span className="comparison-model-icon">{GROQ_MODELS.find((model) => model.id === result.model)?.icon || "⚡"}</span>
                                       <span><strong>{result.name || result.model}</strong><small>{GROQ_MODELS.find((model) => model.id === result.model)?.provider || "AI provider"}</small></span>
                                     </div>
                                     <div className="comparison-card-body">
+                                      <div className="comparison-card-actions">
+                                        <button type="button" onClick={() => copyComparisonAnswer(result.content)}>Copy answer</button>
+                                        <button type="button" className={msg.preferredComparisonModel === result.model ? "selected" : ""} onClick={() => chooseComparisonAnswer(activeChatId, index, result.model)}>
+                                          {msg.preferredComparisonModel === result.model ? "✓ Preferred answer" : "Choose this answer"}
+                                        </button>
+                                      </div>
                                       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                         pre: CodeBlock,
                                         table: ({ children }) => <div className="table-scroll"><table>{children}</table></div>,
