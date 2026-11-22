@@ -1549,6 +1549,7 @@ export default function Home() {
                         <div className="markdown-content">
                           <div className="message-selectable" id={"message-selectable-" + index}>
                             {Array.isArray(msg.comparisons) && msg.comparisons.length > 0 ? (
+                              <>
                               <div className="comparison-tools">
                                 <span>{msg.preferredComparisonModel ? "Preferred answer selected" : "Compare for accuracy, clarity and relevance"}</span>
                                 <button type="button" onClick={() => exportComparisonAnswers(msg)}>Export both (.md)</button>
@@ -1575,6 +1576,7 @@ export default function Home() {
                                   </div>
                                 ))}
                               </div>
+                              </>
                             ) : (
                               <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore", throwOnError: false }]]} components={{
                                 pre: CodeBlock,
